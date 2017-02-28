@@ -25,20 +25,23 @@
     Please REMOVE this comment before publishing your game on BGA
 -->
 
+<div id="mydiv">
+	This is your game interface. You can edit this HTML in your ".tpl"
+	file.
 
-This is your game interface. You can edit this HTML in your ".tpl" file.
+	<div class="wcube wcube_blue"></div>
+
+</div>
 
 
 <script type="text/javascript">
+    // Javascript HTML templates
 
-// Javascript HTML templates
+    /*
+     // Example:
+     var jstpl_some_game_item='<div class="my_game_item" id="my_game_item_${id}"></div>';
 
-/*
-// Example:
-var jstpl_some_game_item='<div class="my_game_item" id="my_game_item_${id}"></div>';
-
-*/
-
-</script>  
+     */
+</script>
 
 {OVERALL_GAME_FOOTER}

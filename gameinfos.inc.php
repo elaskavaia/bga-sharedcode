@@ -14,19 +14,19 @@ $gameinfos = array(
 
 
 // Game designer (or game designers, separated by commas)
-'designer' => 'John Doe',       
+'designer' => 'Board Game Arena',       
 
 // Game artist (or game artists, separated by commas)
-'artist' => 'Jane Doe',         
+'artist' => 'Board Game Arena',         
 
 // Year of FIRST publication of this game. Can be negative.
-'year' => 2000,                 
+'year' => 2017,                 
 
 // Game publisher
-'publisher' => 'My Publishing Company',                     
+'publisher' => 'Board Game Arena',                     
 
 // Url of game publisher website
-'publisher_website' => 'http://www.mypublishingcompany.com/',   
+'publisher_website' => 'http://www.boardgamearena.com/',   
 
 // Board Game Geek ID of the publisher
 'publisher_bgg_id' => 1234,
@@ -36,7 +36,7 @@ $gameinfos = array(
 
 
 // Players configuration that can be played (ex: 2 to 4 players)
-'players' => array( 2,3,4 ),    
+'players' => array( 1,2,3,4 ),    
 
 // Suggest players to play with this number of players. Must be null if there is no such advice, or if there is only one possible player configuration.
 'suggest_player_number' => null,
