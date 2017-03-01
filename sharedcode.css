@@ -12,14 +12,12 @@ Contributors:
 This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
 See http://en.boardgamearena.com/#!doc/Studio for more information.
 */
-
-
-@import url(../../../css/csslayer.css); /* Note: you must not use any @import directive other than this one */
+@import url(../../../css/csslayer.css);
+	/* Note: you must not use any @import directive other than this one */
 
 /********* You can start writing your CSS below this line: **********/
 
 /** Shadow for square tokens or boards, make them appear more real board-gamish */
-
 .shadow {
 	-moz-box-shadow: 1px 1px 2px 1px #222;
 	-webkit-box-shadow: 1px 1px 2px 1px #222;
@@ -27,9 +25,37 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 	box-shadow: 1px 1px 2px 1px #222;
 }
 
+.selected {
+	outline-color: blue;
+	box-shadow: 1px 1px 2px 1px #444, 0 0 5px blue, 0 0 5px darkblue;
+}
+
+.active_slot:hover {
+	outline-color: blue;
+	outline-style: solid;
+	outline-width: 2px;
+}
+
+.active_slot {
+	cursor: pointer;
+	outline-color: white;
+	outline-style: solid;
+	outline-width: 2px;
+}
+
+/** mini board styles */
+.mini_board_item {
+   display: inline-block;
+   margin-right: 1em;
+}
+.mini_board_item > * {
+   display: inline-block;
+   vertical-align: middle;
+}
+
+
 
 /** Wooden cubes */
-
 .wcube {
 	width: 30px;
 	height: 30px;
@@ -42,4 +68,70 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 
 .wcube_blue {
 	background-position: 10% 0%;
+}
+
+.wcube_red {
+	background-position: 20% 0%;
+}
+
+.wcube_yellow {
+	background-position: 30% 0%;
+}
+
+.wcube_green {
+	background-position: 40% 0%;
+}
+
+.wcube_white {
+	background-position: 50% 0%;
+}
+
+.wcube_black {
+	background-position: 60% 0%;
+}
+
+.wcube_brown {
+	background-position: 70% 0%;
+}
+
+.wcube_purple {
+	background-position: 80% 0%;
+}
+
+.wcube_pink {
+	background-position: 90% 0%;
+}
+
+.wcube_orange {
+	background-position: 100% 0%;
+}
+
+
+/** main board styles */
+.mainboard {
+	width: 600px;
+	height: 400px;
+	background-color: #c99d6c;
+	position: relative;
+}
+.basket {
+	width: 200px;
+	height: 100px;
+	background-color: antiquewhite;
+	border-style:inset;
+	border-width: 3px;
+	border-color: white;
+	position: absolute;
+}
+.basket_1 {
+	top: 20px;
+	left: 300px;	
+}
+
+.basket_2 {
+	top: 220px;
+	left: 300px;	
+}
+.basket > * {
+   display: inline-block;
 }
