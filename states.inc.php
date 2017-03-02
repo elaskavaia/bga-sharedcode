@@ -53,6 +53,7 @@
 if (!defined('STATE_END_GAME')) { // guard since this included multiple times
    define("STATE_PLAYER_TURN", 2);
    define("STATE_GAME_TURN", 3);
+   define("STATE_PLAYER_TURN_CUBES", 4);
    define("STATE_END_GAME", 99);
 }
  
@@ -71,13 +72,14 @@ $machinestates = array(
 
     STATE_PLAYER_TURN => array(
     		"name" => "playerTurn",
-    		"description" => clienttranslate('${actplayer} must take Cube, move Cube or Pass'),
-    		"descriptionmyturn" => clienttranslate('${you} must take Cube, move Cube or Pass'),
+    		"description" => clienttranslate('${actplayer} must select an Action Space or Pass'),
+    		"descriptionmyturn" => clienttranslate('${you} must select an Action Space or Pass'),
     		"type" => "activeplayer",
             'args' => 'arg_playerTurn',
-    		"possibleactions" => array( "takeCube", "moveCube", "pass" ),
+    		"possibleactions" => array( "selectWorkerAction", "pass" ),
     		"transitions" => array( 
-    		        "loopback" => STATE_PLAYER_TURN, 
+    		        "loopback" => STATE_PLAYER_TURN,
+    		        "playCubes" => STATE_PLAYER_TURN_CUBES,
     		        "pass" => STATE_GAME_TURN )
     ),
         
@@ -91,7 +93,17 @@ $machinestates = array(
                     "next" => STATE_PLAYER_TURN,
                     "endGame" => STATE_END_GAME )
     ),
-        
+    STATE_PLAYER_TURN_CUBES => array(
+            "name" => "playerTurnPlayCubes",
+            "description" => clienttranslate('${actplayer} must select Take a Cube or Move a Cube'),
+            "descriptionmyturn" => clienttranslate('${you} must select Take a Cube or Move a Cube'),
+            "type" => "activeplayer",
+            'args' => 'arg_playerTurnPlayCubes',
+            "possibleactions" => array( "takeCube", "moveCube" ),
+            "transitions" => array(
+                    "loopback" => STATE_PLAYER_TURN_CUBES,
+                    "next" => STATE_GAME_TURN )
+    ),
 
    
     // Final state.

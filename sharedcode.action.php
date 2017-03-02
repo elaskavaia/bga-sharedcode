@@ -1,4 +1,5 @@
 <?php
+
 /**
  *------
  * BGA framework: © Gregory Isabelli <gisabelli@boardgamearena.com> & Emmanuel Colin <ecolin@boardgamearena.com>
@@ -20,49 +21,47 @@
  * this.ajaxcall( "/sharedcode/sharedcode/myAction.html", ...)
  *
  */
-  
-  
-  class action_sharedcode extends APP_GameAction
-  { 
+class action_sharedcode extends APP_GameAction {
     // Constructor: please do not modify
-   	public function __default()
-  	{
-  	    if( self::isArg( 'notifwindow') )
-  	    {
+    public function __default() {
+        if (self::isArg('notifwindow')) {
             $this->view = "common_notifwindow";
-  	        $this->viewArgs['table'] = self::getArg( "table", AT_posint, true );
-  	    }
-  	    else
-  	    {
+            $this->viewArgs ['table'] = self::getArg("table", AT_posint, true);
+        } else {
             $this->view = "sharedcode_sharedcode";
-            self::trace( "Complete reinitialization of board game" );
-      }
-  	} 
-  	
-  	// TODO: defines your action entry points there
+            self::trace("Complete reinitialization of board game");
+        }
+    }
 
-
-    /*
-    
-    Example:
-  	
-    public function myAction()
-    {
-        self::setAjaxMode();     
-
-        // Retrieve arguments
-        // Note: these arguments correspond to what has been sent through the javascript "ajaxcall" method
-        $arg1 = self::getArg( "myArgument1", AT_posint, true );
-        $arg2 = self::getArg( "myArgument2", AT_posint, true );
-
-        // Then, call the appropriate method in your game logic, like "playCard" or "myAction"
-        $this->game->myAction( $arg1, $arg2 );
-
-        self::ajaxResponse( );
+    public function selectWorkerAction() {
+        self::setAjaxMode();
+        $arg1 = self::getArg("action_id", AT_alphanum, true);
+        $arg2 = self::getArg("worker_id", AT_alphanum, true);
+        $this->game->action_selectWorkerAction($arg1, $arg2);
+        self::ajaxResponse();
     }
     
-    */
-
-  }
+    public function takeCube() {
+        self::setAjaxMode();
+        $arg1 = self::getArg("token_id", AT_alphanum, true);
+        $arg2 = self::getArg("place_id", AT_alphanum, false);
+        $this->game->action_takeCube($arg1, $arg2);
+        self::ajaxResponse();
+    }
+    
+    public function moveCube() {
+        self::setAjaxMode();
+        $arg1 = self::getArg("token_id", AT_alphanum, true);
+        $arg2 = self::getArg("place_id", AT_alphanum, true);
+        $this->game->action_moveCube($arg1, $arg2);
+        self::ajaxResponse();
+    }
+    
+    public function pass() {
+        self::setAjaxMode();
+        $this->game->action_pass();
+        self::ajaxResponse();
+    }
+}
   
 

@@ -19,7 +19,7 @@ require_once (APP_GAMEMODULE_PATH . 'module/table/table.game.php');
 
 class SharedCode extends Table {
 
-    function SharedCode() {
+    function __construct() {
         // Your global variables labels:
         //  Here, you can assign labels to global variables you are using for this game.
         //  You can use any number of global variables with IDs between 10 and 99.
@@ -27,10 +27,14 @@ class SharedCode extends Table {
         //  the corresponding ID in gameoptions.inc.php.
         // Note: afterwards, you can get/set the global variables with getGameStateValue/setGameStateInitialValue/setGameStateValue
         parent::__construct();
-        self::initGameStateLabels(
-                array (
-               "resource_id_counter" => 10, 
-        //    "my_second_global_variable" => 11,
+        $this->gameinit = false;
+        self::initGameStateLabels(array (
+           // reserved globals 1..10
+           'move_nbr' => 6,
+           // game global vars starts at 10
+           "round" => 10,
+           "resource_id_counter" => 11,
+         
         //      ...
         //    "my_first_game_variant" => 100,
         //    "my_second_game_variant" => 101,
@@ -43,7 +47,7 @@ class SharedCode extends Table {
         return "sharedcode";
     }
 
-    /*
+        /*
      * setupNewGame:
      *
      * This method is called only once, when a new game is launched.
@@ -51,33 +55,41 @@ class SharedCode extends Table {
      * the game is ready to be played.
      */
     protected function setupNewGame($players, $options = array()) {
-        // Set the colors of the players with HTML color code
-        // The default below is red/green/blue/orange/brown
-        // The number of colors defined here must correspond to the maximum number of players allowed for the gams
-        $default_colors = array ("ff0000","008000","0000ff","ffa500","773300" );
-        // Create players
-        // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
-        $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
-        $values = array ();
-        foreach ( $players as $player_id => $player ) {
-            $color = array_shift($default_colors);
-            $values [] = "('" . $player_id . "','$color','" . $player ['player_canal'] . "','" . addslashes($player ['player_name']) . "','" . addslashes($player ['player_avatar']) . "')";
+        $this->gameinit = true;
+        try {
+            // Set the colors of the players with HTML color code
+            // The default below is red/green/blue/orange/brown
+            // The number of colors defined here must correspond to the maximum number of players allowed for the gams
+            $default_colors = array ("ff0000","008000","0000ff","ffa500","773300" );
+            // Create players
+            // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
+            $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
+            $values = array ();
+            foreach ( $players as $player_id => $player ) {
+                $color = array_shift($default_colors);
+                $values [] = "('" . $player_id . "','$color','" . $player ['player_canal'] . "','" . addslashes($player ['player_name']) . "','" . addslashes($player ['player_avatar']) . "')";
+            }
+            $sql .= implode($values, ',');
+            self::DbQuery($sql);
+            self::reattributeColorsBasedOnPreferences($players, array ("ff0000","008000","0000ff","ffa500","773300" ));
+            self::reloadPlayersBasicInfos();
+            /**
+             * ********** Start the game initialization ****
+             */
+            // Init global values with their initial values
+            self::setGameStateInitialValue('resource_id_counter', 1);
+            self::setGameStateInitialValue('round', 0);
+            // Init game statistics
+            // (note: statistics used in this file must be defined in your stats.inc.php file)
+            //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
+            //self::initStat( 'player', 'player_teststat1', 0 );  // Init a player statistics (for all players)
+            // TODO: setup the initial game situation here
+
+        } catch ( Exception $e ) {
+            $this->dump('err', $e);
+            $this->error("Error during game initialization: $e");
         }
-        $sql .= implode($values, ',');
-        self::DbQuery($sql);
-        self::reattributeColorsBasedOnPreferences($players, array ("ff0000","008000","0000ff","ffa500","773300" ));
-        self::reloadPlayersBasicInfos();
-        /**
-         * ********** Start the game initialization ****
-         */
-        // Init global values with their initial values
-        self::setGameStateInitialValue( 'resource_id_counter', 1 );
-        // Init game statistics
-        // (note: statistics used in this file must be defined in your stats.inc.php file)
-        //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
-        //self::initStat( 'player', 'player_teststat1', 0 );  // Init a player statistics (for all players)
-        // TODO: setup the initial game situation here
-        // Activate first player (which is in general a good idea :) )
+        $this->gameinit = false;
         $this->activeNextPlayer();
     /**
      * ********** End of the game initialization ****
@@ -115,15 +127,114 @@ class SharedCode extends Table {
      * (see states.inc.php)
      */
     function getGameProgression() {
-        // TODO: compute and return the game progression
-        return 0;
+        $round = self::getGameStateValue('round');
+        if ($round>=6) return 100;
+        return 100*$round/6;
     }
-    //////////////////////////////////////////////////////////////////////////////
-    //////////// Utility functions
-    ////////////    
-    /*
+        //////////////////////////////////////////////////////////////////////////////
+        //////////// Utility functions
+        ////////////    
+        /*
      * In this space, you can put any utility methods useful for your game logic
      */
+    /**
+     * This will throw an exception if condition is false.
+     * The message should be translated and shown to the user.
+     *
+     * @param $log is
+     *            server side log message, no translation needed
+     * @throws BgaUserException
+     */
+    function userAssertTrue($message, $cond = false, $log = "") {
+        if ($cond)
+            return;
+        if ($log) $this->warn($message . " " . $log);
+        throw new BgaUserException($message);
+    }
+
+    /**
+     * This will throw an exception if condition is false.
+     * This only can happened if user hacks the game, client must prevent this
+     *
+     * @param $log is
+     *            server side log message, no translation needed
+     * @throws BgaUserException
+     */
+    function systemAssertTrue($log, $cond = false) {
+        if ($cond)
+            return;
+        $move = $this->getGameStateValue('move_nbr');
+        $this->error("Internal Error during move $move: $log|");
+        throw new BgaUserException(self::_("Internal Error. That should not have happened. Please raise a bug")); 
+    }
+    
+    /**
+     * 
+     * @return first player in natural player order
+     */
+    function getFirstPlayer(){
+        $table = $this->getNextPlayerTable();
+        return $table[0];
+    }
+    
+    function getPlayerColor($player_id) {
+        if (! isset($this->players_basic)) {
+            $this->players_basic = $this->loadPlayersBasicInfos();
+        }
+        if (! isset($this->players_basic [$player_id])) {
+            return 0;
+        }
+        return $this->players_basic [$player_id] ['player_color'];
+    }
+    
+    function getPlayerName($player_id) {
+        if (! isset($this->players_basic)) {
+            $this->players_basic = $this->loadPlayersBasicInfos();
+        }
+        if (! isset($this->players_basic [$player_id])) {
+            return "unknown";
+        }
+        return $this->players_basic [$player_id] ['player_name'];
+    }
+    
+    function getPlayerIdByColor($color) {
+        if (! isset($this->players_basic)) {
+            $this->players_basic = $this->loadPlayersBasicInfos();
+        }
+        if (! isset($this->player_colors)) {
+            $this->player_colors = array ();
+            foreach ( $this->players_basic as $player_id => $info ) {
+                $this->player_colors [$info ['player_color']] = $player_id;
+            }
+        }
+        if (! isset($this->player_colors [$color])) {
+            return 0;
+        }
+        return $this->player_colors [$color];
+    }
+
+    function notifyWithName($type, $message = '', $args = null, $player_id = -1) {
+        if ($this->gameinit)
+            return;
+        if ($args == null)
+            $args = array ();
+        $this->systemAssertTrue("Invalid notification signature", is_array($args));
+
+        if ($player_id==-1)
+           $player_id = $this->getActivePlayerId();
+        $args ['player_id'] = $player_id;
+        if ($message) {
+            $player_name = $this->getPlayerName($player_id);
+            $args ['player_name'] = $player_name;
+        }
+        if (isset($args['_private'])) {
+            unset($args ['_private']);
+            $this->notifyPlayer($player_id, $type, $message, $args);
+        } else {
+            $this->notifyAllPlayers($type, $message, $args);
+        }
+    }
+    
     //////////////////////////////////////////////////////////////////////////////
     //////////// Player actions
     //////////// 
@@ -131,32 +242,36 @@ class SharedCode extends Table {
      * Each time a player is doing some game action, one of the methods below is called.
      * (note: each method below must match an input method in sharedcode.action.php)
      */
-    /*
-     *
-     * Example:
-     *
-     * function playCard( $card_id )
-     * {
-     * // Check that this is the player's turn and that it is a "possible action" at this game state (see
-     * states.inc.php)
-     * self::checkAction( 'playCard' );
-     *
-     * $player_id = self::getActivePlayerId();
-     *
-     * // Add your game logic to play a card there
-     * ...
-     *
-     * // Notify all players about the card played
-     * self::notifyAllPlayers( "cardPlayed", clienttranslate( '${player_name} played ${card_name}' ), array(
-     * 'player_id' => $player_id,
-     * 'player_name' => self::getActivePlayerName(),
-     * 'card_name' => $card_name,
-     * 'card_id' => $card_id
-     * ) );
-     *
-     * }
-     *
-     */
+    
+    function action_pass(){
+        self::notifyWithName( "message", clienttranslate( '${player_name} is passed' ));
+        $this->gamestate->nextState('pass');
+    }
+    
+    function action_selectWorkerAction($action_id, $worker_id) {
+        self::checkAction('selectWorkerAction');
+        switch ($action_id) {
+            case 'action_space_1':
+                $this->gamestate->nextState('playCubes');
+                return;
+            default:
+                $this->userAssertTrue(self::_("Action is not supported yet"),false,$action_id);
+                return;
+        }
+    }
+    
+    function action_takeCube($token_id) {
+        self::checkAction('takeCube');
+        $player_id = self::getActivePlayerId();
+        $this->gamestate->nextState('next');
+    }
+    
+    function action_moveCube($token_id) {
+        self::checkAction('moveCube');
+        $player_id = self::getActivePlayerId();
+        $this->gamestate->nextState('next');
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //////////// Game state arguments
     ////////////
@@ -166,34 +281,39 @@ class SharedCode extends Table {
      * game state.
      */
     function arg_playerTurn() {
+        $round = self::getGameStateValue('round');
+        return array ('round' => $round );
+    }
+
+    function arg_playerTurnPlayCubes() {
         // Get some values from the current game situation in database...
         $takeCubeNumber = rand(0, 10);
-        $counter = self::getGameStateValue( 'resource_id_counter');
+        $counter = self::getGameStateValue('resource_id_counter');
         // return values:
-        return array (
-                'cubeTypeNumber' => $takeCubeNumber,
-                'resource_id_counter' => $counter,
-        );
+        return array ('cubeTypeNumber' => $takeCubeNumber,'resource_id_counter' => $counter );
     }
-    //////////////////////////////////////////////////////////////////////////////
-    //////////// Game state actions
-    ////////////
-    /*
-     * Here, you can create methods defined as "game state actions" (see "action" property in states.inc.php).
-     * The action method of state X is called everytime the current game state is set to X.
+        //////////////////////////////////////////////////////////////////////////////
+        //////////// Game state actions
+        ////////////
+    /**
+     * Typical function that changes to next player
      */
-    /*
-     *
-     * Example for game state "MyGameState":
-     *
-     * function stMyGameState()
-     * {
-     * // Do some stuff ...
-     *
-     * // (very often) go to another gamestate
-     * $this->gamestate->nextState( 'some_gamestate_transition' );
-     * }
-     */
+    function st_gameTurn() {
+        $this->activeNextPlayer();
+        $player_id = $this->getActivePlayerId();
+        $this->giveExtraTime($player_id);
+        $first_player_id = $this->getFirstPlayer();
+        if ($player_id == $first_player_id) {
+            $round = $this->incGameStateValue('round', 1);
+            if ($round >= 6) {
+                $this->gamestate->nextState('endGame');
+                return;
+            }
+            $this->incStat(1, 'turns_number');
+        }
+        $this->incStat(1, 'turns_number', $player_id);
+        $this->gamestate->nextState('next');
+    }
     //////////////////////////////////////////////////////////////////////////////
     //////////// Zombie
     ////////////

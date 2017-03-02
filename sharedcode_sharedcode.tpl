@@ -26,15 +26,16 @@
 -->
 
 <div id="mydiv">
-	This is your game interface. You can edit this HTML in your ".tpl"
-	file.
-	
+
 
 	<div id="mainboard" class="mainboard shadow">
 		This is fake game board.
-		<div id="basket_1" class="basket basket_1">
-		   	<div class="wcube wcube_blue"></div>
-		</div>
+		<div id="action_space_1" class="action_space action_space_1"><span class="splabel">Moving tokens and counters</span></div>
+		<div id="action_space_2" class="action_space action_space_2"></div>
+		<div id="action_space_3" class="action_space action_space_3"></div>
+		<div id="action_space_4" class="action_space action_space_4"></div>
+				
+		<div id="basket_1" class="basket basket_1"></div>
 		<div id="basket_2" class="basket basket_2"></div>
 	</div>
 

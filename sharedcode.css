@@ -43,6 +43,11 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 	outline-width: 2px;
 }
 
+
+.splabel {
+	position: absolute;
+}
+
 /** mini board styles */
 .mini_board_item {
    display: inline-block;
@@ -107,29 +112,123 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 }
 
 
+/** Standing meeples */
+.smeeple2 {
+	width: 64px;
+	height: 78px;
+	background-image: url(img/78_64_stand_meeples.png);
+}
+
+.smeeple {
+	width: 32px;
+	height: 39px;
+	background-image: url(img/78_64_stand_meeples.png);
+	background-size: 352px;
+}
+
+.smeeple_gray {
+	background-position: 20% 0%;
+}
+
+.smeeple_blue {
+	background-position: 40% 0%;
+}
+
+.smeeple_red {
+	background-position: 30% 0%;
+}
+
+.smeeple_yellow {
+	background-position: 10% 0%;
+}
+
+.smeeple_green {
+	background-position: 60% 0%;
+}
+
+.smeeple_white {
+	background-position: 20% 0%;
+}
+
+.smeeple_black {
+	background-position: 50% 0%;
+}
+
+.smeeple_brown {
+	background-position: 50% 0%;
+}
+
+.smeeple_purple {
+	background-position: 0% 0%;
+}
+
+.smeeple_pink {
+	background-position: 0% 0%;
+}
+
+.smeeple_orange {
+	background-position: 70% 0%;
+}
+
 /** main board styles */
 .mainboard {
-	width: 600px;
-	height: 400px;
+	width: 980px;
+	height: 300px;
 	background-color: #c99d6c;
 	position: relative;
 }
+.action_space {
+	width: 150px;
+	height: 50px;
+	background-color: white;
+	border-style: dotted;
+	border-width: 1px;
+	border-color: brown;
+	position: absolute;
+	top: 20px;
+}
+
+.action_space_1 {
+	left: 10px;	
+}
+
+.action_space_2 {
+	left: 180px;	
+}
+.action_space_3 {
+	left: 410px;	
+}
+
+.action_space_4 {
+	left: 600px;	
+}
+
+.action_space > * {
+   display: inline-block;
+}
+
+.action_space > *:NOT(span) {
+	z-index: 11;
+	position: relative;
+}
+
+
 .basket {
 	width: 200px;
 	height: 100px;
 	background-color: antiquewhite;
-	border-style:inset;
-	border-width: 3px;
-	border-color: white;
+    outline-style: inset;
+    outline-width: 3px;
+    outline-color: white;
 	position: absolute;
 }
 .basket_1 {
-	top: 20px;
-	left: 300px;	
+	top: 180px;
+	left: 20px;	
 }
 
 .basket_2 {
-	top: 220px;
+	top: 180px;
 	left: 300px;	
 }
 .basket > * {
