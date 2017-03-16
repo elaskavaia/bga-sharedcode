@@ -13,7 +13,7 @@ This code has been produced on the BGA studio platform for use on http://boardga
 See http://en.boardgamearena.com/#!doc/Studio for more information.
 */
 @import url(../../../css/csslayer.css);
-	/* Note: you must not use any @import directive other than this one */
+/* Note: you must not use any @import directive other than this one */
 
 /********* You can start writing your CSS below this line: **********/
 
@@ -43,22 +43,20 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 	outline-width: 2px;
 }
 
-
 .splabel {
 	position: absolute;
 }
 
 /** mini board styles */
 .mini_board_item {
-   display: inline-block;
-   margin-right: 1em;
-}
-.mini_board_item > * {
-   display: inline-block;
-   vertical-align: middle;
+	display: inline-block;
+	margin-right: 1em;
 }
 
-
+.mini_board_item>* {
+	display: inline-block;
+	vertical-align: middle;
+}
 
 /** Wooden cubes */
 .wcube {
@@ -110,7 +108,6 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 .wcube_orange {
 	background-position: 100% 0%;
 }
-
 
 /** Standing meeples */
 .smeeple2 {
@@ -177,6 +174,7 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 	background-color: #c99d6c;
 	position: relative;
 }
+
 .action_space {
 	width: 150px;
 	height: 50px;
@@ -189,48 +187,109 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 }
 
 .action_space_1 {
-	left: 10px;	
+	left: 10px;
 }
 
 .action_space_2 {
-	left: 180px;	
+	left: 180px;
 }
+
 .action_space_3 {
-	left: 410px;	
+	left: 410px;
 }
 
 .action_space_4 {
-	left: 600px;	
+	left: 600px;
 }
 
-.action_space > * {
-   display: inline-block;
+.action_space>* {
+	display: inline-block;
 }
 
-.action_space > *:NOT(span) {
+.action_space>*:NOT(span) {
 	z-index: 11;
 	position: relative;
 }
-
 
 .basket {
 	width: 200px;
 	height: 100px;
 	background-color: antiquewhite;
-    outline-style: inset;
-    outline-width: 3px;
-    outline-color: white;
+	outline-style: inset;
+	outline-width: 3px;
+	outline-color: white;
 	position: absolute;
+	outline-width: 3px;
+	outline-color: white;
 }
+
 .basket_1 {
 	top: 180px;
-	left: 20px;	
+	left: 20px;
 }
 
 .basket_2 {
 	top: 180px;
-	left: 300px;	
+	left: 300px;
 }
-.basket > * {
-   display: inline-block;
+
+.basket>* {
+	display: inline-block;
+}
+
+/** Card flipping effect */
+
+/* entire container, keeps perspective */
+.flip-container {
+	perspective: 1000px;
+}
+/* flip the pane when hovered */
+.flip-container:hover .flipper, .flip-container.hover .flipper {
+	transform: rotateY(180deg);
+}
+
+.flip-container, .front, .back {
+	width: 110px;
+	height: 176px;
+}
+
+/* flip speed goes here */
+.flipper {
+	transition: 0.6s;
+	transform-style: preserve-3d;
+	position: relative;
+}
+
+/* hide back of pane during swap */
+.front, .back {
+	backface-visibility: hidden;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+/* front pane, placed above back */
+.front {
+	z-index: 2;
+	/* for firefox 31 */
+	transform: rotateY(0deg);
+}
+
+/* back, initially hidden pane */
+.back {
+	transform: rotateY(180deg);
+}
+
+.card {
+  	border-radius: 15px;
+  	border-color: gray;
+}
+
+.front.card {
+	background-image: url(img/publisher.png);
+	background-color: white;
+}
+
+.back.card {
+	background-color: blue;
 }
