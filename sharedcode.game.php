@@ -271,6 +271,10 @@ class SharedCode extends Table {
         $player_id = self::getActivePlayerId();
         $this->gamestate->nextState('next');
     }
+    
+    function stMultiactive() {
+        $this->gamestate->setAllPlayersMultiactive();
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     //////////// Game state arguments
