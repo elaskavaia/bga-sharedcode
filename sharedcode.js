@@ -247,17 +247,19 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             dojo.place(mobile, new_parent, "last");
             var tgt = dojo.position(mobile);
             var box = dojo.marginBox(mobile);
-
+            var cbox = dojo.contentBox(mobile);
             var left = box.l + src.x - tgt.x;
             var top = box.t + src.y - tgt.y;
             dojo.style(mobile, "top", top + "px");
             dojo.style(mobile, "left", left + "px");
+            box.l += box.w-cbox.w;
+            box.t += box.h-cbox.h;
             return box;
         },
 
         /**
          * This method is similar to slideToObject but works on object which do not use inline style positioning. It also attaches object to
-         * new parent immediately, so parent is correct during animation
+         * new parent immediately, so parent is correct during the animation
          */
         slideToObjectRelative : function(token, finalPlace, tlen, tdelay, onEnd) {
             this.stripPosition(token);
@@ -477,3 +479,17 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
      */
     });
 });
+
+function joinId(first, second) {
+    return first + '_' + second;
+};
+
+function getIntPart(word, i) {
+    var arr = word.split('_');
+    return parseInt(arr[i]);
+};
+
+function getPart(word, i) {
+    var arr = word.split('_');
+    return arr[i];
+};
