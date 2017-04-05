@@ -54,7 +54,7 @@ ALTER TABLE resource ADD CONSTRAINT fk_player_id FOREIGN KEY (player_id) REFEREN
 
 CREATE TABLE IF NOT EXISTS `token` (
   `token_key` varchar(32) NOT NULL,
-  `token_location` varchar(32),
+  `token_location` varchar(32) NOT NULL,
   `token_state` int(10),
   PRIMARY KEY (`token_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

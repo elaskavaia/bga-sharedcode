@@ -1,6 +1,7 @@
 Class hierarchy
 ===============================
-APP_DbObject
+APP_Object
+ APP_DbObject
   APP_GameClass
     Table
     Deck
