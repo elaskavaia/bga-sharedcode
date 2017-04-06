@@ -34,7 +34,7 @@ class APP_Object {
         echo "$msg\n";
     }
 }
-class APP_DbObject {
+class APP_DbObject extends APP_Object{
     public $query;
 
     function DbQuery($str) {
