@@ -279,6 +279,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
 
         ajaxAction : function(action, args, func, err) {
             console.log("ajax action " + action);
+            if (!args) {
+                args = [];
+            }
             delete args.action;
             if (typeof func == "undefined" || func == null) {
                 func = function(result) {
