@@ -20,3 +20,4 @@ class SharedCodeTest1 extends SharedCode {
 $x = new SharedCodeTest1();
 $p = $x->getGameProgression();
 if ($p != 50) echo "Test1: FAILED";
+else echo "Test1: PASSED";
