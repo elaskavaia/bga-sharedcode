@@ -71,17 +71,19 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
 
             this.first_player_id = Object.keys(gamedatas.players)[0];
 
-            if (!this.isSpectator) this.player_color = gamedatas.players[this.player_id].color;
+            if (!this.isSpectator) 
+                this.player_color = gamedatas.players[this.player_id].color;
             else
                 this.player_color = gamedatas.players[this.first_player_id].color;
-            ;
+            
 
             // TODO: Set up your game interface here, according to "gamedatas"
             this.resourceIdCounterLocal = 1;
             // connect zones, they always there
             this.connectClass("basket", 'onclick', 'onBasket');
             this.connectClass("action_space", 'onclick', 'onActionSpace');
-
+            // connect cubes
+            this.connectClass("wcube", 'onclick', 'onCube');
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
 
@@ -395,7 +397,12 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             if (this.clientStateArgs.token_id) {
                 dojo.addClass(id, "selected");
                 this.clientStateArgs.place_id = id;
-                this.slideToObjectRelative(this.clientStateArgs.token_id, id, 500, 0);
+                this.resourceIdCounterLocal++;
+                var clone = dojo.clone($(this.clientStateArgs.token_id));
+                clone.id = "cube_"+this.resourceIdCounterLocal;
+             
+                dojo.place(clone, $(this.clientStateArgs.token_id));
+                this.slideToObjectRelative(clone.id, id, 500, 0);
                 this.ajaxAction("moveCube",this.clientStateArgs);
             }
         },

@@ -22,9 +22,6 @@
 
 
 
--- Example 5: add a custom field to the standard "player" table
--- ALTER TABLE `player` ADD `player_my_custom_field` INT UNSIGNED NOT NULL DEFAULT '0';
-
 -- Example 1: create a standard "card" table to be used with the "Deck" tools (see example game "hearts"):
 
 CREATE TABLE IF NOT EXISTS `card` (
@@ -58,3 +55,8 @@ CREATE TABLE IF NOT EXISTS `token` (
   `token_state` int(10),
   PRIMARY KEY (`token_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+-- Example 5: add a custom field to the standard "player" table
+-- ALTER TABLE `player` ADD `player_my_custom_field` INT UNSIGNED NOT NULL DEFAULT '0';

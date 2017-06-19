@@ -173,6 +173,7 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 	height: 300px;
 	background-color: #c99d6c;
 	position: relative;
+	margin-bottom: 10px;
 }
 
 .action_space {
@@ -201,6 +202,11 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 .action_space_4 {
 	left: 600px;
 }
+
+.action_space_4::after {
+	content: "This is text inject by css ::after"
+}
+
 
 .action_space>* {
 	display: inline-block;
@@ -283,6 +289,7 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 .card {
   	border-radius: 15px;
   	border-color: gray;
+  	box-shadow: 1px 1px 2px 1px #222;
 }
 
 .front.card {
