@@ -127,7 +127,7 @@ class SharedCode extends Table {
      * (see states.inc.php)
      */
     function getGameProgression() {
-        $round = self::getGameStateValue('round');
+        $round = $this->getGameStateValue('round');
         if ($round>=6) return 100;
         return 100*$round/6;
     }

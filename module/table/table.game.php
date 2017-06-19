@@ -60,6 +60,9 @@ class APP_DbObject extends APP_Object{
 }
 
 class APP_GameClass extends APP_DbObject {
+    public function __construct() {
+        
+    }
 }
 
 class GameState {
