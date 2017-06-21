@@ -38,8 +38,8 @@
 		<div id="basket_1" class="basket basket_1"></div>
 		<div id="basket_2" class="basket basket_2"></div>
 	</div>
-	
-<div class="flip-container" ontouchstart="this.classList.toggle('hover');">
+	<div class="funcontrols">
+<div class="flip-container">
 	<div class="flipper">
 		<div class="front card" id="card1">
 			<!-- front content -->
@@ -51,9 +51,31 @@
 	</div>
 </div>
 
+<div>
+<input type="radio" checked id="radio-front" name="select-face"/>    
+<input type="radio" id="radio-left" name="select-face"/>
+<input type="radio" id="radio-right" name="select-face"/>
+<input type="radio" id="radio-top" name="select-face"/>
+<input type="radio" id="radio-bottom" name="select-face"/>
+<input type="radio" id="radio-back" name="select-face"/>
+
+<!-- separator -->
+<div id="sep" class="separator" style="height: 40px;"> Click on radio buttons </div>
+
+<div class="scene">
+  <div id="cube1" class="cube">
+      <div class="cube-face  cube-face-front"></div>
+      <div class="cube-face  cube-face-back"></div>
+      <div class="cube-face  cube-face-left"></div>
+      <div class="cube-face  cube-face-right"></div>
+      <div class="cube-face  cube-face-top"></div>
+      <div class="cube-face  cube-face-bottom"></div>
+   </div>
+</div>
+</div>
 </div>
 
-
+</div>
 <script type="text/javascript">
     // Javascript HTML templates
     var jstpl_resource_counter='<div class="mini_board_item"><div id="${type}_${color}_${id}_div" class="${type} ${type}_${color}"></div><span id="${type}_${color}_${id}">0</span></div>';

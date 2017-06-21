@@ -243,6 +243,11 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 	display: inline-block;
 }
 
+.funcontrols>*{
+		display: inline-block;
+		margin-right: 30px;
+}
+
 /** Card flipping effect */
 
 /* entire container, keeps perspective */
@@ -299,4 +304,122 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 
 .back.card {
 	background-color: blue;
+}
+
+/** Dice rolling effect */
+
+/* 3D Cube */
+.scene {
+	perspective: 1000px;
+	width: 100px;
+	height: 100px;
+	text-align: center;
+	display: inline-block;
+}
+
+.cube {
+	display: inline-block;
+	transition: all 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+	text-align: center;
+	position: relative;
+	width: 100%;
+	height: 100%;
+	transform-style: preserve-3d;
+	transform: rotateX(-15deg) rotateY(15deg);
+}
+
+.cube-face {
+	overflow: hidden;
+	position: absolute;
+	border: 1px solid #888;
+	border-radius: 5px;
+	background: #FFF;
+	/* box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.1), 0 0 50px rgba(0, 0, 0, 0.3); */
+	color: #333;
+	line-height: 100px;
+	/* opacity: 1; */
+	width: 100px;
+	height: 100px;
+}
+
+.cube-face-front {
+	transform: translate3d(0, 0, 50px);
+}
+
+.cube-face-top {
+	transform: rotateX(90deg) translate3d(0, 0, 50px);
+}
+
+.cube-face-bottom {
+	transform: rotateX(-90deg) translate3d(0, 0, 50px);
+}
+
+.cube-face-left {
+	left: 50%;
+	margin-left: -50px;
+	transform: rotateY(-90deg) translate3d(0, 0, 50px);
+}
+
+.cube-face-right {
+	left: 50%;
+	margin-left: -50px;
+	transform: rotateY(90deg) translate3d(0, 0, 50px);
+}
+
+.cube-face-back {
+	transform: rotateY(180deg) translate3d(0, 0, 50px);
+}
+
+/* image sides */
+.cube-face {
+	background: url(img/64_64_dice.jpg);
+	background-size: 600%;
+}
+
+.cube-face-front {
+	background-position: 0% 0%;
+}
+
+.cube-face-left {
+	background-position: 20% 0%;
+}
+
+.cube-face-right {
+	background-position: 40% 0%;
+}
+
+.cube-face-top {
+	background-position: 60% 0%;
+}
+
+.cube-face-bottom {
+	background-position: 80% 0%;
+}
+
+.cube-face-back {
+	background-position: 100% 0%;
+}
+
+/* controls */
+
+
+
+#radio-back:checked ~ .scene .cube {
+	transform: rotateY(180deg) rotateX(-15deg);
+}
+
+#radio-left:checked ~ .scene .cube {
+	transform: rotateY(90deg);
+}
+
+#radio-right:checked ~ .scene .cube {
+	transform: rotateY(-90deg);
+}
+
+#radio-top:checked ~ .scene .cube {
+	transform: rotateX(-90deg);
+}
+
+#radio-bottom:checked ~ .scene .cube {
+	transform: rotateX(90deg);
 }
