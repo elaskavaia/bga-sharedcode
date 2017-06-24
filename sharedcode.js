@@ -330,12 +330,19 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
                 delay = Math.min(1, delay);
                 duration = Math.min(1, duration);
             }
-            setTimeout(function(){
+            if (delay) {
+                setTimeout(function() {
+                    onStart();
+                    if (onEnd) {
+                        setTimeout(onEnd, duration);
+                    }
+                }, delay);
+            } else {
                 onStart();
                 if (onEnd) {
                     setTimeout(onEnd, duration);
                 }
-            }, delay);
+            }
         },
 
         /** More convenient version of ajaxcall, do not to specify game name, and any of the handlers */
