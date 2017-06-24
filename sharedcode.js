@@ -222,6 +222,18 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             dojo.style(token, "left", null);
             dojo.style(token, "position", null);
         },
+        
+        stripTransition : function(token) {
+            this.setTransition(token, null);  
+        },
+        
+        setTransition : function(token, value) {
+            dojo.style(token, "transition", value);
+            dojo.style(token, "-webkit-transition", value);
+            dojo.style(token, "-moz-transition", value);
+            dojo.style(token, "-o-transition", value);
+            
+        },
 
         /**
          * This method will attach mobile to a new_parent without destroying, unlike original attachToNewParent which destroys mobile and
@@ -260,21 +272,70 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
         },
 
         /**
-         * This method is similar to slideToObject but works on object which do not use inline style positioning. It also attaches object to
-         * new parent immediately, so parent is correct during the animation
+         * This method is similar to slideToObject but works on object which do not use inline style positioning. It also
+         * attaches object to new parent immediately, so parent is correct during animation
          */
-        slideToObjectRelative : function(token, finalPlace, tlen, tdelay, onEnd) {
-            this.stripPosition(token);
-
-            var box = this.attachToNewParentNoDestroy(token, finalPlace);
-            var anim = this.slideToObjectPos(token, finalPlace, box.l, box.t, tlen, tdelay);
-
-            dojo.connect(anim, "onEnd", dojo.hitch(this, function(token) {
-                this.stripPosition(token);
+        slideToObjectRelative : function(token, finalPlace, duration, delay, onEnd) {
+            if (typeof token == 'string') {
+                token = $(token);
+            }
+       
+            var self = this;
+            this.delayedExec(function() {                
+                self.stripTransition(token);
+                self.stripPosition(token);
+                var box = self.attachToNewParentNoDestroy(token, finalPlace);
+                self.setTransition(token, "all " + duration + "ms ease-in-out");
+ 
+                // set abs position causing css animation
+                var left = dojo.style(token, "left"); // does not work if not called
+                var top = dojo.style(token, "top");
+                dojo.style(token, "left", 0 + "px");
+                dojo.style(token, "top", 0 + "px");
+            }, function() {
+                self.stripTransition(token);
+                self.stripPosition(token);
                 if (onEnd) onEnd(token);
-            }));
+            }, duration, delay);
+        },
 
-            anim.play();
+        slideToObjectAbsolute : function(token, finalPlace, x, y, duration, delay, onEnd) {
+            if (typeof token == 'string') {
+                token = $(token);
+            }
+            var self = this;
+            this.delayedExec(function() {
+                self.stripTransition(token);
+                var box = self.attachToNewParentNoDestroy(token, finalPlace);
+                self.setTransition(token, "all " + duration + "ms ease-in-out");
+                // set abs position causing css animation
+                var left = dojo.style(token, "left"); // does not work if not called
+                var top = dojo.style(token, "top");
+                dojo.style(token, "left", x + "px");
+                dojo.style(token, "top", y + "px");
+            }, function() {
+                self.stripTransition(token);
+                if (onEnd) onEnd(token);
+            }, duration, delay);
+        },
+        
+        delayedExec: function(onStart, onEnd, duration, delay) {
+            if (typeof duration == "undefined") {
+                duration = 500;
+            }
+            if (typeof delay == "undefined") {
+                delay = 0;
+            }
+            if (this.instantaneousMode) {
+                delay = Math.min(1, delay);
+                duration = Math.min(1, duration);
+            }
+            setTimeout(function(){
+                onStart();
+                if (onEnd) {
+                    setTimeout(onEnd, duration);
+                }
+            }, delay);
         },
 
         /** More convenient version of ajaxcall, do not to specify game name, and any of the handlers */
