@@ -27,53 +27,122 @@
 
 <div id="mydiv">
 
-
 	<div id="mainboard" class="mainboard shadow">
 		This is fake game board.
-		<div id="action_space_1" class="action_space action_space_1"><span class="splabel">Moving tokens and counters</span></div>
+		<div id="action_space_1" class="action_space action_space_1">
+			<span class="splabel">Moving tokens and counters</span>
+		</div>
 		<div id="action_space_2" class="action_space action_space_2"></div>
 		<div id="action_space_3" class="action_space action_space_3"></div>
 		<div id="action_space_4" class="action_space action_space_4"></div>
-				
+
 		<div id="basket_1" class="basket basket_1"></div>
 		<div id="basket_2" class="basket basket_2"></div>
 	</div>
 	<div class="funcontrols">
-<div class="flip-container">
-	<div class="flipper">
-		<div class="front card" id="card1">
-			<!-- front content -->
-		</div>
-		<div class="back card" id="card1_back">
-			<!-- back content -->
+		<div class="flip-container">
+			<div class="flipper">
+				<div class="front card" id="card1">
+					<!-- front content -->
+				</div>
+				<div class="back card" id="card1_back">
+					<!-- back content -->
 
+				</div>
+			</div>
+		</div>
+
+		<div>
+			<input type="radio" checked id="radio-front" name="select-face" /> <input
+				type="radio" id="radio-left" name="select-face" /> <input
+				type="radio" id="radio-right" name="select-face" /> <input
+				type="radio" id="radio-top" name="select-face" /> <input
+				type="radio" id="radio-bottom" name="select-face" /> <input
+				type="radio" id="radio-back" name="select-face" />
+
+			<!-- separator -->
+			<div id="sep" class="separator" style="height: 40px;">Click on
+				radio buttons</div>
+
+			<div class="cube-scene">
+				<div id="cube1" class="cube shape">
+					<div class="cube-face  cube-face-front"></div>
+					<div class="cube-face  cube-face-back"></div>
+					<div class="cube-face  cube-face-left"></div>
+					<div class="cube-face  cube-face-right"></div>
+					<div class="cube-face  cube-face-top"></div>
+					<div class="cube-face  cube-face-bottom"></div>
+				</div>
+				<div class="shape cylinder-1 cyl-1">
+					<div class="face bm">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.125);"></div>
+					</div>
+					<div class="face tp">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.125);"></div>
+					</div>
+					<div class="face side s0">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.07);"></div>
+					</div>
+					<div class="face side s1">
+						<div class="photon-shader"
+							style="background-color: rgba(255, 255, 255, 0.016);"></div>
+					</div>
+					<div class="face side s2">
+						<div class="photon-shader"
+							style="background-color: rgba(255, 255, 255, 0.016);"></div>
+					</div>
+					<div class="face side s3">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.125);"></div>
+					</div>
+					<div class="face side s4">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.184);"></div>
+					</div>
+					<div class="face side s5">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.3);"></div>
+					</div>
+					<div class="face side s6">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.42);"></div>
+					</div>
+					<div class="face side s7">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.53);"></div>
+					</div>
+					<div class="face side s8">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.616);"></div>
+					</div>
+					<div class="face side s9">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.616);"></div>
+					</div>
+					<div class="face side s10">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.125);"></div>
+					</div>
+					<div class="face side s11">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.416);"></div>
+					</div>
+					<div class="face side s12">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.298);"></div>
+					</div>
+					<div class="face side s13">
+						<div class="photon-shader"
+							style="background-color: rgba(0, 0, 0, 0.18);"></div>
+					</div>
+				</div>
+
+			</div>
 		</div>
 	</div>
-</div>
-
-<div>
-<input type="radio" checked id="radio-front" name="select-face"/>    
-<input type="radio" id="radio-left" name="select-face"/>
-<input type="radio" id="radio-right" name="select-face"/>
-<input type="radio" id="radio-top" name="select-face"/>
-<input type="radio" id="radio-bottom" name="select-face"/>
-<input type="radio" id="radio-back" name="select-face"/>
-
-<!-- separator -->
-<div id="sep" class="separator" style="height: 40px;"> Click on radio buttons </div>
-
-<div class="scene">
-  <div id="cube1" class="cube">
-      <div class="cube-face  cube-face-front"></div>
-      <div class="cube-face  cube-face-back"></div>
-      <div class="cube-face  cube-face-left"></div>
-      <div class="cube-face  cube-face-right"></div>
-      <div class="cube-face  cube-face-top"></div>
-      <div class="cube-face  cube-face-bottom"></div>
-   </div>
-</div>
-</div>
-</div>
 
 </div>
 <script type="text/javascript">

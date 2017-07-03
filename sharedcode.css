@@ -309,7 +309,7 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 /** Dice rolling effect */
 
 /* 3D Cube */
-.scene {
+.cube-scene {
 	perspective: 1000px;
 	width: 100px;
 	height: 100px;
@@ -326,6 +326,9 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 	height: 100%;
 	transform-style: preserve-3d;
 	transform: rotateX(-15deg) rotateY(15deg);
+	top: 50%;
+	left: 50%;
+	transform-origin: 50%;
 }
 
 .cube-face {
@@ -336,8 +339,7 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 	background: #FFF;
 	/* box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.1), 0 0 50px rgba(0, 0, 0, 0.3); */
 	color: #333;
-	line-height: 100px;
-	/* opacity: 1; */
+	line-height: 100px;	
 	width: 100px;
 	height: 100px;
 }
@@ -355,14 +357,10 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 }
 
 .cube-face-left {
-	left: 50%;
-	margin-left: -50px;
 	transform: rotateY(-90deg) translate3d(0, 0, 50px);
 }
 
 .cube-face-right {
-	left: 50%;
-	margin-left: -50px;
 	transform: rotateY(90deg) translate3d(0, 0, 50px);
 }
 
@@ -404,22 +402,163 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 
 
 
-#radio-back:checked ~ .scene .cube {
+#radio-back:checked ~ .cube-scene .shape {
 	transform: rotateY(180deg) rotateX(-15deg);
 }
 
-#radio-left:checked ~ .scene .cube {
+#radio-left:checked ~ .cube-scene .shape {
 	transform: rotateY(90deg);
 }
 
-#radio-right:checked ~ .scene .cube {
+#radio-right:checked ~ .cube-scene .shape {
 	transform: rotateY(-90deg);
 }
 
-#radio-top:checked ~ .scene .cube {
+#radio-top:checked ~ .cube-scene .shape {
 	transform: rotateX(-90deg);
 }
 
-#radio-bottom:checked ~ .scene .cube {
+#radio-bottom:checked ~ .cube-scene .shape {
 	transform: rotateX(90deg);
+}
+
+/* Cilinder css */
+
+/* /!\ You need to add vendor prefixes in order to render the CSS properly (or simply use http://leaverou.github.io/prefixfree/) /!\ */ 
+
+.face {
+	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+
+
+
+.scene, .shape, .face, .face-wrapper, .cr {
+	transform-style: preserve-3d;
+}
+
+.face, .face-wrapper, .cr {
+	position: absolute;	
+}
+
+.scene {
+	width: 80em;
+	height: 80em;
+	top: 50%;
+	left: 50%;
+	margin: -40em 0 0 -40em;
+	perspective: 800px;
+}
+
+.shape {
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform-origin: 50%;
+  transition: all 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform: rotateX(-15deg) rotateY(15deg);
+}
+.face, .face-wrapper {
+  overflow: hidden;
+  transform-origin: 0 0;
+  backface-visibility: hidden;
+  /* hidden by default, prevent blinking and other weird rendering glitchs */
+}
+.face {
+  background-size: 100% 100%!important;
+  background-position: center;
+}
+.face-wrapper .face {
+  left: 100%;
+  width: 100%;
+  height: 100%
+}
+.photon-shader {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%
+}
+.side {
+  left: 50%;
+}
+.cr, .cr .side {
+  height: 100%;
+}
+[class*="cylinder"] .tp {
+  transform: rotateX(90deg) translateY(-50%);
+}
+[class*="cylinder"] .bm {
+  transform: rotateX(-90deg) translateY(-50%);
+}
+[class*="cylinder"] .tp, [class*="cylinder"] .bm, [class*="cylinder"] .tp .photon-shader, [class*="cylinder"] .bm .photon-shader {
+  border-radius: 50%;
+}
+[class*="cylinder"] .bm {
+  top: 100%;
+}
+/* .cyl-1 styles */
+.cyl-1 {
+  /*transform:translate3D(0em, 0.125em, 0.125em) rotateX(0deg) rotateY(0deg) rotateZ(0deg);*/
+  opacity:1;
+  width:6em;
+  height:2.75em;
+  margin:-1.375em 0 0 -3em;
+}
+.cyl-1 .tp, .cyl-1 .bm {
+  width:6em;
+  height:6em;
+}
+.cyl-1 .side {
+  width:1.3944608463408996em;
+  height:2.75em;
+}
+.cyl-1 .s0 {
+  transform: rotateY(12.857142857142858deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s1 {
+  transform: rotateY(38.57142857142857deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s2 {
+  transform: rotateY(64.28571428571429deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s3 {
+  transform: rotateY(90deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s4 {
+  transform: rotateY(115.71428571428572deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s5 {
+  transform: rotateY(141.42857142857144deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s6 {
+  transform: rotateY(167.14285714285714deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s7 {
+  transform: rotateY(192.85714285714286deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s8 {
+  transform: rotateY(218.57142857142858deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s9 {
+  transform: rotateY(244.2857142857143deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s10 {
+  transform: rotateY(270deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s11 {
+  transform: rotateY(295.7142857142857deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s12 {
+  transform: rotateY(321.4285714285714deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .s13 {
+  transform: rotateY(347.1428571428571deg) translate3D(-50%, 0, 2.975em);
+}
+.cyl-1 .face, .cyl-1 .side {
+  background-color:red;
+}
+.cyl-1 .tp {
+  background-color:red;
 }
