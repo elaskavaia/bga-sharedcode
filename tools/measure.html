@@ -1,0 +1,257 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+<!--  <link rel="stylesheet" type="text/css" href="../sharedcode.css"> -->
+<style>
+.floatbox {
+	background-color: red;
+	opacity: 0.2;
+	filter: alpha(opacity = 20);
+	position: absolute;
+	width: 100px;
+	height: 100px;
+}
+
+.outline {
+	outline-width: 3px;
+	outline-color: blue;
+	outline-style: solid;
+	position: absolute;
+}
+
+.spritetest {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  border-style: solid;
+}
+</style>
+
+</head>
+<body>
+	Use this tool for image markup
+
+	<form>
+		<input type="radio" name="type"
+			onclick="switchType(this.value)" value="sprite" />Sprite Div
+		<input
+			type="radio" name="type" onclick="switchType(this.value)"
+			value="spritePer" />Sprite Div Per 
+		<input type="radio" name="type"
+			onclick="switchType(this.value)" value="spot" />Map Coords
+		<input
+			type="radio" name="type" onclick="switchType(this.value)"
+			value="spotPer"/>Map Coords Calc
+			<br>
+		Selected:
+		<input type="text" id="typeanswer" size="20" value="spotPer"><br/>
+		Width:<input type="text" id="boxw" size="5" value="20">
+		Height: <input type="text" id="boxh" size="5" value="20"><br/>
+		Name: <input type="text" id="spotname" size="20" value="name"><br/>
+		Counter: <input type="text" id="spotcounter" size="5" value="1">
+			<input 
+			type="button" onclick="clearCoors()" name="clear" value="Clear Coors"
+			/>
+	</form>
+
+
+
+
+
+	<!--  specify image here using inline styling for sprite or css styling for zone -->
+	<div id="main"  style="position: relative;background-image: url(../img/78_64_stand_meeples.png); width: 100%; height: 300px; outline: 1px solid;"> 
+
+	
+	
+		<div id="floatbox" class="floatbox" style="left: 10px; top: 10px;"></div>
+		<div id="test2" class="outline"></div>
+	</div>
+
+
+	If you using sprite this is how div will look like:
+	<div id="test" class="spritetest" style=""></div>
+	Resulting code:
+	<div id="coords" style="width: 500px; height: 500px; background-color: white;"></div>
+
+	<script>
+        var board = document.getElementById('main');
+        var box = document.getElementById('floatbox')
+        var inbox = document.getElementById('coords');
+
+        var testdiv = document.getElementById('test');
+        var test2div = document.getElementById('test2');
+        var isMouseDown = false;
+
+        var x, y, w, h;
+        var bpos = board.getBoundingClientRect();
+        var by = bpos.top;
+        var bx = bpos.left;
+        var scale = 1;
+
+        var mainw = document.getElementById("main").clientWidth;
+        var mainh = document.getElementById("main").clientHeight;
+        document.getElementById("typeanswer").value = 'spotPer';
+        console.log(mainw);
+        console.log(mainh);
+
+        var img = window.getComputedStyle(main, null).getPropertyValue("background-image");
+        var bbsize = window.getComputedStyle(main, null).getPropertyValue("background-size");
+        console.log(bbsize);
+
+        img = img.replace("/file:.*img/", "img");
+        console.log(img);
+
+        function switchType(browser) {
+            document.getElementById("typeanswer").value = browser;
+        }
+        function clearCoors() {
+            inbox.innerHTML = "";
+        }
+
+        function onBoardClick(event) {
+            x = event.pageX;
+            box.style.left = x - bx;
+            y = event.pageY;
+            box.style.top = y - by;
+            //updateText();
+        }
+
+        function vx(text) {
+            return parseInt(text.replace('px', ''));
+        }
+        function v(text) {
+            return parseInt(vx(text) * scale);
+        }
+        function s(text) {
+            return v(text) + 'px';
+        }
+
+        function fs(number) {
+            return (parseFloat(number).toPrecision(3));
+        }
+
+        function pw(text) {
+
+            res = fs(vx(text) / (parseInt(mainw)-w) * 100) + '%';
+            console.log("w" + res);
+            return res;
+        }
+        function ph(text) {
+            res = fs(vx(text) / (parseInt(mainh)-h) * 100) + '%';
+            console.log("h" + res);
+            return res;
+        }
+
+        function updateInput(){
+            spotname = document.getElementById("spotname").value;
+            spotcounter = parseInt( document.getElementById("spotcounter").value);
+            document.getElementById("spotcounter").value = (spotcounter+1);
+        }
+        function updateText() {
+
+            var bgpos = '-' + box.style.left + ' ' + '-' + box.style.top;
+
+            var curtype = document.getElementById("typeanswer").value;
+            console.log(curtype);
+            switch (curtype) {
+                case 'sprite':
+                    updateInput();
+                  	inbox.innerHTML += '<br>\n';
+                    inbox.innerHTML += ' .'+ spotname+'_'+spotcounter+ ' .{background-position: ' + '-' + s(box.style.left) + ' ' + '-' + s(box.style.top) + '; ' 
+                      //+  'background-image: ' + img + ';' 
+                      + 'width: ' + s(box.style.width) + ';' + 'height: ' + s(box.style.height) +
+                            ';' + '}';
+
+                    testdiv.style["background-position"] = bgpos;
+                    testdiv.style["background-image"] = img;
+                    testdiv.style["background-size"] = bbsize;
+                    testdiv.style.width = box.style.width;
+                    testdiv.style.height = box.style.height;
+                    break;
+                case 'spritePer':
+                    var sl = pw(box.style.left);
+                    var st = ph(box.style.top);
+                    var sw = pw(box.style.width);
+                    var sh = ph(box.style.height);
+                  	updateInput();
+                  	inbox.innerHTML += '<br>\n';
+                    inbox.innerHTML += ' .'+spotname+'_'+spotcounter+ ' {background-position: ' + sl + ' ' + st + '; ' 
+                    //+ 'background-image: ' + img + ';' 
+                      + 'width: ' + s(box.style.width) + ';' + 'height: ' + s(box.style.height) + ';' 
+                    //+ 'width: ' + sw + ';' + 'height: ' + sh + ';' 
+                    + '}';
+                   
+             
+                    testdiv.style.width = sw;
+                    testdiv.style.height = sh;
+                    testdiv.style.width = box.style.width;
+                    testdiv.style.height = box.style.height;
+                    testdiv.style["background-position"] =  sl + ' ' + st;
+                    testdiv.style["background-image"] = img;
+                    testdiv.style["background-size"] = bbsize;
+                    break;
+                case 'spot':
+                    var sl = s(box.style.left);
+                    var st = s(box.style.top);
+                    var sw = s(box.style.width);
+                    var sh = s(box.style.height);
+
+                    inbox.innerHTML += ' .slot{left: ' + sl + '; top: ' + st + '; ' + 'width: ' + sw + ';' + 'height: ' + sh + ';' + '}';
+                    inbox.innerHTML += '<br>\n';
+                    
+                    test2div.style.left = sl;
+                    test2div.style.top = st;
+                    test2div.style.width = sw;
+                    test2div.style.height = sh;
+                    break;
+                case 'spotPer':
+                    var sl = pw(box.style.left);
+                    var st = ph(box.style.top);
+                    var sw = pw(box.style.width);
+                    var sh = ph(box.style.height);
+					updateInput();
+                    
+                    inbox.innerHTML += ' .slot_'+ spotname+'_'+spotcounter+' {left: ' + sl + '; top: ' + st + '; ' + 'width: ' + sw + ';' + 'height: ' + sh + ';' + '}';
+                    inbox.innerHTML += '<br>\n';
+                       
+
+                    test2div.style.left = sl;
+                    test2div.style.top = st;
+                    test2div.style.width = sw;
+                    test2div.style.height = sh;
+                    break;
+            }
+
+        }
+
+        board.onmousedown = function(event) {
+            isMouseDown = true;
+            onBoardClick(event);
+        };
+        board.onmouseup = function(event) {
+            if (isMouseDown) {
+                isMouseDown = false;
+                var w1= event.pageX - x;
+                var h1= event.pageY - y;
+                if (w1<2 && h1<2) {
+                    w = box.style.width = parseInt( document.getElementById("boxw").value); 
+                    h = box.style.height = parseInt(document.getElementById("boxh").value); 
+                }
+                else {
+                    w = box.style.width = w1; 
+                    h = box.style.height = h1;
+                }
+    
+                updateText();
+            }
+            isMouseDown = false
+        };
+        board.onmousemove = function(event) {
+            if (isMouseDown) { /* do drag things */
+                w = box.style.width = event.pageX - x;
+                h = box.style.height = event.pageY - y;
+            }
+        };
+    </script>
+</body>
+</html>
