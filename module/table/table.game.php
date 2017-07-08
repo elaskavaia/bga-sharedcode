@@ -168,6 +168,14 @@ class GUser {
     }
 }
 
+class game_view {
+    
+}
+
+class APP_GameAction {
+    
+}
+
 function clienttranslate($x) {
     return $x;
 }
