@@ -234,6 +234,14 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             dojo.style(token, "-o-transition", value);
             
         },
+        
+        getPlayerColor : function(id) {
+            for ( var playerId in this.gamedatas.players) {
+                var playerInfo = this.gamedatas.players[playerId];
+                if (id == playerId) { return playerInfo.color; }
+            }
+            return '000000';
+        },
 
         /**
          * This method will attach mobile to a new_parent without destroying, unlike original attachToNewParent which destroys mobile and
