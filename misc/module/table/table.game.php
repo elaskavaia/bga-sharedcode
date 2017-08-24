@@ -77,6 +77,10 @@ class GameState {
 
 class BgaUserException extends Exception {
 }
+
+class BgaVisibleSystemException extends Exception {
+}
+
 class feException extends Exception {
 }
 

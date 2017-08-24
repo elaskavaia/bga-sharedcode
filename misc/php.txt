@@ -202,3 +202,33 @@ APP_Object::trace
 APP_Object::warn
 APP_Object::error
 APP_Object::dump
+
+
+
+This is example of player array send to setupNewGame php method
+array(2) { 
+ [2300663]=> array(7) { 
+    ["player_name"]=> string(8) "laskava1" 
+    ["player_canal"]=> string(32) "aa5ceb9e01f1367d4f4a42eaa535b0f0" 
+    ["player_avatar"]=> string(6) "000000" 
+    ["player_is_admin"]=> string(1) "0" 
+    ["player_is_ai"]=> string(1) "0" 
+    ["player_table_order"]=> string(1) "2" 
+    ["beginner"]=> string(1) "1" 
+ } 
+ [2300662]=> array(8) { 
+    ["player_name"]=> string(8) "laskava0" 
+    ["player_canal"]=> string(32) "60d9d1240f012630bb8f6bf07cbf5139" 
+    ["player_avatar"]=> string(10) "bf78772d42" 
+    ["player_is_admin"]=> string(1) "1" 
+    ["player_is_ai"]=> string(1) "0" 
+    ["player_table_order"]=> string(1) "1" 
+    ["player_colorprefs"]=> array(4) { 
+       [0]=> string(6) "ff0000" 
+       [1]=> string(6) "ffa500" 
+       [2]=> string(6) "000000" 
+       [3]=> string(6) "ffffff" 
+    } 
+    ["beginner"]=> string(1) "0" 
+ } 
+ } {"status":1,"data":true}
