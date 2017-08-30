@@ -21,11 +21,12 @@ class Tokens extends APP_GameClass {
     var $autoreshuffle = false; // If true, a new deck is automatically formed with a reshuffled discard as soon at is needed
     var $autoreshuffle_trigger = null; // Callback to a method called when an autoreshuffle occurs
     // autoreshuffle_trigger = array( 'obj' => object, 'method' => method_name )
+    // If defined, tell the name of the deck and what is the corresponding discard (ex : "mydeck" => "mydiscard")
     var $autoreshuffle_custom = array ();
     private $custom_fields;
     private $g_index;
 
-    // If defined, tell the name of the deck and what is the corresponding discard (ex : "mydeck" => "mydiscard")
+   
     function __construct() {
         $this->table = 'token';
         $this->custom_fields = array ();
