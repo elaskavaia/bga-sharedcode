@@ -100,7 +100,18 @@ class Tokens extends APP_GameClass {
         $this->DbQuery($sql);
         return $keys;
     }
-
+    
+    function createToken($key, $location, $token_state = 0) {
+        self::checkLocation($location);
+        self::checkState($token_state);
+        self::checkKey($key);
+        $values = array();
+        $values [] = "( '$key', '$location', '$token_state' )";
+        $sql = "INSERT INTO " . $this->table . " (token_key,token_location,token_state)";
+        $sql .= " VALUES " . implode(",", $values);
+        $this->DbQuery($sql);
+    }
+    
     function createTokensPack($key, $location, $nbr = 1, $nbr_start = 0, $iterArr = null) {
         if ($iterArr == null)
             $iterArr = array ('' );
@@ -218,6 +229,17 @@ class Tokens extends APP_GameClass {
             $obj->$method($from_location);
         }
     }
+    
+    // Set token state
+    function setTokenState($token_key, $state) {
+        self::checkState($state);
+        self::checkKey($token_key);
+        $sql = "UPDATE " . $this->table;
+        $sql .= " SET token_state='$state'";
+        $sql .= " WHERE token_key='$token_key'";
+        self::DbQuery($sql);
+    }
+    
 
     // Move a card to specific location
     function moveToken($token_key, $location, $state = 0) {
@@ -299,6 +321,11 @@ class Tokens extends APP_GameClass {
         return $this->getTokensOfTypeInLocation(null, $location, $state, $order_by);
     }
 
+    function getTokenOnLocation($location) {
+        $res = $this->getTokensOfTypeInLocation(null, $location);
+        return array_shift($res);
+    }
+
     /**
      * Get tokens of a specific type in a specific location, since there is no field for type we use like expression on
      * key
@@ -347,6 +374,19 @@ class Tokens extends APP_GameClass {
         return $result;
     }
 
+    
+    function getTokenState($token_id) {
+        $res = $this->getTokenInfo($token_id);
+        if ($res==null) return null;
+        return $res ['state'];
+    }
+    
+    function getTokenLocation($token_id) {
+        $res = $this->getTokenInfo($token_id);
+        if ($res==null) return null;
+        return $res ['location'];
+    }
+    
     /**
      * Get specific token info
      */
