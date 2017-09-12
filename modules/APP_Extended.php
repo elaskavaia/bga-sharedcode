@@ -16,6 +16,15 @@ class BattleShip extends APP_Extended {
  */
 abstract class APP_Extended extends Table {
     
+    function __construct() {
+        parent::__construct();
+        self::initGameStateLabels(
+                array (
+                        "move_nbr" => 6,
+                ));
+        $this->gameinit = false;
+    }
+    
     // ------ ERROR HANDLING ----------
 
     /**
