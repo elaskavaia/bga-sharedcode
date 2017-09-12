@@ -60,7 +60,7 @@ abstract class APP_Extended extends Table {
         //$this->dump('bt',$bt);
         $this->error("Internal Error during move $move: $log|");
         //throw new feException($log);
-        throw new BgaUserException(self::_("Internal Error. That should not have happened. Please raise a bug. ") . $log); // TODO remove
+        throw new BgaUserException(self::_("Internal Error. That should not have happened. Please raise a bug. ")); 
     }
     
     // ------ NOTIFICATIONS ----------
