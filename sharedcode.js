@@ -420,6 +420,42 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             if (!this.checkActiveSlot(id)) { return false; }
             return true;
         },
+        
+        setMainTitle : function(text) {
+            var main = $('pagemaintitletext');
+            main.innerHTML = text;
+        },
+
+        divYou : function() {
+            var color = this.gamedatas.players[this.player_id].color;
+            var color_bg = "";
+            if (this.gamedatas.players[this.player_id] && this.gamedatas.players[this.player_id].color_back) {
+                color_bg = "background-color:#" + this.gamedatas.players[this.player_id].color_back + ";";
+            }
+            var you = "<span style=\"font-weight:bold;color:#" + color + ";" + color_bg + "\">" +
+                    __("lang_mainsite", "You") + "</span>";
+            return you;
+        },
+
+        setDescriptionOnMyTurn : function(text) {
+            this.gamedatas.gamestate.descriptionmyturn = text;
+            // this.updatePageTitle();
+            var tpl = dojo.clone(this.gamedatas.gamestate.args);
+            if (tpl === null) {
+                tpl = {};
+            }
+            var title = "";
+            if (this.isCurrentPlayerActive() && text !== null) {
+                tpl.you = this.divYou();
+                title = this.format_string_recursive(text, tpl);
+            }
+
+            if (title == "") {
+                this.setMainTitle("&nbsp;");
+            } else {
+                this.setMainTitle(title);
+            }
+        },
 
         // /////////////////////////////////////////////////
         // // Player's action
