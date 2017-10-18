@@ -181,11 +181,7 @@ abstract class APP_Extended extends Table {
         $this->DbQuery("UPDATE player SET player_score='$count' WHERE player_id='$player_id'");
     }
 
-    function dbIncScoreValueAndNotify($player_id, $inc, $notif = '*') {
-        $this->dbIncScoreValueAndNotifyAndStat($player_id, $inc, $notif, '');
-    }
-
-    function dbIncScoreValueAndNotifyAndStat($player_id, $inc, $notif = '*', $stat = 'player_score') {
+    function dbIncScoreValueAndNotify($player_id, $inc, $notif = '*', $stat = '') {
         $count = $this->dbGetScoreValue($player_id);
         if ($inc != 0) {
             $count += $inc;
