@@ -21,9 +21,12 @@ function varsubdirect($key, $value, $incontents) {
 // MAIN
 $indir = $argv [1];
 $infile = "$indir/gameinfos.inc.php";
-//require_once $infile;
+
 if (isset($argv [2])) {
     $bgg_id = $argv [2];
+} else {
+    require_once $infile;
+    $bgg_id = $gameinfos['bgg_id'];
 }
 $outfile = $infile . ".out";
 //$out = fopen($outfile, "w") or die("Unable to open file! $outfile");

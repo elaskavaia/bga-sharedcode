@@ -6,7 +6,7 @@
 if (! isset($argv [1])) {
     echo "Make a project copy by moving files into new project and renaming some known files and strings inside them\n";
     echo "The new project directory must be empty. The name of the new project is the name of the directory. It must be all lowercase.\n";
-    echo "usage: <oldProjectFullPath> <newProjectFullPath>\n";
+    echo "usage: bgaprojectrename.php <oldProjectFullPath> <newProjectFullPath>\n";
     exit(0);
 }
 $oldprojectpath = $argv [1];
