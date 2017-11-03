@@ -112,7 +112,7 @@ class Tokens extends APP_GameClass {
         $this->DbQuery($sql);
     }
     
-    function createTokensPack($key, $location, $nbr = 1, $nbr_start = 0, $iterArr = null) {
+    function createTokensPack($key, $location, $nbr = 1, $nbr_start = 0, $iterArr = null, $token_state = null) {
         if ($iterArr == null)
             $iterArr = array ('' );
         if (! is_array($iterArr))
@@ -129,7 +129,7 @@ class Tokens extends APP_GameClass {
             }
             $tokens [] = $newspec;
         }
-        return $this->createTokens($tokens, null);
+        return $this->createTokens($tokens, null,$token_state );
     }
 
     // Get max on min state on the specific location
