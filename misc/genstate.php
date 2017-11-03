@@ -19,13 +19,13 @@ $gamename = basename($indir);
  * 
  * Usage: genstate.php <path_to_project_dir>
  */
-require_once "../${gamename}.states.php";
+require_once "$indir/${gamename}.states.php";
 
 function clienttranslate($str) {
     return $str;
 }
 
-require_once "../states.inc.php";
+require_once "$indir/states.inc.php";
 $prev_machinestates = $machinestates;
 $prev_gamestate = array ();
 foreach ( $prev_machinestates as $state_num => $stateinfo ) {
@@ -158,8 +158,8 @@ foreach ( $gamestates as $statename => $stateinfo ) {
 $states_str = var_export($machinestates, true) . ";";
 $states_str = preg_replace("/^ *'description' => ('.*'),$/m", "    'description' => clienttranslate(\\1),", $states_str);
 $states_str = preg_replace("/^ *'descriptionmyturn' => ('.*'),$/m", "    'descriptionmyturn' => clienttranslate(\\1),", $states_str);
-inject("../states.inc.php", 'generated states', $states_str);
-$infile = "../${gamename}.action.php";
+inject("$indir/states.inc.php", 'generated states', $states_str);
+$infile = "$indir/${gamename}.action.php";
 $body = "";
 foreach ( $actions as $action => $args ) {
     $func = "
@@ -186,12 +186,12 @@ foreach ( $actions as $action => $args ) {
         \$this->checkAction( '$action' );
 $checkArgs
         \$player_id = \$this->getActivePlayerId();
-        \$this->notifyAllPlayersWithActive( '$action', clienttranslate( '\${player_name} $action' ), array());
+        \$this->notifyWithName( '$action', clienttranslate( '\${player_name} $action' ), array());
         \$this->gamestate->nextState( 'next' );
     }";
 }
 inject($infile, 'generated actions', $body);
-inject_functions("../${gamename}.game.php", 'Game state actions generated', $game_func_arr);
-inject_functions("../${gamename}.game.php", 'Player actions generated', $player_func_arr);
-inject_functions("../${gamename}.game.php", 'Game state arguments generated', $state_args_arr);
+inject_functions("$indir/${gamename}.game.php", 'Game state actions generated', $game_func_arr);
+inject_functions("$indir/${gamename}.game.php", 'Player actions generated', $player_func_arr);
+inject_functions("$indir/${gamename}.game.php", 'Game state arguments generated', $state_args_arr);
 ?>
