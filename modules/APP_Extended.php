@@ -211,6 +211,10 @@ abstract class APP_Extended extends Table {
             $this->dump('err', $e);
         }
     }
+    
+    function dbSetAuxScore($score, $player_id) {
+        $this->DbQuery("UPDATE player SET player_score_aux=$score WHERE player_id='$player_id'");
+    }
 }
 
 function startsWith($haystack, $needle) {
