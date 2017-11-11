@@ -6,14 +6,14 @@
  * On DB side this is based on a standard table with the following fields:
  * token_key (string), token_location (string), token_state (int)
  *
- * 
-CREATE TABLE IF NOT EXISTS `token` (
-  `token_key` varchar(32) NOT NULL,
-  `token_location` varchar(32) NOT NULL,
-  `token_state` int(10),
-  PRIMARY KEY (`token_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
+ *
+ * CREATE TABLE IF NOT EXISTS `token` (
+ * `token_key` varchar(32) NOT NULL,
+ * `token_location` varchar(32) NOT NULL,
+ * `token_state` int(10),
+ * PRIMARY KEY (`token_key`)
+ * ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+ *
  *
  */
 class Tokens extends APP_GameClass {
@@ -26,7 +26,6 @@ class Tokens extends APP_GameClass {
     private $custom_fields;
     private $g_index;
 
-   
     function __construct() {
         $this->table = 'token';
         $this->custom_fields = array ();
@@ -100,18 +99,18 @@ class Tokens extends APP_GameClass {
         $this->DbQuery($sql);
         return $keys;
     }
-    
+
     function createToken($key, $location, $token_state = 0) {
         self::checkLocation($location);
         self::checkState($token_state);
         self::checkKey($key);
-        $values = array();
+        $values = array ();
         $values [] = "( '$key', '$location', '$token_state' )";
         $sql = "INSERT INTO " . $this->table . " (token_key,token_location,token_state)";
         $sql .= " VALUES " . implode(",", $values);
         $this->DbQuery($sql);
     }
-    
+
     function createTokensPack($key, $location, $nbr = 1, $nbr_start = 0, $iterArr = null, $token_state = null) {
         if ($iterArr == null)
             $iterArr = array ('' );
@@ -129,7 +128,7 @@ class Tokens extends APP_GameClass {
             }
             $tokens [] = $newspec;
         }
-        return $this->createTokens($tokens, null,$token_state );
+        return $this->createTokens($tokens, null, $token_state);
     }
 
     // Get max on min state on the specific location
@@ -178,7 +177,7 @@ class Tokens extends APP_GameClass {
             // No more cards in deck & reshuffle is active => form another deck
             $nbr_token_missing = $nbr - count($tokens);
             self::reformDeckFromDiscard($from_location);
-            $newcards = self::pickCardsForLocation($nbr_token_missing, $from_location, $to_location, $state, true); // Note: block anothr deck reform
+            $newcards = self::pickTokensForLocation($nbr_token_missing, $from_location, $to_location, $state, true); // Note: block anothr deck reform
             foreach ( $newcards as $card ) {
                 $tokens [] = $card;
             }
@@ -229,7 +228,7 @@ class Tokens extends APP_GameClass {
             $obj->$method($from_location);
         }
     }
-    
+
     // Set token state
     function setTokenState($token_key, $state) {
         self::checkState($state);
@@ -239,7 +238,6 @@ class Tokens extends APP_GameClass {
         $sql .= " WHERE token_key='$token_key'";
         self::DbQuery($sql);
     }
-    
 
     // Move a card to specific location
     function moveToken($token_key, $location, $state = 0) {
@@ -374,19 +372,20 @@ class Tokens extends APP_GameClass {
         return $result;
     }
 
-    
     function getTokenState($token_id) {
         $res = $this->getTokenInfo($token_id);
-        if ($res==null) return null;
+        if ($res == null)
+            return null;
         return $res ['state'];
     }
-    
+
     function getTokenLocation($token_id) {
         $res = $this->getTokenInfo($token_id);
-        if ($res==null) return null;
+        if ($res == null)
+            return null;
         return $res ['location'];
     }
-    
+
     /**
      * Get specific token info
      */
