@@ -111,7 +111,7 @@ class Tokens extends APP_GameClass {
         $this->DbQuery($sql);
     }
 
-    function createTokensPack($key, $location, $nbr = 1, $nbr_start = 0, $iterArr = null, $token_state = null) {
+    function createTokensPack($key, $location, $nbr = 1, $nbr_start = 1, $iterArr = null, $token_state = null) {
         if ($iterArr == null)
             $iterArr = array ('' );
         if (! is_array($iterArr))
@@ -132,14 +132,28 @@ class Tokens extends APP_GameClass {
     }
 
     // Get max on min state on the specific location
-    function getExtremePosition($getMax, $location) {
-        self::checkLocation($location);
+    function getExtremePosition($getMax, $location, $token_key = null) {
+        self::checkLocation($location, true);
         if ($getMax)
             $sql = "SELECT MAX( token_state ) res ";
         else
             $sql = "SELECT MIN( token_state ) res ";
         $sql .= "FROM " . $this->table;
-        $sql .= " WHERE token_location='" . addslashes($location) . "' ";
+        
+        $like = "LIKE";
+        if (strpos($location, "%") === false) {
+            $like = "=";
+        }
+        $sql .= " WHERE token_location $like '$location' ";
+        if ($token_key != null) {
+            self::checkKey($token_key, true);
+            $like = "LIKE";
+            if (strpos($token_key, "%") === false) {
+                $like = "=";
+            }
+            $sql .= " AND token_key $like '$token_key' ";
+        }
+        
         $dbres = self::DbQuery($sql);
         $row = mysql_fetch_assoc($dbres);
         if ($row)

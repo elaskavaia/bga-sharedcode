@@ -71,12 +71,27 @@ abstract class APP_Extended extends Table {
             $player_name = $this->getPlayerName($player_id);
             $args ['player_name'] = $player_name;
         }
-        if (isset($args ['_private'])) {
+     
+
+        if (array_key_exists('_private',$args)) {
             unset($args ['_private']);
+
             $this->notifyPlayer($player_id, $type, $message, $args);
         } else {
+           
             $this->notifyAllPlayers($type, $message, $args);
         }
+    }
+    
+    function notifyAnimate() {
+        $this->notifyAllPlayers('animate', '', array());
+    }
+    
+    function notifyAction($action_id) {
+        //$this->notifyMoveNumber();
+        $this->notifyWithName('playerLog', clienttranslate('${player_name} took action ${token_name}'), array (
+                'token_id' => $action_id,  'token_name' => $action_id
+        ));
     }
 
     // ------ PLAYERS ----------
@@ -190,10 +205,12 @@ abstract class APP_Extended extends Table {
         if ($notif == '*') {
             $notif = clienttranslate('${player_name} scored ${inc} points');
         }
-        $this->notifyWithName("score", $notif, array ('player_score' => $count,'inc' => $inc ), $player_id);
+        $this->notifyWithName("score", $notif, array ('player_score' => $count,'inc' => $inc, 
+                'modinc' => abs($inc) ), $player_id);
         if ($stat) {
             $this->dbIncStatChecked($inc, $stat, $player_id);
         }
+        return $count;
     }
 
     function dbIncStatChecked($inc, $stat, $player_id) {
@@ -232,7 +249,6 @@ function getPart($haystack, $i) {
         $parts = explode('_', $haystack);
         return $parts [$i];
     } catch ( Exception $e ) {
-        $this->dump('err', $e);
-        return '';
+        throw new BgaUserException("Internal error: Access $i to $haystack: $e");
     }
 }
