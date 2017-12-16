@@ -120,7 +120,9 @@ foreach ( $gamestates as $statename => $stateinfo ) {
                     die("Missing ) in $action_name");
                 $args_str = substr($action_str, $k + 1, $l - $k - 1);
                 $args_arr = explode(',', $args_str);
+                
                 foreach ( $args_arr as $arg_str ) {
+                    if (!$arg_str) continue;
                     list ( $atype, $avar ) = explode(' ', trim($arg_str));
                     if (endsWith($avar,'?')) {
                       $avar = substr($avar, 0, -1);  
