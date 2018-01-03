@@ -167,6 +167,11 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 	background-position: 70% 0%;
 }
 
+.logitem {
+	display: inline-block;
+	vertical-align: middle;
+}
+
 /** main board styles */
 .mainboard {
 	width: 980px;

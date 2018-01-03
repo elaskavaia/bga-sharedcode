@@ -18,8 +18,9 @@
 require_once (APP_GAMEMODULE_PATH . 'module/table/table.game.php');
 
 require_once ('modules/tokens.php');
+require_once ('modules/APP_Extended.php');
 
-class SharedCode extends Table {
+class SharedCode extends APP_Extended {
 
     function __construct() {
         // Your global variables labels:
@@ -29,7 +30,6 @@ class SharedCode extends Table {
         //  the corresponding ID in gameoptions.inc.php.
         // Note: afterwards, you can get/set the global variables with getGameStateValue/setGameStateInitialValue/setGameStateValue
         parent::__construct();
-        $this->gameinit = false;
         self::initGameStateLabels(array (
            // reserved globals 1..10
            'move_nbr' => 6,
@@ -42,6 +42,8 @@ class SharedCode extends Table {
         //    "my_second_game_variant" => 101,
         //      ...
         ));
+        $this->tokens = new Tokens();
+        $this->gameinit = false;
     }
 
     protected function getGameName() {
@@ -115,6 +117,7 @@ class SharedCode extends Table {
         $sql = "SELECT player_id id, player_score score FROM player ";
         $result ['players'] = self::getCollectionFromDb($sql);
         // TODO: Gather all information about current game situation (visible by player $current_player_id).
+        $result ['tokens'] = [];
         return $result;
     }
 
@@ -133,108 +136,38 @@ class SharedCode extends Table {
         if ($round>=6) return 100;
         return 100*$round/6;
     }
+
         //////////////////////////////////////////////////////////////////////////////
         //////////// Utility functions
         ////////////    
         /*
      * In this space, you can put any utility methods useful for your game logic
      */
-    /**
-     * This will throw an exception if condition is false.
-     * The message should be translated and shown to the user.
-     *
-     * @param $log is
-     *            server side log message, no translation needed
-     * @throws BgaUserException
-     */
-    function userAssertTrue($message, $cond = false, $log = "") {
-        if ($cond)
-            return;
-        if ($log) $this->warn($message . " " . $log);
-        throw new BgaUserException($message);
-    }
-
-    /**
-     * This will throw an exception if condition is false.
-     * This only can happened if user hacks the game, client must prevent this
-     *
-     * @param $log is
-     *            server side log message, no translation needed
-     * @throws BgaUserException
-     */
-    function systemAssertTrue($log, $cond = false) {
-        if ($cond)
-            return;
-        $move = $this->getGameStateValue('move_nbr');
-        $this->error("Internal Error during move $move: $log|");
-        throw new BgaUserException(self::_("Internal Error. That should not have happened. Please raise a bug")); 
-    }
-    
-    /**
-     * 
-     * @return first player in natural player order
-     */
-    function getFirstPlayer(){
-        $table = $this->getNextPlayerTable();
-        return $table[0];
-    }
-    
-    function getPlayerColor($player_id) {
-        if (! isset($this->players_basic)) {
-            $this->players_basic = $this->loadPlayersBasicInfos();
-        }
-        if (! isset($this->players_basic [$player_id])) {
-            return 0;
-        }
-        return $this->players_basic [$player_id] ['player_color'];
-    }
-    
-    function getPlayerName($player_id) {
-        if (! isset($this->players_basic)) {
-            $this->players_basic = $this->loadPlayersBasicInfos();
-        }
-        if (! isset($this->players_basic [$player_id])) {
-            return "unknown";
-        }
-        return $this->players_basic [$player_id] ['player_name'];
-    }
-    
-    function getPlayerIdByColor($color) {
-        if (! isset($this->players_basic)) {
-            $this->players_basic = $this->loadPlayersBasicInfos();
-        }
-        if (! isset($this->player_colors)) {
-            $this->player_colors = array ();
-            foreach ( $this->players_basic as $player_id => $info ) {
-                $this->player_colors [$info ['player_color']] = $player_id;
-            }
-        }
-        if (! isset($this->player_colors [$color])) {
-            return 0;
-        }
-        return $this->player_colors [$color];
-    }
-
-    function notifyWithName($type, $message = '', $args = null, $player_id = -1) {
-        if ($this->gameinit)
-            return;
+    function dbSetTokenLocation($token_id, $place_id, $state = null, $notif = '*', $args = null) {
+        $this->systemAssertTrue("token_id is null/empty $token_id, $place_id $notif", $token_id != null && $token_id != '');
         if ($args == null)
             $args = array ();
-        $this->systemAssertTrue("Invalid notification signature", is_array($args));
-
-        if ($player_id==-1)
-           $player_id = $this->getActivePlayerId();
-        $args ['player_id'] = $player_id;
-        if ($message) {
-            $player_name = $this->getPlayerName($player_id);
-            $args ['player_name'] = $player_name;
+        if ($notif === '*')
+            $notif = clienttranslate('${player_name} moves ${token_name} into ${place_name}');
+        if ($state === null) {
+            $state = $this->tokens->getTokenState($token_id);
         }
-        if (isset($args['_private'])) {
-            unset($args ['_private']);
-            $this->notifyPlayer($player_id, $type, $message, $args);
-        } else {
-            $this->notifyAllPlayers($type, $message, $args);
+        $this->tokens->moveToken($token_id, $place_id, $state);
+        $notifyArgs = array ('token_id' => $token_id,'place_id' => $place_id,'token_name' => $token_id,
+                'place_name' => $place_id,'new_state' => $state );
+        $args = array_merge($notifyArgs, $args);
+        $type = "tokenMoved";
+        if (array_key_exists('_notifType', $args)) {
+            $type = $args ['_notifType'];
+        } else if (array_key_exists('noa', $args) || array_key_exists('nop', $args) || array_key_exists('nod', $args)) {
+            $type = "tokenMovedNoa";
         }
+        $player_id = - 1;
+        if (array_key_exists('player_id', $args)) {
+            $player_id = $args ['player_id'];
+        }
+        //$this->warn("$type $notif ".$args['token_id']." -> ".$args['place_id']."|");
+        $this->notifyWithName($type, $notif, $args, $player_id);
     }
     
     //////////////////////////////////////////////////////////////////////////////
@@ -265,6 +198,8 @@ class SharedCode extends Table {
     function action_takeCube($token_id) {
         self::checkAction('takeCube');
         $player_id = self::getActivePlayerId();
+        $this->dbSetTokenLocation($token_id, 'basket_1',0);
+        $this->notifyPlayer($player_id,'playerLog','${You} moved cube',['You'=>'You']);
         $this->gamestate->nextState('next');
     }
     

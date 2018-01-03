@@ -45,7 +45,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             // Here, you can init the global variables of your user interface
             // Example:
             // this.myGlobalValue = 0;
-
+            this.globalid=0;
         },
 
         /*
@@ -61,7 +61,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
 
         setup : function(gamedatas) {
             console.log("Starting game setup");
-
+            this.gamedatas = gamedatas;
             // Setting up player boards
             for ( var player_id in gamedatas.players) {
                 var player = gamedatas.players[player_id];
@@ -456,7 +456,75 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
                 this.setMainTitle(title);
             }
         },
+        
+        getTranslatable : function(key, args) {
+            if (typeof args.i18n == 'undefined') {
+                return -1;
+            } else {
+                var i = args.i18n.indexOf(key);
+                if (i >= 0) { return i; }
+            }
+            return -1;
+        },
+        /** @Override */
+        format_string_recursive : function(log, args) {
+            try {
+                if (log && args && !args.processed) {
+                    args.processed = true;
+                    args.You = this.divYou(); // will replace ${You} with colored version
+                    var keys = ['place_name','token_name'];
+                    for ( var i in keys) {
+                        var key = keys[i];
+                        console.log("checking "+key+" for "+log);
+                        if (typeof args[key] == 'string') {
+                            if (this.getTranslatable(key, args) == -1) {
+                                var res = this.getTokenDiv(key, args);
+                                console.log("subs "+res);
+                                if (res)
+                                    args[key] = res;
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(log,args,"Exception thrown", e.stack);
+            }
+            return this.inherited(arguments);
+        },
+        getTokenDiv : function(key, args) {
+            // ... implement whatever html you want here
+            var token_id = args[key];
+            var item_type = getPart(token_id,0);
+            var logid = "log" + (this.globalid++) + "_" + token_id;
+            switch (item_type) {
+                case 'wcube':
+                    var tokenDiv = this.format_block('jstpl_resource_log', {
+                        "id" : logid,
+                        "type" : "wcube",
+                        "color" : getPart(token_id,1),
+                    });
+                    return tokenDiv;
+                    break;
+                case 'meeple':
+                    if ($(token_id)) {
+                        var clone = dojo.clone($(token_id));
+    
+                        dojo.attr(clone, "id", logid);
+                        this.stripPosition(clone);
+                        dojo.addClass(clone, "logitem");
+                        return clone.outerHTML;
+                    }
+                    break;
+     
+                default:
+                    break;
+            }
 
+            return "'" + this.getTokenName(token_id) + "'";
+       },
+       getTokenName : function(key) {
+           return key; // XXX
+       },
         // /////////////////////////////////////////////////
         // // Player's action
         /*
@@ -576,29 +644,62 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
          */
         setupNotifications : function() {
             console.log('notifications subscriptions setup');
-
-            // TODO: here, associate your game notifications with local methods
-
-            // Example 1: standard notification handling
-            // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
-
-            // Example 2: standard notification handling + tell the user interface to wait
-            // during 3 seconds after calling the method in order to let the players
-            // see what is happening in the game.
-            // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
-            // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
-            // 
+            dojo.subscribe('tokenMoved', this, "notif_tokenMoved");
+            dojo.subscribe('tokenMovedNoa', this, "notif_tokenMoved");
+            dojo.subscribe('playerLog', this, "notif_playerLog");
+            dojo.subscribe('counter', this, "notif_counter");
+            dojo.subscribe('score', this, "notif_score");
+            dojo.subscribe('log', this, "notif_log");
+            dojo.subscribe('animate', this, "notif_animate");
+            this.notifqueue.setSynchronous('tokenMoved', 500);
+            this.notifqueue.setSynchronous('animate', 1000);
         },
+        notif_playerLog : function(notif) {
+            // pure log
+        },
+        notif_animate : function(notif) {
+            // do nothing, just there to play animation from previous notifications
+        },
+        notif_tokenMoved : function(notif) {
+            // console.log('notif_tokenMoved');
+            // console.log(notif);
+            var token = notif.args.token_id;
+            if (!this.gamedatas.tokens[token]) {
+                this.gamedatas.tokens[token] = {
+                    key : token
+                };
+            }
+            this.gamedatas.tokens[token].location = notif.args.place_id;
+            this.gamedatas.tokens[token].state = notif.args.new_state;
 
-    // TODO: from this point and below, you can write your game notifications handling methods
+            console.log("** notif moved " + token + " -> " + notif.args.place_id + " (" + notif.args.new_state + ")");
+            //this.gamedatas_local.tokens[token] = dojo.clone(this.gamedatas.tokens[token]);
 
-    /*
-     * Example:
-     * 
-     * notif_cardPlayed: function( notif ) { console.log( 'notif_cardPlayed' ); console.log( notif ); // Note: notif.args contains the
-     * arguments specified during you "notifyAllPlayers" / "notifyPlayer" PHP call // TODO: play the card in the user interface. },
-     * 
-     */
+            //this.placeTokenWithTips(token, this.gamedatas.tokens[token], notif.args.noa, notif.args);
+        },
+        notif_log : function(notif) {
+            console.log(notif.log);
+            console.log(notif.args);
+        },
+        notif_counter : function(notif) {
+            try {
+                this.gamedatas.counters[notif.args.counter_name].counter_value = notif.args.counter_value;
+                this.updateCounters(this.gamedatas.counters);
+            } catch (ex) {
+                console.log(notif);
+                console.error("Cannot update " + notif.args.counter_name + ": " + ex.stack);
+            }
+            // this.placeResource(notif.args.resource_id, notif.args.place_id, notif.args.inc, notif.args.player_id);
+        },
+        notif_score : function(notif) {
+            // console.log(notif);
+            this.scoreCtrl[notif.args.player_id].setValue(notif.args.player_score);
+            //var color = this.getPlayerColor(notif.args.player_id);
+           // this.setCounter('coin_' + color + '_counter', notif.args.player_score);
+            if (notif.args.source) {
+                // local animation
+            }
+        },
     });
 });
 

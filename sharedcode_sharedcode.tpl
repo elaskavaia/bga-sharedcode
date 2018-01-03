@@ -149,6 +149,7 @@
     // Javascript HTML templates
     var jstpl_resource_counter='<div class="mini_board_item"><div id="${type}_${color}_${id}_div" class="${type} ${type}_${color}"></div><span id="${type}_${color}_${id}">0</span></div>';
     var jstpl_resource='<div class="${type} ${type}_${color}" id="${type}_${color}_${id}"></div>';
+    var jstpl_resource_log='<div class="${type} ${type}_${color} logitem" id="${type}_${color}_${id}"></div>';
     var jstpl_player_board='<div class="boardblock mini_board mini_board_${id} mini_board_color_${color}" id="mini_board_${id}"></div>';
     
    
