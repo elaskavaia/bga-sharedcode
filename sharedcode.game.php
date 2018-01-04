@@ -17,10 +17,10 @@
  */
 require_once (APP_GAMEMODULE_PATH . 'module/table/table.game.php');
 
-require_once ('modules/tokens.php');
-require_once ('modules/APP_Extended.php');
 
-class SharedCode extends APP_Extended {
+require_once ('modules/EuroGame.php');
+
+class SharedCode extends EuroGame {
 
     function __construct() {
         // Your global variables labels:
@@ -42,7 +42,6 @@ class SharedCode extends APP_Extended {
         //    "my_second_game_variant" => 101,
         //      ...
         ));
-        $this->tokens = new Tokens();
         $this->gameinit = false;
     }
 
@@ -118,6 +117,7 @@ class SharedCode extends APP_Extended {
         $result ['players'] = self::getCollectionFromDb($sql);
         // TODO: Gather all information about current game situation (visible by player $current_player_id).
         $result ['tokens'] = [];
+        $result ['token_types'] = $this->token_types;
         return $result;
     }
 
@@ -157,17 +157,10 @@ class SharedCode extends APP_Extended {
                 'place_name' => $place_id,'new_state' => $state );
         $args = array_merge($notifyArgs, $args);
         $type = "tokenMoved";
-        if (array_key_exists('_notifType', $args)) {
-            $type = $args ['_notifType'];
-        } else if (array_key_exists('noa', $args) || array_key_exists('nop', $args) || array_key_exists('nod', $args)) {
-            $type = "tokenMovedNoa";
-        }
-        $player_id = - 1;
-        if (array_key_exists('player_id', $args)) {
-            $player_id = $args ['player_id'];
-        }
+
+
         //$this->warn("$type $notif ".$args['token_id']." -> ".$args['place_id']."|");
-        $this->notifyWithName($type, $notif, $args, $player_id);
+        $this->notifyWithName($type, $notif, $args);
     }
     
     //////////////////////////////////////////////////////////////////////////////
@@ -194,18 +187,19 @@ class SharedCode extends APP_Extended {
                 return;
         }
     }
-    
-    function action_takeCube($token_id) {
+
+    function action_takeCube($token_id, $place_id) {
         self::checkAction('takeCube');
         $player_id = self::getActivePlayerId();
-        $this->dbSetTokenLocation($token_id, 'basket_1',0);
-        $this->notifyPlayer($player_id,'playerLog','${You} moved cube',['You'=>'You']);
+        $this->dbSetTokenLocation($token_id, $place_id, 0);
+        $this->notifyPlayer($player_id, 'playerLog', '${You} moved cube', [ 'You' => 'You' ]);
         $this->gamestate->nextState('next');
     }
-    
-    function action_moveCube($token_id) {
+
+    function action_moveCube($token_id, $place_id) {
         self::checkAction('moveCube');
         $player_id = self::getActivePlayerId();
+        $this->dbSetTokenLocation($token_id, $place_id, 0);
         $this->gamestate->nextState('next');
     }
     

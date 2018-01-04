@@ -35,7 +35,7 @@ abstract class APP_Extended extends Table {
         if ($cond)
             return;
         if ($log)
-            $this->warn($message . " " . $log);
+            $this->warn("$message $log|");
         throw new BgaUserException($message);
     }
 
@@ -55,8 +55,7 @@ abstract class APP_Extended extends Table {
         //$bt = debug_backtrace();
         //$this->dump('bt',$bt);
         $this->error("Internal Error during move $move: $log|");
-        //throw new feException($log);
-        throw new BgaUserException(self::_("Internal Error. That should not have happened. Please raise a bug. "));
+        throw new BgaUserException(self::_("Internal Error. That should not have happened. Please raise a bug."));
     }
 
     // ------ NOTIFICATIONS ----------
@@ -64,6 +63,9 @@ abstract class APP_Extended extends Table {
         if ($args == null)
             $args = array ();
         $this->systemAssertTrue("Invalid notification signature", is_array($args));
+        if (array_key_exists('player_id', $args) && $player_id == - 1) {
+            $player_id = $args ['player_id'];
+        }
         if ($player_id == - 1)
             $player_id = $this->getActivePlayerId();
         $args ['player_id'] = $player_id;
@@ -71,14 +73,19 @@ abstract class APP_Extended extends Table {
             $player_name = $this->getPlayerName($player_id);
             $args ['player_name'] = $player_name;
         }
-     
-
-        if (array_key_exists('_private',$args)) {
+        
+        if (array_key_exists('_notifType', $args)) {
+            $type = $args ['_notifType'];
+            unset($args ['_notifType']);
+        } 
+        if (array_key_exists('noa', $args) || array_key_exists('nop', $args) || array_key_exists('nod', $args)) {
+            $type += "Async";
+        }
+        
+        if (array_key_exists('_private', $args) && $args['_private']) {
             unset($args ['_private']);
-
             $this->notifyPlayer($player_id, $type, $message, $args);
         } else {
-           
             $this->notifyAllPlayers($type, $message, $args);
         }
     }
@@ -188,30 +195,56 @@ abstract class APP_Extended extends Table {
     }
 
     // ------ DB ----------
-    function dbGetScoreValue($player_id) {
+    function dbGetScore($player_id) {
         return $this->getUniqueValueFromDB("SELECT player_score FROM player WHERE player_id='$player_id'");
     }
 
-    function dbSetScoreValue($player_id, $count) {
+    function dbSetScore($player_id, $count) {
         $this->DbQuery("UPDATE player SET player_score='$count' WHERE player_id='$player_id'");
     }
-
-    function dbIncScoreValueAndNotify($player_id, $inc, $notif = '*', $stat = '') {
-        $count = $this->dbGetScoreValue($player_id);
+    
+    function dbSetAuxScore($player_id, $score) {
+        $this->DbQuery("UPDATE player SET player_score_aux=$score WHERE player_id='$player_id'");
+    }
+    
+    function dbIncScore($inc) {
+        $count = $this->dbGetScore($player_id);
         if ($inc != 0) {
             $count += $inc;
-            $this->dbSetScoreValue($player_id, $count);
+            $this->dbSetScore($player_id, $count);
         }
+        return $count;
+    }
+    
+
+    /**
+     * Changes the player scrore and sends notification, also update statistic if provided
+     * 
+     * @param number $player_id - player id
+     * @param number $inc - increment of score, can be negative
+     * @param string $notif - notification string, '*' - for default notification, '' - for none
+     * @param string $stat - name of the player statistic to update (points source) 
+     * @return number - current score after increase/descrease
+     */
+    function dbIncScoreValueAndNotify($player_id, $inc, $notif = '*', $stat = '') {
+        $count = $this->dbIncScore($inc);
         if ($notif == '*') {
-            $notif = clienttranslate('${player_name} scored ${inc} points');
+            if ($inc >= 0)
+                $notif = clienttranslate('${player_name} scores ${inc} point(s)');
+            else
+                $notif = clienttranslate('${player_name} loses ${modinc} point(s)');
         }
-        $this->notifyWithName("score", $notif, array ('player_score' => $count,'inc' => $inc, 
-                'modinc' => abs($inc) ), $player_id);
+        $this->notifyWithName("score", $notif, 
+                array ('player_score' => $count,
+                       'inc' => $inc, 
+                       'modinc' => abs($inc) 
+                ), $player_id);
         if ($stat) {
             $this->dbIncStatChecked($inc, $stat, $player_id);
         }
         return $count;
     }
+
 
     function dbIncStatChecked($inc, $stat, $player_id) {
         try {
@@ -219,7 +252,6 @@ abstract class APP_Extended extends Table {
             $player_stats = $all_stats ['player'];
             if (isset($player_stats [$stat])) {
                 $this->incStat($inc, $stat, $player_id);
-                //$this->warn ( "inc stat $stat to $inc => " . $this->getStat ( $stat, $player_id ) . "|" );
             } else {
                 $this->error("statistic $stat is not defined");
             }
@@ -229,9 +261,7 @@ abstract class APP_Extended extends Table {
         }
     }
     
-    function dbSetAuxScore($score, $player_id) {
-        $this->DbQuery("UPDATE player SET player_score_aux=$score WHERE player_id='$player_id'");
-    }
+
 }
 
 function startsWith($haystack, $needle) {

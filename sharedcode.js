@@ -8,46 +8,18 @@
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com. See
  * http://en.boardgamearena.com/#!doc/Studio for more information.
  */
-
-var colorNameToHex = {
-    gray : "808080",
-    blue : "0000ff",
-    red : "ff0000",
-    yellow : "ffff00",
-    green : "008000",
-    white : "ffffff",
-    black : "000000",
-    brown : "773300",
-    purple : "4c1b5b",
-    pink : "ffc0cb",
-    orange : "ffa500",
-};
-
-var colorHexToName = {
-    "808080" : "gray",
-    "0000ff" : "blue",
-    "ff0000" : "red",
-    "ffff00" : "yellow",
-    "008000" : "green",
-    "ffffff" : "white",
-    "000000" : "black",
-    "773300" : "brown",
-    "4c1b5b" : "purple",
-    "ffc0cb" : "pink",
-    "ffa500" : "orange",
-};
-
-define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], function(dojo, declare) {
-    return declare("bgagame.sharedcode", ebg.core.gamegui, {
+define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter",
+    // load my own module!!!
+    g_gamethemeurl + "modules/sharedparent.js" ], function(dojo,
+        declare) {
+    return declare("bgagame.sharedcode", bgagame.sharedparent, {
         constructor : function() {
             console.log('sharedcode constructor');
-
+            console.log(this.globalid);
             // Here, you can init the global variables of your user interface
             // Example:
             // this.myGlobalValue = 0;
-            this.globalid=0;
         },
-
         /*
          * setup:
          * 
@@ -58,25 +30,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
          * 
          * "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
          */
-
         setup : function(gamedatas) {
             console.log("Starting game setup");
-            this.gamedatas = gamedatas;
-            // Setting up player boards
-            for ( var player_id in gamedatas.players) {
-                var player = gamedatas.players[player_id];
-
-                this.setupPlayerMiniBoard(player_id, player);
-            }
-
-            this.first_player_id = Object.keys(gamedatas.players)[0];
-
-            if (!this.isSpectator) 
-                this.player_color = gamedatas.players[this.player_id].color;
-            else
-                this.player_color = gamedatas.players[this.first_player_id].color;
-            
-
+            this.inherited(arguments); // parent common setup
             // TODO: Set up your game interface here, according to "gamedatas"
             this.resourceIdCounterLocal = 1;
             // connect zones, they always there
@@ -84,13 +40,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             this.connectClass("action_space", 'onclick', 'onActionSpace');
             // connect cubes
             this.connectClass("wcube", 'onclick', 'onCube');
-            // Setup game notifications to handle (see "setupNotifications" method below)
-            this.setupNotifications();
-
             console.log("Ending game setup");
         },
-
-        setupPlayerMiniBoard : function(playerId, playerInfo) {
+        setupPlayer : function(playerId, playerInfo) {
             var playerBoardDiv = dojo.byId('player_board_' + playerId);
             var div = this.format_block('jstpl_player_board', playerInfo);
             var block = dojo.place(div, playerBoardDiv);
@@ -105,7 +57,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
                 dojo.place(tokenDiv, block);
             }
             // this is meeple in the player color
-            var playerColorName = colorHexToName[playerInfo.color];
+            var playerColorName = g_colorHexToName[playerInfo.color];
             var tokenDiv = this.format_block('jstpl_resource_counter', {
                 "id" : "pc",
                 "type" : "smeeple",
@@ -113,51 +65,39 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             });
             dojo.place(tokenDiv, block);
         },
-
         // /////////////////////////////////////////////////
         // // Game & client states
-
         // onEnteringState: this method is called each time we are entering into a new game state.
         // You can use this method to perform some user interface changes at this moment.
         //
         onEnteringState : function(stateName, args) {
             console.log('Entering state: ' + stateName);
-
-            if (!this.on_client_state) {
-                // we can use it to preserve arguments for client states
-                this.clientStateArgs = {};
-            }
-
+            this.inherited(arguments); // parent common code
             switch (stateName) {
                 case 'playerTurn':
-
                     break;
             }
         },
-
         // onLeavingState: this method is called each time we are leaving a game state.
         // You can use this method to perform some user interface changes at this moment.
         //
         onLeavingState : function(stateName) {
+            this.inherited(arguments); // parent common code
             console.log('Leaving state: ' + stateName);
-            dojo.query(".active_slot").removeClass('active_slot');
-            dojo.query(".selected").removeClass('selected');
         },
-
         // onUpdateActionButtons: in this method you can manage "action buttons" that are displayed in the
         // action status bar (ie: the HTML links in the status bar).
         //        
         onUpdateActionButtons : function(stateName, args) {
+            this.inherited(arguments); // parent common code
             console.log('onUpdateActionButtons: ' + stateName);
-
             if (this.isCurrentPlayerActive()) {
                 switch (stateName) {
                     case 'playerTurn':
-
                         dojo.query(".action_space").addClass('active_slot');
                         // add text action button
-                        this.addActionButton('button_pass', _('Pass'), dojo.hitch(this,function() {
-                            this.ajaxAction('pass',{});
+                        this.addActionButton('button_pass', _('Pass'), dojo.hitch(this, function() {
+                            this.ajaxAction('pass', {});
                         }));
                         break;
                     case 'client_selectCubeLocation':
@@ -171,9 +111,8 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
                         this.cubeTypeNumber = args.cubeTypeNumber;
                         this.resourceIdCounter = args.resource_id_counter;
                         dojo.query(".wcube").addClass('active_slot');
-
                         // add image action button
-                        var keys = Object.keys(colorNameToHex);
+                        var keys = Object.keys(g_colorNameToHex);
                         this.takeCubeColor = keys[this.cubeTypeNumber];
                         var tokenDiv = this.format_block('jstpl_resource', {
                             "id" : "0",
@@ -185,346 +124,61 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
                 }
             }
         },
-
         // /////////////////////////////////////////////////
         // // Utility methods
-
-        /**
-         * This method can be used instead of addActionButton, to add a button which is an image (i.e. resource). Can be useful when player
-         * need to make a choice of resources or tokens.
-         */
-        addImageActionButton : function(id, div, handler) {
-            // this will actually make a transparent button
-            this.addActionButton(id, div, handler, '', false, 'gray');
-            // remove boarder, for images it better without
-            dojo.style(id, "border", "none");
-            // but add shadow style (box-shadow, see css)
-            dojo.addClass(id, "shadow");
-            // you can also add addition styles, such as background
-            // dojo.style(id, "background-color", "white");
-        },
-
-        /**
-         * Convenient method to get state name
-         */
-        getStateName : function() {
-            return this.gamedatas.gamestate.name;
-        },
-
-        /**
-         * This method will remove all inline style added to element that affect positioning
-         */
-        stripPosition : function(token) {
-            // console.log(token + " STRIPPING");
-            // remove any added positioning style
-            dojo.style(token, "display", null);
-            dojo.style(token, "top", null);
-            dojo.style(token, "left", null);
-            dojo.style(token, "position", null);
-        },
-        
-        stripTransition : function(token) {
-            this.setTransition(token, null);  
-        },
-        
-        setTransition : function(token, value) {
-            dojo.style(token, "transition", value);
-            dojo.style(token, "-webkit-transition", value);
-            dojo.style(token, "-moz-transition", value);
-            dojo.style(token, "-o-transition", value);
-            
-        },
-        
-        getPlayerColor : function(id) {
-            for ( var playerId in this.gamedatas.players) {
-                var playerInfo = this.gamedatas.players[playerId];
-                if (id == playerId) { return playerInfo.color; }
-            }
-            return '000000';
-        },
-
-        /**
-         * This method will attach mobile to a new_parent without destroying, unlike original attachToNewParent which destroys mobile and
-         * all its connectors (onClick, etc)
-         */
-
-        attachToNewParentNoDestroy : function(mobile, new_parent) {
-            if (mobile === null) {
-                console.error("attachToNewParent: mobile obj is null");
-                return;
-            }
-            if (new_parent === null) {
-                console.error("attachToNewParent: new_parent is null");
-                return;
-            }
-            if (typeof mobile == "string") {
-                mobile = $(mobile);
-            }
-            if (typeof new_parent == "string") {
-                new_parent = $(new_parent);
-            }
-
-            var src = dojo.position(mobile);
-            dojo.style(mobile, "position", "absolute");
-            dojo.place(mobile, new_parent, "last");
-            var tgt = dojo.position(mobile);
-            var box = dojo.marginBox(mobile);
-            var cbox = dojo.contentBox(mobile);
-            var left = box.l + src.x - tgt.x;
-            var top = box.t + src.y - tgt.y;
-            dojo.style(mobile, "top", top + "px");
-            dojo.style(mobile, "left", left + "px");
-            box.l += box.w-cbox.w;
-            box.t += box.h-cbox.h;
-            return box;
-        },
-
-        /**
-         * This method is similar to slideToObject but works on object which do not use inline style positioning. It also
-         * attaches object to new parent immediately, so parent is correct during animation
-         */
-        slideToObjectRelative : function(token, finalPlace, duration, delay, onEnd) {
-            if (typeof token == 'string') {
-                token = $(token);
-            }
-       
-            var self = this;
-            this.delayedExec(function() {                
-                self.stripTransition(token);
-                self.stripPosition(token);
-                var box = self.attachToNewParentNoDestroy(token, finalPlace);
-                self.setTransition(token, "all " + duration + "ms ease-in-out");
- 
-                // set abs position causing css animation
-                var left = dojo.style(token, "left"); // does not work if not called
-                var top = dojo.style(token, "top");
-                dojo.style(token, "left", 0 + "px");
-                dojo.style(token, "top", 0 + "px");
-            }, function() {
-                self.stripTransition(token);
-                self.stripPosition(token);
-                if (onEnd) onEnd(token);
-            }, duration, delay);
-        },
-
-        slideToObjectAbsolute : function(token, finalPlace, x, y, duration, delay, onEnd) {
-            if (typeof token == 'string') {
-                token = $(token);
-            }
-            var self = this;
-            this.delayedExec(function() {
-                self.stripTransition(token);
-                var box = self.attachToNewParentNoDestroy(token, finalPlace);
-                self.setTransition(token, "all " + duration + "ms ease-in-out");
-                // set abs position causing css animation
-                var left = dojo.style(token, "left"); // does not work if not called
-                var top = dojo.style(token, "top");
-                dojo.style(token, "left", x + "px");
-                dojo.style(token, "top", y + "px");
-            }, function() {
-                self.stripTransition(token);
-                if (onEnd) onEnd(token);
-            }, duration, delay);
-        },
-        
-        delayedExec: function(onStart, onEnd, duration, delay) {
-            if (typeof duration == "undefined") {
-                duration = 500;
-            }
-            if (typeof delay == "undefined") {
-                delay = 0;
-            }
-            if (this.instantaneousMode) {
-                delay = Math.min(1, delay);
-                duration = Math.min(1, duration);
-            }
-            if (delay) {
-                setTimeout(function() {
-                    onStart();
-                    if (onEnd) {
-                        setTimeout(onEnd, duration);
-                    }
-                }, delay);
-            } else {
-                onStart();
-                if (onEnd) {
-                    setTimeout(onEnd, duration);
-                }
-            }
-        },
-
-        /** More convenient version of ajaxcall, do not to specify game name, and any of the handlers */
-
-        ajaxAction : function(action, args, func, err) {
-            console.log("ajax action " + action);
-            if (!args) {
-                args = [];
-            }
-            delete args.action;
-            if (typeof func == "undefined" || func == null) {
-                func = function(result) {
-
-                };
-            }
-
-            if (this.on_client_state) {
-                // restore server server if error happened
-                if (typeof err == "undefined") {
-                    var self = this;
-                    err = function(iserr, message) {
-                        if (iserr) {
-                            console.log('restoring server state, error: ' + message);
-                            self.cancelLocalStateEffects();
-                        }
-                    };
-                }
-            }
-            var name = this.game_name;
-            if (this.checkAction(action)) {
-                // args.lock = true;
-                this.ajaxcall("/" + name + "/" + name + "/" + action + ".html", args,// 
-                this, func, err);
-            }
-        },
-
-        cancelLocalStateEffects : function() {
-            if (this.on_client_state) {
-                // do something to cancel local state effects
-            }
-            this.restoreServerGameState();
-        },
-
-        isActiveSlot : function(id) {
-            if (!dojo.hasClass(id, 'active_slot')) { return false; }
-
-            return true;
-        },
-        checkActiveSlot : function(id) {
-            if (!this.isActiveSlot(id)) {
-                this.showMoveUnauthorized();
-                return false;
-            }
-
-            return true;
-        },
-        checkActivePlayer : function() {
-            if (!this.isCurrentPlayerActive()) {
-                this.showMessage(__("lang_mainsite", "This is not your turn"), "error");
-                return false;
-            }
-            return true;
-        },
-
-        checkActivePlayerAndSlot : function(id) {
-            if (!this.checkActivePlayer()) { return false; }
-            if (!this.checkActiveSlot(id)) { return false; }
-            return true;
-        },
-        
-        setMainTitle : function(text) {
-            var main = $('pagemaintitletext');
-            main.innerHTML = text;
-        },
-
-        divYou : function() {
-            var color = this.gamedatas.players[this.player_id].color;
-            var color_bg = "";
-            if (this.gamedatas.players[this.player_id] && this.gamedatas.players[this.player_id].color_back) {
-                color_bg = "background-color:#" + this.gamedatas.players[this.player_id].color_back + ";";
-            }
-            var you = "<span style=\"font-weight:bold;color:#" + color + ";" + color_bg + "\">" +
-                    __("lang_mainsite", "You") + "</span>";
-            return you;
-        },
-
-        setDescriptionOnMyTurn : function(text) {
-            this.gamedatas.gamestate.descriptionmyturn = text;
-            // this.updatePageTitle();
-            var tpl = dojo.clone(this.gamedatas.gamestate.args);
-            if (tpl === null) {
-                tpl = {};
-            }
-            var title = "";
-            if (this.isCurrentPlayerActive() && text !== null) {
-                tpl.you = this.divYou();
-                title = this.format_string_recursive(text, tpl);
-            }
-
-            if (title == "") {
-                this.setMainTitle("&nbsp;");
-            } else {
-                this.setMainTitle(title);
-            }
-        },
-        
-        getTranslatable : function(key, args) {
-            if (typeof args.i18n == 'undefined') {
-                return -1;
-            } else {
-                var i = args.i18n.indexOf(key);
-                if (i >= 0) { return i; }
-            }
-            return -1;
-        },
         /** @Override */
         format_string_recursive : function(log, args) {
             try {
                 if (log && args && !args.processed) {
                     args.processed = true;
                     args.You = this.divYou(); // will replace ${You} with colored version
-                    var keys = ['place_name','token_name'];
+                    var keys = [ 'place_name', 'token_name' ];
                     for ( var i in keys) {
                         var key = keys[i];
-                        console.log("checking "+key+" for "+log);
+                        console.log("checking " + key + " for " + log);
                         if (typeof args[key] == 'string') {
                             if (this.getTranslatable(key, args) == -1) {
                                 var res = this.getTokenDiv(key, args);
-                                console.log("subs "+res);
-                                if (res)
-                                    args[key] = res;
+                                console.log("subs " + res);
+                                if (res) args[key] = res;
                             }
                         }
                     }
                 }
             } catch (e) {
-                console.error(log,args,"Exception thrown", e.stack);
+                console.error(log, args, "Exception thrown", e.stack);
             }
             return this.inherited(arguments);
         },
         getTokenDiv : function(key, args) {
             // ... implement whatever html you want here
             var token_id = args[key];
-            var item_type = getPart(token_id,0);
+            var item_type = getPart(token_id, 0);
             var logid = "log" + (this.globalid++) + "_" + token_id;
             switch (item_type) {
                 case 'wcube':
                     var tokenDiv = this.format_block('jstpl_resource_log', {
                         "id" : logid,
                         "type" : "wcube",
-                        "color" : getPart(token_id,1),
+                        "color" : getPart(token_id, 1),
                     });
                     return tokenDiv;
                     break;
                 case 'meeple':
                     if ($(token_id)) {
                         var clone = dojo.clone($(token_id));
-    
                         dojo.attr(clone, "id", logid);
                         this.stripPosition(clone);
                         dojo.addClass(clone, "logitem");
                         return clone.outerHTML;
                     }
                     break;
-     
                 default:
                     break;
             }
-
             return "'" + this.getTokenName(token_id) + "'";
-       },
-       getTokenName : function(key) {
-           return key; // XXX
-       },
+        },
+
         // /////////////////////////////////////////////////
         // // Player's action
         /*
@@ -534,7 +188,6 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
          * Most of the time, these methods: _ check the action is possible at this game state. _ make a call to the game server
          * 
          */
-
         onTakeCube : function(event) {
             var id = event.currentTarget.id;
             dojo.stopEvent(event);
@@ -549,14 +202,12 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             var cubeNode = dojo.place(tokenDiv, id);
             // connect clicker
             this.connect(cubeNode, 'onclick', 'onCube');
-
             // slide
             this.slideToObjectRelative(cubeNode, "basket_1");
-            this.clientStateArgs.token_id=cubeNode.id;
-            this.clientStateArgs.place_id="basket_1";
-            this.ajaxAction("takeCube",this.clientStateArgs);
+            this.clientStateArgs.token_id = cubeNode.id;
+            this.clientStateArgs.place_id = "basket_1";
+            this.ajaxAction("takeCube", this.clientStateArgs);
         },
-
         onCube : function(event) {
             var id = event.currentTarget.id;
             dojo.stopEvent(event);
@@ -568,7 +219,6 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
                 descriptionmyturn : _('${you} must select location for the cube'),
             });
         },
-
         onBasket : function(event) {
             var id = event.currentTarget.id;
             dojo.stopEvent(event);
@@ -579,14 +229,12 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
                 this.clientStateArgs.place_id = id;
                 this.resourceIdCounterLocal++;
                 var clone = dojo.clone($(this.clientStateArgs.token_id));
-                clone.id = "cube_"+this.resourceIdCounterLocal;
-             
+                clone.id = "cube_" + this.resourceIdCounterLocal;
                 dojo.place(clone, $(this.clientStateArgs.token_id));
                 this.slideToObjectRelative(clone.id, id, 500, 0);
-                this.ajaxAction("moveCube",this.clientStateArgs);
+                this.ajaxAction("moveCube", this.clientStateArgs);
             }
         },
-
         onActionSpace : function(event) {
             var id = event.currentTarget.id;
             dojo.stopEvent(event);
@@ -596,7 +244,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             this.clientStateArgs.action_id = id;
             // create new meeple
             this.resourceIdCounterLocal += 1;
-            var playerColorName = colorHexToName[this.player_color];
+            var playerColorName = g_colorHexToName[this.player_color];
             var tokenDiv = this.format_block('jstpl_resource', {
                 "id" : this.resourceIdCounterLocal,
                 "type" : "smeeple",
@@ -606,10 +254,8 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             var meepleNode = dojo.place(tokenDiv, "smeeple_" + playerColorName + "_pc_div");
             this.slideToObjectRelative(meepleNode, id);
             this.clientStateArgs.worker_id = meepleNode.id;
-            
-            this.ajaxAction("selectWorkerAction",this.clientStateArgs);
+            this.ajaxAction("selectWorkerAction", this.clientStateArgs);
         },
-
         /**
          * This is light weight undo support. You use local states, and this one erases it.
          */
@@ -618,20 +264,6 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
             console.log("on cancel");
             this.cancelLocalStateEffects();
         },
-
-        /*
-         * Example:
-         * 
-         * onMyMethodToCall1: function( evt ) { console.log( 'onMyMethodToCall1' ); // Preventing default browser reaction dojo.stopEvent(
-         * evt ); // Check that this action is possible (see "possibleactions" in states.inc.php) if( ! this.checkAction( 'myAction' ) ) {
-         * return; }
-         * 
-         * this.ajaxcall( "/sharedcode/sharedcode/myAction.html", { lock: true, myArgument1: arg1, myArgument2: arg2, ... }, this, function(
-         * result ) { // What to do after the server call if it succeeded // (most of the time: nothing) }, function( is_error) { // What to
-         * do after the server call in anyway (success or failure) // (most of the time: nothing) } ); },
-         * 
-         */
-
         // /////////////////////////////////////////////////
         // // Reaction to cometD notifications
         /*
@@ -643,76 +275,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter" ], func
          * 
          */
         setupNotifications : function() {
-            console.log('notifications subscriptions setup');
-            dojo.subscribe('tokenMoved', this, "notif_tokenMoved");
-            dojo.subscribe('tokenMovedNoa', this, "notif_tokenMoved");
-            dojo.subscribe('playerLog', this, "notif_playerLog");
-            dojo.subscribe('counter', this, "notif_counter");
-            dojo.subscribe('score', this, "notif_score");
-            dojo.subscribe('log', this, "notif_log");
-            dojo.subscribe('animate', this, "notif_animate");
-            this.notifqueue.setSynchronous('tokenMoved', 500);
-            this.notifqueue.setSynchronous('animate', 1000);
-        },
-        notif_playerLog : function(notif) {
-            // pure log
-        },
-        notif_animate : function(notif) {
-            // do nothing, just there to play animation from previous notifications
-        },
-        notif_tokenMoved : function(notif) {
-            // console.log('notif_tokenMoved');
-            // console.log(notif);
-            var token = notif.args.token_id;
-            if (!this.gamedatas.tokens[token]) {
-                this.gamedatas.tokens[token] = {
-                    key : token
-                };
-            }
-            this.gamedatas.tokens[token].location = notif.args.place_id;
-            this.gamedatas.tokens[token].state = notif.args.new_state;
-
-            console.log("** notif moved " + token + " -> " + notif.args.place_id + " (" + notif.args.new_state + ")");
-            //this.gamedatas_local.tokens[token] = dojo.clone(this.gamedatas.tokens[token]);
-
-            //this.placeTokenWithTips(token, this.gamedatas.tokens[token], notif.args.noa, notif.args);
-        },
-        notif_log : function(notif) {
-            console.log(notif.log);
-            console.log(notif.args);
-        },
-        notif_counter : function(notif) {
-            try {
-                this.gamedatas.counters[notif.args.counter_name].counter_value = notif.args.counter_value;
-                this.updateCounters(this.gamedatas.counters);
-            } catch (ex) {
-                console.log(notif);
-                console.error("Cannot update " + notif.args.counter_name + ": " + ex.stack);
-            }
-            // this.placeResource(notif.args.resource_id, notif.args.place_id, notif.args.inc, notif.args.player_id);
-        },
-        notif_score : function(notif) {
-            // console.log(notif);
-            this.scoreCtrl[notif.args.player_id].setValue(notif.args.player_score);
-            //var color = this.getPlayerColor(notif.args.player_id);
-           // this.setCounter('coin_' + color + '_counter', notif.args.player_score);
-            if (notif.args.source) {
-                // local animation
-            }
+            this.inherited(arguments); // parent common notifications for euro game
         },
     });
 });
-
-function joinId(first, second) {
-    return first + '_' + second;
-};
-
-function getIntPart(word, i) {
-    var arr = word.split('_');
-    return parseInt(arr[i]);
-};
-
-function getPart(word, i) {
-    var arr = word.split('_');
-    return arr[i];
-};

@@ -151,7 +151,7 @@
     var jstpl_resource='<div class="${type} ${type}_${color}" id="${type}_${color}_${id}"></div>';
     var jstpl_resource_log='<div class="${type} ${type}_${color} logitem" id="${type}_${color}_${id}"></div>';
     var jstpl_player_board='<div class="boardblock mini_board mini_board_${id} mini_board_color_${color}" id="mini_board_${id}"></div>';
-    
+    var jstpl_token = '<div class="${classes} ${id} token" id="${id}"></div>';
    
 </script>
 

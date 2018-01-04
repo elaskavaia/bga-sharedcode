@@ -18,19 +18,8 @@
  * are available everywhere in your game logic code.
  *
  */
+$this->token_types = array ('wcube' => array ("name" =>  clienttranslate("Cube") ) );
 
-
-/*
-
-Example:
-
-$this->card_types = array(
-    1 => array( "card_name" => ...,
-                ...
-              )
-);
-
-*/
 
 
 
