@@ -63,7 +63,8 @@ class SharedCode extends EuroGame {
             // Set the colors of the players with HTML color code
             // The default below is red/green/blue/orange/brown
             // The number of colors defined here must correspond to the maximum number of players allowed for the gams
-            $default_colors = array ("ff0000","008000","0000ff","ffa500","773300" );
+            $gameinfos = self::getGameinfos();
+            $default_colors = $gameinfos ['player_colors'];
             // Create players
             // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
             $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
@@ -74,7 +75,7 @@ class SharedCode extends EuroGame {
             }
             $sql .= implode($values, ',');
             self::DbQuery($sql);
-            self::reattributeColorsBasedOnPreferences($players, array ("ff0000","008000","0000ff","ffa500","773300" ));
+            self::reattributeColorsBasedOnPreferences($players, $gameinfos ['player_colors']);
             self::reloadPlayersBasicInfos();
             /**
              * ********** Start the game initialization ****

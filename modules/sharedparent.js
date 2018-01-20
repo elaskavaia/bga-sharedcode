@@ -142,6 +142,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         },
         setupPlayer : function(player_id, playerInfo) {
             // does nothing here, override
+            console.log("player info "+player_id,playerInfo);
         },
         // /////////////////////////////////////////////////
         // // Game & client states
@@ -360,7 +361,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         },
         ajaxActionErrorCallback : function(action, args, message) {
             console.log('restoring server state, error: ' + message);
-            self.cancelLocalStateEffects();
+            this.cancelLocalStateEffects();
         },
         ajaxClientStateHandler : function(event) {
             dojo.stopEvent(event);
@@ -547,10 +548,15 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             var tokenKey = tokenId;
             var tokenMainType = this.getTokenMainType(token);
             var tokenInfo = this.gamedatas.token_types[tokenKey];
-            
+            var parts = token.split('_');
+            var imageTypes = "";
             while (!tokenInfo && tokenKey) {
                 tokenKey = getParentParts(tokenKey);
                 tokenInfo = this.gamedatas.token_types[tokenKey];
+                imageTypes += " "+tokenKey + " ";
+            }
+            if (parts.length>=4) {
+                imageTypes += " "+parts[0] + "_"+ parts[2]+" ";
             }
             
             // console.log("request for " + token);
@@ -559,7 +565,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             tokenInfo = dojo.clone(tokenInfo);
             tokenInfo.tokenKey = tokenKey;
             tokenInfo.mainType = tokenMainType;
-            tokenInfo.imageTypes = token + " " + tokenMainType + " " + tokenInfo.type + " " + tokenKey;
+            tokenInfo.imageTypes = token + " " + tokenMainType + " " + tokenInfo.type + " " + tokenKey + imageTypes;
             if (!tokenInfo.key) {
                 tokenInfo.key = tokenId;
             }
@@ -617,7 +623,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 if (typeof args == 'undefined') {
                     args = {};
                 }
-                
+                var noAnnimation = false;
                 if (args.noa) {
                     noAnnimation = true;
                 }
@@ -695,9 +701,13 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         createToken : function(token, tokenInfo, place, connectFunc) {
             var info = this.getTokenDisplayInfo(token);
             
-            var tokenMainType = this.getTokenMainType(tokenInfo.key);
+            if (info==null) {
+                console.error("Don't know how to create ",token,tokenInfo);
+                return;
+            }
+            var tokenMainType = info.mainType;
             var jstpl_token = '<div class="${classes} ${id} token" id="${id}"></div>';
-            var tokenDiv = this.format_block(jstpl_token, {
+            var tokenDiv = this.format_string_recursive(jstpl_token, {
                 "id" : token,
                 "classes" : info.imageTypes,
             });

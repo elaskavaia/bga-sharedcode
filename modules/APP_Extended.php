@@ -21,6 +21,53 @@ abstract class APP_Extended extends Table {
         self::initGameStateLabels(array ("move_nbr" => 6 ));
         $this->gameinit = false;
     }
+    
+    public function initPlayers($players) {
+        // Set the colors of the players with HTML color code
+        // The default below is red/green/blue/orange/brown
+        // The number of colors defined here must correspond to the maximum number of players allowed for the gams
+        $gameinfos = self::getGameinfos();
+        $default_colors = $gameinfos ['player_colors'];
+        shuffle($default_colors);
+        // Create players
+        // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
+        $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
+        $values = array ();
+        foreach ( $players as $player_id => $player ) {
+            $color = array_shift($default_colors);
+            $values [] = "('" . $player_id . "','$color','" . $player ['player_canal'] . "','" . addslashes($player ['player_name']) . "','" . addslashes($player ['player_avatar']) . "')";
+        }
+        $sql .= implode($values, ',');
+        self::DbQuery($sql);
+        if ($gameinfos ['favorite_colors_support'])
+            self::reattributeColorsBasedOnPreferences($players, $gameinfos ['player_colors']);
+        self::reloadPlayersBasicInfos();
+    }
+    
+    public function initStats() {
+        // INIT GAME STATISTIC
+        $all_stats = $this->getStatTypes();
+        $player_stats = $all_stats ['player'];
+        // all my stats starts with la_, that is not French article
+        foreach ( $player_stats as $key => $value ) {
+            if (startsWith($key, 'game_')) {
+                $this->initStat('player', $key, 0);
+            }
+            if ($key === 'turns_number') {
+                $this->initStat('player', $key, 0);
+            }
+        }
+        $table_stats = $all_stats ['table'];
+        // all my stats starts with la_, that is not French article
+        foreach ( $table_stats as $key => $value ) {
+            if (startsWith($key, 'game_')) {
+                $this->initStat('table', $key, 0);
+            }
+            if ($key === 'turns_number') {
+                $this->initStat('table', $key, 0);
+            }
+        }
+    }
 
     // ------ ERROR HANDLING ----------
     /**
