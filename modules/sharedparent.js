@@ -380,6 +380,15 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             console.log("sending " + action);
             this.ajaxAction(action, this.clientStateArgs);
         },
+        setClientStateAction : function(stateName, desc) {
+            var args = dojo.clone(this.gamedatas.gamestate.args);
+            if (this.clientStateArgs.action) 
+                args.actname = this.getTr(this.clientStateArgs.action);
+            this.setClientState(stateName, {
+                descriptionmyturn : this.getTr(desc),
+                args : args
+            });
+        },
         cancelLocalStateEffects : function() {
             if (this.on_client_state) {
                 this.clientStateArgs = {};
@@ -711,6 +720,10 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 "id" : token,
                 "classes" : info.imageTypes,
             });
+            
+            if (!connectFunc && info.connectFunc) {
+                connectFunc = info.connectFunc;
+            }
             
            
             if (place) {
