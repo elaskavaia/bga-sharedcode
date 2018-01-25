@@ -105,4 +105,36 @@ abstract class EuroGame extends APP_Extended {
         //$this->warn("$type $notif ".$args['token_id']." -> ".$args['place_id']."|");
         $this->notifyWithName("tokenMoved", $notif, $args);
     }
+    
+    /**
+     * This method will increase/descrease resource counter (as state)
+     * @param string $token_id - token key
+     * @param int $num - increment of the change
+     * @param string $place - optional $place, only used in notification to show where "resource" 
+     *   is gain or where it "goes" when its paid, used in client for animation
+     */
+    function dbResourceInc($token_id, $num, $place = null) {
+        $player_id = $this->getActivePlayerId();
+        $color = $this->getPlayerColor($player_id);
+        $home = $this->tokens->getTokenLocation($token_id);
+        $current = $this->tokens->getTokenState($token_id);
+        $value  = $this->tokens->setTokenState($token_id, $current + $num);
+        if ($value < 0) {
+            $this->userAssertTrue(self::_("Not enough resources to pay"), $current >= - $num); 
+        }
+        $from = $home;
+        $to = $home;
+        if ($num < 0) {
+            $message = clienttranslate('${player_name} paid ${token_name} x${mod}');
+            $to = $place;
+        } else {
+            $message = clienttranslate('${player_name} gained ${token_name} x${mod}');
+            $from= $place;
+        }
+        $this->notifyWithName("counter", $message, ['counter_name'=>$token_id,
+                'counter_value'=>$value,'from'=>$from,'to'=>$to, 
+                'token_name'=>$token_id,'mod'=>abs($num)
+                
+        ]);
+    }
 }
