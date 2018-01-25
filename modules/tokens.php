@@ -251,6 +251,7 @@ class Tokens extends APP_GameClass {
         $sql .= " SET token_state='$state'";
         $sql .= " WHERE token_key='$token_key'";
         self::DbQuery($sql);
+        return $state;
     }
 
     // Move a card to specific location
