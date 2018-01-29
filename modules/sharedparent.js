@@ -380,14 +380,22 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             console.log("sending " + action);
             this.ajaxAction(action, this.clientStateArgs);
         },
-        setClientStateAction : function(stateName, desc) {
+        setClientStateAction : function(stateName, desc, delay) {
             var args = dojo.clone(this.gamedatas.gamestate.args);
             if (this.clientStateArgs.action) 
                 args.actname = this.getTr(this.clientStateArgs.action);
-            this.setClientState(stateName, {
-                descriptionmyturn : this.getTr(desc),
-                args : args
-            });
+            var newargs = {
+                    descriptionmyturn : this.getTr(desc),
+                    args : args
+                };
+            
+            if (delay && delay > 0) {
+                setTimeout(dojo.hitch(this, function() {
+                    this.setClientState(stateName, newargs);
+                }, delay));
+            } else {
+                this.setClientState(stateName, newargs);
+            }
         },
         cancelLocalStateEffects : function() {
             if (this.on_client_state) {
@@ -531,6 +539,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             }
         },
         getTr : function(name) {
+            if (typeof name == 'undefined') return null;
             if (typeof name.log != 'undefined') {
                 name = this.format_string_recursive(name.log, name.args);
             } else {
