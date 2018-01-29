@@ -21,7 +21,7 @@ abstract class APP_Extended extends Table {
         self::initGameStateLabels(array ("move_nbr" => 6 ));
         $this->gameinit = false;
     }
-    
+
     public function initPlayers($players) {
         // Set the colors of the players with HTML color code
         // The default below is red/green/blue/orange/brown
@@ -43,7 +43,7 @@ abstract class APP_Extended extends Table {
             self::reattributeColorsBasedOnPreferences($players, $gameinfos ['player_colors']);
         self::reloadPlayersBasicInfos();
     }
-    
+
     public function initStats() {
         // INIT GAME STATISTIC
         $all_stats = $this->getStatTypes();
@@ -120,32 +120,29 @@ abstract class APP_Extended extends Table {
             $player_name = $this->getPlayerName($player_id);
             $args ['player_name'] = $player_name;
         }
-        
         if (array_key_exists('_notifType', $args)) {
             $type = $args ['_notifType'];
             unset($args ['_notifType']);
-        } 
+        }
         if (array_key_exists('noa', $args) || array_key_exists('nop', $args) || array_key_exists('nod', $args)) {
             $type += "Async";
         }
-        
-        if (array_key_exists('_private', $args) && $args['_private']) {
+        if (array_key_exists('_private', $args) && $args ['_private']) {
             unset($args ['_private']);
             $this->notifyPlayer($player_id, $type, $message, $args);
         } else {
             $this->notifyAllPlayers($type, $message, $args);
         }
     }
-    
+
     function notifyAnimate() {
-        $this->notifyAllPlayers('animate', '', array());
+        $this->notifyAllPlayers('animate', '', array ());
     }
-    
+
     function notifyAction($action_id) {
         //$this->notifyMoveNumber();
         $this->notifyWithName('playerLog', clienttranslate('${player_name} took action ${token_name}'), array (
-                'token_id' => $action_id,  'token_name' => $action_id
-        ));
+                'token_id' => $action_id,'token_name' => $action_id ));
     }
 
     // ------ PLAYERS ----------
@@ -249,12 +246,12 @@ abstract class APP_Extended extends Table {
     function dbSetScore($player_id, $count) {
         $this->DbQuery("UPDATE player SET player_score='$count' WHERE player_id='$player_id'");
     }
-    
+
     function dbSetAuxScore($player_id, $score) {
         $this->DbQuery("UPDATE player SET player_score_aux=$score WHERE player_id='$player_id'");
     }
-    
-    function dbIncScore($inc) {
+
+    function dbIncScore($player_id, $inc) {
         $count = $this->dbGetScore($player_id);
         if ($inc != 0) {
             $count += $inc;
@@ -262,36 +259,34 @@ abstract class APP_Extended extends Table {
         }
         return $count;
     }
-    
 
     /**
      * Changes the player scrore and sends notification, also update statistic if provided
-     * 
-     * @param number $player_id - player id
-     * @param number $inc - increment of score, can be negative
-     * @param string $notif - notification string, '*' - for default notification, '' - for none
-     * @param string $stat - name of the player statistic to update (points source) 
+     *
+     * @param number $player_id
+     *            - player id
+     * @param number $inc
+     *            - increment of score, can be negative
+     * @param string $notif
+     *            - notification string, '*' - for default notification, '' - for none
+     * @param string $stat
+     *            - name of the player statistic to update (points source)
      * @return number - current score after increase/descrease
      */
     function dbIncScoreValueAndNotify($player_id, $inc, $notif = '*', $stat = '') {
-        $count = $this->dbIncScore($inc);
+        $count = $this->dbIncScore($player_id, $inc);
         if ($notif == '*') {
             if ($inc >= 0)
                 $notif = clienttranslate('${player_name} scores ${inc} point(s)');
             else
                 $notif = clienttranslate('${player_name} loses ${modinc} point(s)');
         }
-        $this->notifyWithName("score", $notif, 
-                array ('player_score' => $count,
-                       'inc' => $inc, 
-                       'modinc' => abs($inc) 
-                ), $player_id);
+        $this->notifyWithName("score", $notif, array ('player_score' => $count,'inc' => $inc,'modinc' => abs($inc) ), $player_id);
         if ($stat) {
             $this->dbIncStatChecked($inc, $stat, $player_id);
         }
         return $count;
     }
-
 
     function dbIncStatChecked($inc, $stat, $player_id) {
         try {
@@ -307,8 +302,6 @@ abstract class APP_Extended extends Table {
             $this->dump('err', $e);
         }
     }
-    
-
 }
 
 function startsWith($haystack, $needle) {
@@ -322,10 +315,6 @@ function endsWith($haystack, $needle) {
 }
 
 function getPart($haystack, $i) {
-    try {
-        $parts = explode('_', $haystack);
-        return $parts [$i];
-    } catch ( Exception $e ) {
-        throw new BgaUserException("Internal error: Access $i to $haystack: $e");
-    }
+    $parts = explode('_', $haystack);
+    return $parts [$i];
 }
