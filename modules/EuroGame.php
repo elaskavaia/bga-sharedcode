@@ -132,7 +132,7 @@ abstract class EuroGame extends APP_Extended {
             $from= $place;
         }
         $this->notifyWithName("counter", $message, ['counter_name'=>$token_id,
-                'counter_value'=>$value,'from'=>$from,'to'=>$to, 
+                'counter_value'=>$value,'place_from'=>$from,'place_to'=>$to, 
                 'token_name'=>$token_id,'mod'=>abs($num)
                 
         ]);

@@ -634,6 +634,18 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.on_client_state = true;
             this.placeToken(token, tokenInfo);
         },
+        moveCounter : function(args) {
+            //args.counter_name
+            //args.counter_value
+            //args.place_from
+            //args.place_to
+            //args.mod
+            if (args.place_from) {
+                var tokenDiv = this.getTokenDiv('counter_name', args);
+                var tokenNode = dojo.place(tokenDiv, args.place_from);
+                this.slideToObjectRelative(tokenNode.id, args.place_to, 500, 0, this.fadeOutAndDestroy);
+            }
+        },
         placeToken : function(token, tokenInfo, args) {
             try {
                 var placeInfo = this.getPlaceRedirect(token, tokenInfo);
@@ -830,7 +842,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             } catch (ex) {
                 console.error("Cannot update " + notif.args.counter_name, nofif, ex.stack);
             }
-            // this.placeResource(notif.args.resource_id, notif.args.place_id, notif.args.inc, notif.args.player_id);
+            this.moveCounter(notif.args);
         },
         notif_score : function(notif) {
             // console.log(notif);
