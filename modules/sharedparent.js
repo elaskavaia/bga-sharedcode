@@ -380,10 +380,13 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             console.log("sending " + action);
             this.ajaxAction(action, this.clientStateArgs);
         },
-        setClientStateAction : function(stateName, desc, delay) {
+        setClientStateAction : function(stateName, desc, delay, moreargs) {
             var args = dojo.clone(this.gamedatas.gamestate.args);
             if (this.clientStateArgs.action) 
                 args.actname = this.getTr(this.clientStateArgs.action);
+            if (typeof moreargs != 'undefined') {
+                args = args.concat(moreargs);
+            }
             var newargs = {
                     descriptionmyturn : this.getTr(desc),
                     args : args
@@ -469,12 +472,15 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             var you = "<span style=\"font-weight:bold;color:#" + color + ";" + color_bg + "\">" + __("lang_mainsite", "You") + "</span>";
             return you;
         },
-        setDescriptionOnMyTurn : function(text) {
+        setDescriptionOnMyTurn : function(text, moreargs) {
             this.gamedatas.gamestate.descriptionmyturn = text;
             // this.updatePageTitle();
             var tpl = dojo.clone(this.gamedatas.gamestate.args);
             if (tpl === null) {
                 tpl = {};
+            }
+            if (typeof moreargs != 'undefined') {
+                tpl = tpl.concat(moreargs);
             }
             var title = "";
             if (this.isCurrentPlayerActive() && text !== null) {
@@ -774,6 +780,55 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 }
             }
             this.updateCounters(safeCounters);
+        },
+        
+        divInlineTokens : function(token_ids, max) {
+            var div = "";
+            if (typeof max == 'undefined') max = 10;
+            for ( var i in token_ids) {
+                if (i>=max) break;
+                var token_id = token_ids[i];
+                if (token_id) div += this.divInlineToken(token_id);
+                
+            }
+            return div;
+        },
+        divInlineToken : function(token_id) {
+            var node = $(token_id);
+            if (!node) console.log("no div node for " + token_id);
+
+            if (node) {
+                var clone = dojo.clone(node);
+                this.formatLogNode(clone, token_id);
+                dojo.query("div", clone).forEach(dojo.destroy);
+                div = clone.outerHTML;
+            } else {
+                var name = this.getTokenName(token_id);
+                div = "<span>'" + name + "'</span>";
+            }
+            return div;
+        },
+        formatLogNode : function(clone, token_id) {
+            var name = this.getTokenName(token_id);
+            var logid = "log" + (this.globalid++) + "_" + token_id;
+            dojo.attr(clone, "id", logid);
+            dojo.removeClass(clone, 'active_slot selected');
+
+            dojo.addClass(clone, "logitem");
+            this.stripPosition(clone);
+            dojo.attr(clone, "title", name);
+            dojo.attr(clone, "aria-label", name);
+            return clone;
+        },
+        
+        showError :function(log, args) {
+            if (typeof args == 'undefined') {
+                args = {};
+            }
+            args.you = this.divYou();
+            var message = this.format_string_recursive(log, args);
+            this.showMessage(log, 'error');
+            return;
         },
         
         // /////////////////////////////////////////////////

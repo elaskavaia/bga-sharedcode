@@ -125,15 +125,16 @@ abstract class EuroGame extends APP_Extended {
         $from = $home;
         $to = $home;
         if ($num < 0) {
-            $message = clienttranslate('${player_name} paid ${token_name} x${mod}');
+            $message = clienttranslate('${player_name} pays ${inc_resource}');
             $to = $place;
         } else {
-            $message = clienttranslate('${player_name} gained ${token_name} x${mod}');
+            $message = clienttranslate('${player_name} gains ${inc_resource}');
             $from= $place;
         }
         $this->notifyWithName("counter", $message, ['counter_name'=>$token_id,
-                'counter_value'=>$value,'place_from'=>$from,'place_to'=>$to, 
-                'token_name'=>$token_id,'mod'=>abs($num)
+                'counter_value'=>$value,'place_from'=>$from,'place_to'=>$to,
+                'inc_resource' => [ 'log' => '${token_name} x${mod}',
+                        'args' => [ 'token_name' => $token_id,'mod' => abs($num) ] ]
                 
         ]);
     }
