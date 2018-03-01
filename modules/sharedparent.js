@@ -135,6 +135,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             }
             this.restoreList = []; // list of object dirtied during client state visualization
             this.gamedatas_local = dojo.clone(this.gamedatas);
+            this.gamedatas_server = dojo.clone(this.gamedatas);
             this.globalid = 1; // global id used to inject tmp id's of objects
             this.clientStateArgs = {}; // collector of client state arguments
             this.setupNotifications();
@@ -401,20 +402,22 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             }
         },
         cancelLocalStateEffects : function() {
-            if (this.on_client_state) {
-                this.clientStateArgs = {};
-                this.gamedatas_local = dojo.clone(this.gamedatas);
-                if (this.restoreList) {
-                    var restoreList = this.restoreList;
-                    this.restoreList = [];
-                    for (var i = 0; i < restoreList.length; i++) {
-                        var token = restoreList[i];
-                        var tokenInfo = this.gamedatas.tokens[token];
-                        this.placeTokenWithTips(token, tokenInfo);
-                    }
+            this.clientStateArgs = {};
+            this.gamedatas_local = dojo.clone(this.gamedatas);
+            if (this.restoreList) {
+                var restoreList = this.restoreList;
+                this.restoreList = [];
+                for (var i = 0; i < restoreList.length; i++) {
+                    var token = restoreList[i];
+                    var tokenInfo = this.gamedatas.tokens[token];
+                    this.placeTokenWithTips(token, tokenInfo);
                 }
             }
+
+            this.updateCountersSafe(this.gamedatas_server.counters);
+
             this.restoreServerGameState();
+           
         },
         /**
          * This is convenient function to be called when processing click events, it - remembers id of object - stops propagation - logs to
@@ -476,11 +479,13 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.gamedatas.gamestate.descriptionmyturn = text;
             // this.updatePageTitle();
             var tpl = dojo.clone(this.gamedatas.gamestate.args);
-            if (tpl === null) {
+            if (!tpl) {
                 tpl = {};
             }
             if (typeof moreargs != 'undefined') {
-                tpl = tpl.concat(moreargs);
+                Object.assign(tpl, moreargs);
+                console.log('tpl',tpl);
+                
             }
             var title = "";
             if (this.isCurrentPlayerActive() && text !== null) {
@@ -640,16 +645,96 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.on_client_state = true;
             this.placeToken(token, tokenInfo);
         },
-        moveCounter : function(args) {
-            //args.counter_name
-            //args.counter_value
-            //args.place_from
-            //args.place_to
-            //args.mod
-            if (args.place_from) {
+        incCounterLocal : function(counter_id, inc, place) {
+            var cur_value = this.gamedatas_local.counters[counter_id].counter_value;
+            var notif_args = {
+                counter_name : counter_id,
+                counter_value : parseInt( cur_value ) + inc,
+                inc : inc,
+                place : place
+            };
+            this.gamedatas_local.counters[notif_args.counter_name].counter_value = notif_args.counter_value;
+            this.updateCountersSafe(this.gamedatas_local.counters);
+            this.animCounter(notif_args);
+        },
+        
+        animEvaporResource: function(animNodeId, inc, div) {
+            var value = inc>0?"+"+inc:inc ;
+            var mod = Math.abs(inc);
+            
+            if (div && !div.startsWith("<")) {
+                var classes = div + " tmp_obj";
+                var jstpl_score = '<div class="${classes}" id="${id}">${value}</div>';
+                var scoring_marker_id = "scorenumber_" + animNodeId;
+                div = this.format_string_recursive(jstpl_score, {
+                    "id" : scoring_marker_id,
+                    "value" : value,
+                    "classes" : classes
+                });
+            }
+            
+            for (var i = 0; i < mod; i++) {
+                var sNode = dojo.place(div, animNodeId);
+                dojo.setAttr(sNode, "id", sNode.id + "_" + i);
+                var scoring_marker_id = sNode.id;
+                dojo.addClass(scoring_marker_id, "tmp_obj");
+                if (i==mod-1) sNode.innerHTML = value;
+         
+                this.placeOnObject(scoring_marker_id, animNodeId);//?
+               
+                setTimeout(dojo.hitch(this, function(local) {
+                    //console.log("apply "+local);
+                    dojo.addClass(local, "vapor_anim");
+                    this.fadeOutAndDestroy(local, 1000, 0);
+                }), i*200, scoring_marker_id);
+      
+            }
+
+            return scoring_marker_id;
+        },
+        
+        animSpinCounter : function(animNodeId, inc, playerId) {
+            var value = inc > 0 ? "+" + inc : inc;
+            var classes = "scorenumber tmp_obj";
+            var jstpl_score = '<div class="${classes}" id="${id}">${value}</div>';
+            var scoring_marker_id = "scorenumber_" + animNodeId;
+            div = this.format_string_recursive(jstpl_score, {
+                "id" : scoring_marker_id,
+                "value" : value,
+                "classes" : classes
+            });
+            var sNode = dojo.place(div, animNodeId);
+            if (this.playerId) {
+                dojo.style(scoring_marker_id, 'color', '#' + this.gamedatas.players[playerId].color);
+            }
+            
+          
+            
+            this.placeOnObject(scoring_marker_id, animNodeId);// ?
+            dojo.addClass(scoring_marker_id, "scorenumber_anim");
+            this.fadeOutAndDestroy(scoring_marker_id, 2000, 300);
+            return scoring_marker_id;
+        },
+        
+        animCounter : function(args) {
+            // args.counter_name
+            // args.counter_value
+            // args.place
+            // args.inc_resource.args.inc
+            var anim_node = args.place;
+            if (anim_node && $(anim_node)) {
+                console.log("animCounter",args);
                 var tokenDiv = this.getTokenDiv('counter_name', args);
-                var tokenNode = dojo.place(tokenDiv, args.place_from);
-                this.slideToObjectRelative(tokenNode.id, args.place_to, 500, 0, this.fadeOutAndDestroy);
+                this.animEvaporResource(anim_node, args.inc, tokenDiv);
+            }
+        },
+        
+        animScore: function(args) {
+            var anim_node = args.place;
+            if (anim_node && $(anim_node)) {
+                // local animation
+                console.log("animScore",args);
+                this.animSpinCounter(anim_node, args.inc, args.player_id);
             }
         },
         placeToken : function(token, tokenInfo, args) {
@@ -754,8 +839,11 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             
            
             if (place) {
+                if (tokenInfo && tokenInfo.place) {
+                    place = tokenInfo.place;
+                }
                 // console.log(token + ": " + tokenInfo.key + " - created -> " + place + " " + tokenInfo.state);
-                tokenNode = dojo.place(tokenDiv, tokenInfo.from_place ? tokenInfo.from_place : place);
+                tokenNode = dojo.place(tokenDiv, place);
                 if (connectFunc) {
                     // console.log("new connect "+tokenNode+" -> "+connectFunc);
                     this.connect(tokenNode, 'onclick', connectFunc);
@@ -893,20 +981,23 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         notif_counter : function(notif) {
             try {
                 this.gamedatas.counters[notif.args.counter_name].counter_value = notif.args.counter_value;
+                this.gamedatas_local.counters[notif.args.counter_name].counter_value = notif.args.counter_value;
+                this.gamedatas_server.counters[notif.args.counter_name].counter_value = notif.args.counter_value;
                 this.updateCounters(this.gamedatas.counters);
+                this.animCounter(notif.args);
             } catch (ex) {
-                console.error("Cannot update " + notif.args.counter_name, nofif, ex.stack);
+                console.error("Cannot update " + notif.args.counter_name, notif, ex.stack);
             }
-            this.moveCounter(notif.args);
+
         },
+        
+
         notif_score : function(notif) {
             // console.log(notif);
-            this.scoreCtrl[notif.args.player_id].setValue(notif.args.player_score);
-            // var color = this.getPlayerColor(notif.args.player_id);
-            // this.setCounter('coin_' + color + '_counter', notif.args.player_score);
-            if (notif.args.source) {
-                // local animation
-            }
+            this.scoreCtrl[notif.args.player_id].setValue(notif.args.player_score);            
+            this.animScore(notif.args);
+            
+
         },
     });
 });
