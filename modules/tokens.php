@@ -514,6 +514,8 @@ class Tokens extends APP_GameClass {
         if ($state === null && $canBeNull == false)
             throw new feException("state cannot be null");
         if ($state !== null && preg_match("/^-*[0-9]+$/", $state) == 0) {
+           // $bt = debug_backtrace();
+           // trigger_error("bt ".print_r($bt[2],true)) ;
             throw new feException("state must be integer number");
         }
     }
