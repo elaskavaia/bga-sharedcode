@@ -125,7 +125,7 @@ abstract class APP_Extended extends Table {
             unset($args ['_notifType']);
         }
         if (array_key_exists('noa', $args) || array_key_exists('nop', $args) || array_key_exists('nod', $args)) {
-            $type += "Async";
+            $type .= "Async";
         }
         if (array_key_exists('_private', $args) && $args ['_private']) {
             unset($args ['_private']);
@@ -273,7 +273,9 @@ abstract class APP_Extended extends Table {
      *            - name of the player statistic to update (points source)
      * @return number - current score after increase/descrease
      */
-    function dbIncScoreValueAndNotify($player_id, $inc, $notif = '*', $stat = '') {
+    function dbIncScoreValueAndNotify($player_id, $inc, $notif = '*', $stat = '', $args = null) {
+        if ($args==null) $args = [];
+        
         $count = $this->dbIncScore($player_id, $inc);
         if ($notif == '*') {
             if ($inc >= 0)
@@ -281,7 +283,9 @@ abstract class APP_Extended extends Table {
             else
                 $notif = clienttranslate('${player_name} loses ${modinc} point(s)');
         }
-        $this->notifyWithName("score", $notif, array ('player_score' => $count,'inc' => $inc,'modinc' => abs($inc) ), $player_id);
+        $this->notifyWithName("score", $notif, // 
+                array_merge(array ('player_score' => $count,'inc' => $inc, 'mod' => abs($inc) ), $args), // 
+                $player_id);
         if ($stat) {
             $this->dbIncStatChecked($inc, $stat, $player_id);
         }
