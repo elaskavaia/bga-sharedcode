@@ -102,7 +102,9 @@ abstract class EuroGame extends APP_Extended {
                 'token_name' => $token_id,
                 'place_name' => $place_id,'new_state' => $state );
         $args = array_merge($notifyArgs, $args);
-        //$this->warn("$type $notif ".$args['token_id']." -> ".$args['place_id']."|");
+            //$this->warn("$type $notif ".$args['token_id']." -> ".$args['place_id']."|");
+    
+        
         $this->notifyWithName("tokenMoved", $notif, $args);
     }
     
@@ -116,25 +118,37 @@ abstract class EuroGame extends APP_Extended {
     function dbResourceInc($token_id, $num, $place = null) {
         $player_id = $this->getActivePlayerId();
         $color = $this->getPlayerColor($player_id);
-        $home = $this->tokens->getTokenLocation($token_id);
+       
         $current = $this->tokens->getTokenState($token_id);
-        $value  = $this->tokens->setTokenState($token_id, $current + $num);
+        $value = $this->tokens->setTokenState($token_id, $current + $num);
         if ($value < 0) {
-            $this->userAssertTrue(self::_("Not enough resources to pay"), $current >= - $num); 
+            $this->userAssertTrue(self::_("Not enough resources to pay"), $current >= - $num);
         }
-        $from = $home;
-        $to = $home;
+
         if ($num < 0) {
-            $message = clienttranslate('${player_name} pays ${inc_resource}');
-            $to = $place;
+            if ($place)
+                $message = clienttranslate('${player_name} pays ${inc_resource} for ${place_name}');
+            else
+                $message = clienttranslate('${player_name} pays ${inc_resource}');
         } else {
-            $message = clienttranslate('${player_name} gains ${inc_resource}');
-            $from= $place;
+            if ($place)
+                $message = clienttranslate('${player_name} gains ${inc_resource} from ${place_name}');
+            else
+                $message = clienttranslate('${player_name} gains ${inc_resource}');
         }
-        $this->notifyWithName("counter", $message, ['counter_name'=>$token_id,
-                'counter_value'=>$value,'place_from'=>$from,'place_to'=>$to,
+        //$this->warn("playing inc $token_id, $num, $place");
+        $this->notifyWithName("counter", $message, [
+                'counter_name'=>$token_id,
+                'counter_value'=>$value,
+                'place'=>$place,
+                'place_name'=>$place,
+                'mod' => abs($num),
+                'inc' => $num,
                 'inc_resource' => [ 'log' => '${token_name} x${mod}',
-                        'args' => [ 'token_name' => $token_id,'mod' => abs($num) ] ]
+                        'args' => [ 'token_name' => $token_id,
+                                    'mod' => abs($num),
+                                    'inc' => $num,
+                        ] ]
                 
         ]);
     }
