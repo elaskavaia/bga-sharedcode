@@ -35,10 +35,10 @@ abstract class EuroGame extends APP_Extended {
         $array [$key] = array ('counter_value' => $value,'counter_name' => $key );
     }
 
-    protected function fillCounters(&$array, $locs) {
+    protected function fillCounters(&$array, $locs, $create = true) {
         foreach ( $locs as $location => $count ) {
             $key = $location . "_counter";
-            if (array_key_exists($key, $array))
+            if ($create || array_key_exists($key, $array))
                 $this->setCounter($array, $key, $count);
         }
     }
@@ -64,13 +64,22 @@ abstract class EuroGame extends APP_Extended {
         $color = $this->getPlayerColor($current_player_id);
         foreach ( $locs as $location => $count ) {
             if ($this->isCounterAllowedForLocation($current_player_id, $location)) {
-                $this->fillCounters($result ['counters'], [ $location ]);
+                $this->fillCounters($result ['counters'], [ $location => $count ]);
             } else {
                 continue;
             }
-            if ($this->isContentAllowedForLocation($current_player_id, $location)) {
-                $tokens = $this->tokens->getTokensInLocation($location);
-                $this->fillTokensFromArray($result ['tokens'], $tokens);
+            $content = $this->isContentAllowedForLocation($current_player_id, $location);
+            if ($content !== false) {
+                if ($content === true) {
+                    $tokens = $this->tokens->getTokensInLocation($location);
+                    $this->fillTokensFromArray($result ['tokens'], $tokens);
+                } else {
+                    $num = floor($content);
+                    if ($count < $num)
+                        $num = $count;
+                    $tokens = $this->tokens->getTokensOnTop($num, $location);
+                    $this->fillTokensFromArray($result ['tokens'], $tokens);
+                }
             }
         }
         return $result;
