@@ -1,0 +1,15 @@
+Seamless background
+
+https://www.imgonline.com.ua/eng/make-seamless-texture-result.php
+
+PDF to png convertion (linux)
+
+gs -sDEVICE=pngalpha   -o output.png -r600 -dDownScaleFactor=3 input.pdf 
+
+PSD extraction (adobe file format)
+
+https://www.photopea.com/
+
+Tiling
+
+/usr/bin/montage -colorspace sRGB -density 300 *.png -tile 6 -background transparent ../tokens.png

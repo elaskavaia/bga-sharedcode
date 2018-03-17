@@ -105,7 +105,6 @@ if (!String.prototype.startsWith) {
         }
     }());
 };
-
 define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, declare) {
     return declare("bgagame.sharedparent", ebg.core.gamegui, {
         constructor : function() {
@@ -138,12 +137,16 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.gamedatas_server = dojo.clone(this.gamedatas);
             this.globalid = 1; // global id used to inject tmp id's of objects
             this.clientStateArgs = {}; // collector of client state arguments
+            this.setupGameTokens();
             this.setupNotifications();
             console.log("Ending game setup parent");
         },
         setupPlayer : function(player_id, playerInfo) {
             // does nothing here, override
-            console.log("player info "+player_id,playerInfo);
+            console.log("player info " + player_id, playerInfo);
+        },
+        setupGameTokens : function() {
+            // does nothing here, override
         },
         // /////////////////////////////////////////////////
         // // Game & client states
@@ -383,16 +386,14 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         },
         setClientStateAction : function(stateName, desc, delay, moreargs) {
             var args = dojo.clone(this.gamedatas.gamestate.args);
-            if (this.clientStateArgs.action) 
-                args.actname = this.getTr(this.clientStateArgs.action);
+            if (this.clientStateArgs.action) args.actname = this.getTr(this.clientStateArgs.action);
             if (typeof moreargs != 'undefined') {
                 args = args.concat(moreargs);
             }
             var newargs = {
-                    descriptionmyturn : this.getTr(desc),
-                    args : args
-                };
-            
+                descriptionmyturn : this.getTr(desc),
+                args : args
+            };
             if (delay && delay > 0) {
                 setTimeout(dojo.hitch(this, function() {
                     this.setClientState(stateName, newargs);
@@ -413,11 +414,8 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                     this.placeTokenWithTips(token, tokenInfo);
                 }
             }
-
             this.updateCountersSafe(this.gamedatas_server.counters);
-
             this.restoreServerGameState();
-           
         },
         /**
          * This is convenient function to be called when processing click events, it - remembers id of object - stops propagation - logs to
@@ -484,8 +482,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             }
             if (typeof moreargs != 'undefined') {
                 Object.assign(tpl, moreargs);
-                console.log('tpl',tpl);
-                
+                console.log('tpl', tpl);
             }
             var title = "";
             if (this.isCurrentPlayerActive() && text !== null) {
@@ -525,21 +522,32 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 var tokenInfo = this.getTokenDisplayInfo(token);
                 // console.log(tokenInfo);
                 if (!tokenInfo) return;
-                var main = this.getTooptipHtml(tokenInfo.name, tokenInfo.tooltip, tokenInfo.imageTypes, "<hr/>");
+                var main = this.getTooptipHtmlForToken(token);
+
                 if (!tokenInfo.tooltip && tokenInfo.name) {
                     $(token).title = this.getTr(tokenInfo.name);
                     return;
                 }
                 if (main) {
-                    var action = tokenInfo.tooltip_action;
-                    if (action) {
-                        this.addTooltipHtml(attachTo, main + "<br/>" + this.getActionLine(action));
-                    } else {
-                        this.addTooltipHtml(attachTo, main);
-                    }
+                    this.addTooltipHtml(attachTo, main);
                     dojo.removeAttr(attachTo, 'title'); // unset title so both title and tooltip do not show up
                 }
             }
+        },
+        getTooptipHtmlForToken : function(token) {
+            if (typeof token != 'string') {
+                console.error("cannot calc tooltip" + token);
+                return null;
+            }
+            var tokenInfo = this.getTokenDisplayInfo(token);
+            // console.log(tokenInfo);
+            if (!tokenInfo) return;
+            var main = this.getTooptipHtml(tokenInfo.name, tokenInfo.tooltip, tokenInfo.imageTypes, "<hr/>");
+            var action = tokenInfo.tooltip_action;
+            if (action && main !== null) {
+                main += "<br/>" + this.getActionLine(action);
+            }
+            return main;
         },
         getTokenName : function(token) {
             var tokenInfo = this.getTokenDisplayInfo(token);
@@ -563,8 +571,15 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             if (!message) message = "";
             if (!dyn) dyn = "";
             var divImg = "";
-            if (imgTypes) divImg = "<div class='tooltipimage " + imgTypes + "'></div>";
-            return "<div class='tooltipcontainer'><span class='tooltiptitle'>" + this.getTr(name) + "</span>" + sep + "<div>" + divImg +
+            var containerType = "tooltipcontainer ";
+            if (imgTypes) {
+                divImg = "<div class='tooltipimage " + imgTypes + "'></div>";
+                var itypes = imgTypes.split(" ");
+                for (var i = 0; i < itypes.length; i++) {
+                    containerType+=itypes[i]+"_tooltipcontainer ";
+                }
+            }
+            return "<div class='"+containerType+"'><span class='tooltiptitle'>" + this.getTr(name) + "</span>" + sep + "<div>" + divImg +
                     "<div class='tooltipmessage tooltiptext'>" + this.getTr(message) + dyn + "</div></div></div>";
         },
         getActionLine : function(text) {
@@ -582,12 +597,11 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             while (!tokenInfo && tokenKey) {
                 tokenKey = getParentParts(tokenKey);
                 tokenInfo = this.gamedatas.token_types[tokenKey];
-                imageTypes += " "+tokenKey + " ";
+                imageTypes += " " + tokenKey + " ";
             }
-            if (parts.length>=4) {
-                imageTypes += " "+parts[0] + "_"+ parts[2]+" ";
+            if (parts.length >= 4) {
+                imageTypes += " " + parts[0] + "_" + parts[2] + " ";
             }
-            
             // console.log("request for " + token);
             // console.log(tokenInfo);
             if (!tokenInfo) return null;
@@ -634,14 +648,13 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 result.temp = true;
             } else if (location.startsWith('deck')) {
                 result.temp = true;
-            } 
+            }
             return result;
         },
         placeTokenLocal : function(token, place, state) {
             var tokenInfo = this.gamedatas_local.tokens[token];
             tokenInfo.location = place;
-            if (state !== null) 
-                tokenInfo.state = state;
+            if (state !== null) tokenInfo.state = state;
             this.on_client_state = true;
             this.placeToken(token, tokenInfo);
         },
@@ -649,7 +662,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             var cur_value = this.gamedatas_local.counters[counter_id].counter_value;
             var notif_args = {
                 counter_name : counter_id,
-                counter_value : parseInt( cur_value ) + inc,
+                counter_value : parseInt(cur_value) + inc,
                 inc : inc,
                 place : place
             };
@@ -657,11 +670,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.updateCountersSafe(this.gamedatas_local.counters);
             this.animCounter(notif_args);
         },
-        
-        animEvaporResource: function(animNodeId, inc, div) {
-            var value = inc>0?"+"+inc:inc ;
+        animEvaporResource : function(animNodeId, inc, div) {
+            var value = inc > 0 ? "+" + inc : inc;
             var mod = Math.abs(inc);
-            
             if (div && !div.startsWith("<")) {
                 var classes = div + " tmp_obj";
                 var jstpl_score = '<div class="${classes}" id="${id}">${value}</div>';
@@ -672,27 +683,21 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                     "classes" : classes
                 });
             }
-            
             for (var i = 0; i < mod; i++) {
                 var sNode = dojo.place(div, animNodeId);
                 dojo.setAttr(sNode, "id", sNode.id + "_" + i);
                 var scoring_marker_id = sNode.id;
                 dojo.addClass(scoring_marker_id, "tmp_obj");
-                if (i==mod-1) sNode.innerHTML = value;
-         
-                this.placeOnObject(scoring_marker_id, animNodeId);//?
-               
+                if (i == mod - 1) sNode.innerHTML = value;
+                this.placeOnObject(scoring_marker_id, animNodeId);// ?
                 setTimeout(dojo.hitch(this, function(local) {
-                    //console.log("apply "+local);
+                    // console.log("apply "+local);
                     dojo.addClass(local, "vapor_anim");
                     this.fadeOutAndDestroy(local, 1000, 0);
-                }), i*200, scoring_marker_id);
-      
+                }), i * 200, scoring_marker_id);
             }
-
             return scoring_marker_id;
         },
-        
         animSpinCounter : function(animNodeId, inc, playerId) {
             var value = inc > 0 ? "+" + inc : inc;
             var classes = "scorenumber tmp_obj";
@@ -707,15 +712,11 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             if (this.playerId) {
                 dojo.style(scoring_marker_id, 'color', '#' + this.gamedatas.players[playerId].color);
             }
-            
-          
-            
             this.placeOnObject(scoring_marker_id, animNodeId);// ?
             dojo.addClass(scoring_marker_id, "scorenumber_anim");
             this.fadeOutAndDestroy(scoring_marker_id, 2000, 300);
             return scoring_marker_id;
         },
-        
         animCounter : function(args) {
             // args.counter_name
             // args.counter_value
@@ -723,17 +724,16 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             // args.inc_resource.args.inc
             var anim_node = args.place;
             if (anim_node && $(anim_node)) {
-                console.log("animCounter",args);
+                console.log("animCounter", args);
                 var tokenDiv = this.getTokenDiv('counter_name', args);
                 this.animEvaporResource(anim_node, args.inc, tokenDiv);
             }
         },
-        
-        animScore: function(args) {
+        animScore : function(args) {
             var anim_node = args.place;
             if (anim_node && $(anim_node)) {
                 // local animation
-                console.log("animScore",args);
+                console.log("animScore", args);
                 this.animSpinCounter(anim_node, args.inc, args.player_id);
             }
         },
@@ -821,9 +821,8 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         },
         createToken : function(token, tokenInfo, place, connectFunc) {
             var info = this.getTokenDisplayInfo(token);
-            
-            if (info==null) {
-                console.error("Don't know how to create ",token,tokenInfo);
+            if (info == null) {
+                console.error("Don't know how to create ", token, tokenInfo);
                 return;
             }
             var tokenMainType = info.mainType;
@@ -832,12 +831,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 "id" : token,
                 "classes" : info.imageTypes,
             });
-            
             if (!connectFunc && info.connectFunc) {
                 connectFunc = info.connectFunc;
             }
-            
-           
             if (place) {
                 if (tokenInfo && tokenInfo.place) {
                     place = tokenInfo.place;
@@ -869,22 +865,19 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             }
             this.updateCounters(safeCounters);
         },
-        
         divInlineTokens : function(token_ids, max) {
             var div = "";
             if (typeof max == 'undefined') max = 10;
             for ( var i in token_ids) {
-                if (i>=max) break;
+                if (i >= max) break;
                 var token_id = token_ids[i];
                 if (token_id) div += this.divInlineToken(token_id);
-                
             }
             return div;
         },
         divInlineToken : function(token_id) {
             var node = $(token_id);
             if (!node) console.log("no div node for " + token_id);
-
             if (node) {
                 var clone = dojo.clone(node);
                 this.formatLogNode(clone, token_id);
@@ -901,15 +894,13 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             var logid = "log" + (this.globalid++) + "_" + token_id;
             dojo.attr(clone, "id", logid);
             dojo.removeClass(clone, 'active_slot selected');
-
             dojo.addClass(clone, "logitem");
             this.stripPosition(clone);
             dojo.attr(clone, "title", name);
             dojo.attr(clone, "aria-label", name);
             return clone;
         },
-        
-        showError :function(log, args) {
+        showError : function(log, args) {
             if (typeof args == 'undefined') {
                 args = {};
             }
@@ -918,10 +909,8 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.showMessage(log, 'error');
             return;
         },
-        
         // /////////////////////////////////////////////////
         // // Player's action
-        
         /**
          * This is light weight undo support. You use local states, and this one erases it.
          */
@@ -988,16 +977,11 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             } catch (ex) {
                 console.error("Cannot update " + notif.args.counter_name, notif, ex.stack);
             }
-
         },
-        
-
         notif_score : function(notif) {
             // console.log(notif);
-            this.scoreCtrl[notif.args.player_id].setValue(notif.args.player_score);            
+            this.scoreCtrl[notif.args.player_id].setValue(notif.args.player_score);
             this.animScore(notif.args);
-            
-
         },
     });
 });
