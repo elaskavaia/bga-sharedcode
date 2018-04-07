@@ -567,3 +567,46 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 .cyl-1 .tp {
   background-color:red;
 }
+
+/* Pulse scale */
+
+         
+@keyframes pulsescale_anim {
+            0% {transform: scale(1.0);}
+            50% { 
+            transform: scale(1.1);   
+            }
+            100% {transform: scale(1.0);}
+}
+         
+.pulsescale {
+	animation: pulsescale_anim 2s infinite;
+}
+
+.scorenumber {
+    font-size: 1em;
+    font-weight: bold;
+    color: maroon;
+    text-shadow: 1px 0 1px #fff, 0 -1px 1px #fff, 0 1px 1px #fff, -1px 0 1px #fff;
+    
+    position: absolute;
+	z-index: 100;
+    transition: transform 0.5s ease-in-out;
+}
+
+.tmp_obj {
+	position: absolute;
+	z-index: 100;
+    transition: transform 0.5s ease-in-out;
+}
+
+.scorenumber_anim {
+    transform: translateY(-50px) rotate(-360deg) scale(3);
+    transition: transform 0.5s ease-in-out;
+}
+
+.vapor_anim {
+    transform: translateY(-100px) scale(1.5) ;
+    transition: transform 2s ease-out
+}
+
