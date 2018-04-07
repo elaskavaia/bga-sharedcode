@@ -6,6 +6,11 @@ PDF to png convertion (linux)
 
 gs -sDEVICE=pngalpha   -o output.png -r600 -dDownScaleFactor=3 input.pdf 
 
+PSD Extraction (image magic - CMYK to sRBG - one layer per file)
+
+for i in *.psd; do  /usr/bin/convert  $i -profile /usr/share/color/icc/colord/sRGB.icc   `basename $i .psd`.png; done;
+
+
 PSD extraction (adobe file format)
 
 https://www.photopea.com/

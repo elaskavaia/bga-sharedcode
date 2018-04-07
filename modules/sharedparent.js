@@ -177,13 +177,16 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
          * This method can be used instead of addActionButton, to add a button which is an image (i.e. resource). Can be useful when player
          * need to make a choice of resources or tokens.
          */
-        addImageActionButton : function(id, div, handler) {
+        addImageActionButton : function(id, div, handler, bcolor) {
+            if (typeof bcolor == "undefined") {
+                bcolor = "gray";
+            }
             // this will actually make a transparent button
-            this.addActionButton(id, div, handler, '', false, 'gray');
+            this.addActionButton(id, div, handler, '', false, bcolor);
             // remove boarder, for images it better without
             dojo.style(id, "border", "none");
             // but add shadow style (box-shadow, see css)
-            dojo.addClass(id, "shadow");
+            dojo.addClass(id, "shadow bgaimagebutton");
             // you can also add addition styles, such as background
             // dojo.style(id, "background-color", "white");
         },
@@ -225,7 +228,8 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
          * This method will attach mobile to a new_parent without destroying, unlike original attachToNewParent which destroys mobile and
          * all its connectors (onClick, etc)
          */
-        attachToNewParentNoDestroy : function(mobile, new_parent) {
+        attachToNewParentNoDestroy : function(mobile, new_parent, relation) {
+            //console.log("attaching ",mobile,new_parent,relation);
             if (mobile === null) {
                 console.error("attachToNewParent: mobile obj is null");
                 return;
@@ -240,9 +244,12 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             if (typeof new_parent == "string") {
                 new_parent = $(new_parent);
             }
+            if (typeof relation == "undefined") {
+                relation = "last";
+            }
             var src = dojo.position(mobile);
             dojo.style(mobile, "position", "absolute");
-            dojo.place(mobile, new_parent, "last");
+            dojo.place(mobile, new_parent, relation);
             var tgt = dojo.position(mobile);
             var box = dojo.marginBox(mobile);
             var cbox = dojo.contentBox(mobile);
@@ -261,7 +268,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
          * This method is similar to slideToObject but works on object which do not use inline style positioning. It also attaches object to
          * new parent immediately, so parent is correct during animation
          */
-        slideToObjectRelative : function(token, finalPlace, duration, delay, onEnd) {
+        slideToObjectRelative : function(token, finalPlace, duration, delay, onEnd, relation) {
             if (typeof token == 'string') {
                 token = $(token);
             }
@@ -269,7 +276,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.delayedExec(function() {
                 self.stripTransition(token);
                 self.stripPosition(token);
-                var box = self.attachToNewParentNoDestroy(token, finalPlace);
+                var box = self.attachToNewParentNoDestroy(token, finalPlace, relation);
                 self.setTransition(token, "all " + duration + "ms ease-in-out");
                 self.placeOnObjectDirect(token, finalPlace, box.l, box.t);
             }, function() {
@@ -278,14 +285,14 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 if (onEnd) onEnd(token);
             }, duration, delay);
         },
-        slideToObjectAbsolute : function(token, finalPlace, x, y, duration, delay, onEnd) {
+        slideToObjectAbsolute : function(token, finalPlace, x, y, duration, delay, onEnd, relation) {
             if (typeof token == 'string') {
                 token = $(token);
             }
             var self = this;
             this.delayedExec(function() {
                 self.stripTransition(token);
-                var box = self.attachToNewParentNoDestroy(token, finalPlace);
+                var box = self.attachToNewParentNoDestroy(token, finalPlace, relation);
                 self.setTransition(token, "all " + duration + "ms ease-in-out");
                 self.placeOnObjectDirect(token, finalPlace, x, y);
             }, function() {
@@ -385,10 +392,20 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.ajaxAction(action, this.clientStateArgs);
         },
         setClientStateAction : function(stateName, desc, delay, moreargs) {
-            var args = dojo.clone(this.gamedatas.gamestate.args);
+            var args = {};
+            if (typeof this.gamedatas.gamestate.args != 'undefined') {
+                args = dojo.clone(this.gamedatas.gamestate.args);
+           
+            } 
+       
+     
             if (this.clientStateArgs.action) args.actname = this.getTr(this.clientStateArgs.action);
             if (typeof moreargs != 'undefined') {
-                args = args.concat(moreargs);
+                for (var property in moreargs) {
+                    if (moreargs.hasOwnProperty(property)) {
+                        args[property] = moreargs[property];
+                    }
+                }
             }
             var newargs = {
                 descriptionmyturn : this.getTr(desc),
@@ -404,7 +421,8 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         },
         cancelLocalStateEffects : function() {
             this.clientStateArgs = {};
-            this.gamedatas_local = dojo.clone(this.gamedatas);
+            this.gamedatas_local = dojo.clone(this.gamedatas_server);
+            this.gamedatas = dojo.clone(this.gamedatas_server);
             if (this.restoreList) {
                 var restoreList = this.restoreList;
                 this.restoreList = [];
@@ -465,10 +483,14 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             main.innerHTML = text;
         },
         divYou : function() {
-            var color = this.gamedatas.players[this.player_id].color;
+            var color = "black";
             var color_bg = "";
+            if (this.gamedatas.players[this.player_id]) {
+                color = this.gamedatas.players[this.player_id].color;
+            }
             if (this.gamedatas.players[this.player_id] && this.gamedatas.players[this.player_id].color_back) {
                 color_bg = "background-color:#" + this.gamedatas.players[this.player_id].color_back + ";";
+             
             }
             var you = "<span style=\"font-weight:bold;color:#" + color + ";" + color_bg + "\">" + __("lang_mainsite", "You") + "</span>";
             return you;
@@ -476,17 +498,22 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         setDescriptionOnMyTurn : function(text, moreargs) {
             this.gamedatas.gamestate.descriptionmyturn = text;
             // this.updatePageTitle();
+            //console.log('in',   this.gamedatas.gamestate.args, moreargs);
             var tpl = dojo.clone(this.gamedatas.gamestate.args);
+            
             if (!tpl) {
                 tpl = {};
             }
             if (typeof moreargs != 'undefined') {
                 Object.assign(tpl, moreargs);
-                console.log('tpl', tpl);
+
             }
+            console.log('tpl', tpl);
             var title = "";
             if (this.isCurrentPlayerActive() && text !== null) {
                 tpl.you = this.divYou();
+            }
+            if (text !== null) {
                 title = this.format_string_recursive(text, tpl);
             }
             if (title == "") {
@@ -633,7 +660,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             dojo.addClass(token, "state_" + newState);
         },
         placeTokenWithTips : function(token, tokenInfo, args) {
-            var playerId = this.getActivePlayerId();
+            if (!tokenInfo) {
+                tokenInfo = this.gamedatas.tokens[token];
+            }
             this.placeToken(token, tokenInfo, args);
             this.updateTooltip(token);
             this.updateTooltip(tokenInfo.location);
@@ -670,6 +699,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.updateCountersSafe(this.gamedatas_local.counters);
             this.animCounter(notif_args);
         },
+        /**
+         * Using of this method also require tmp_obj and vapor_anim defined in css
+         */
         animEvaporResource : function(animNodeId, inc, div) {
             var value = inc > 0 ? "+" + inc : inc;
             var mod = Math.abs(inc);
@@ -698,6 +730,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             }
             return scoring_marker_id;
         },
+        /**
+         * Using of this method require scorenumber_anim defined in css
+         */
         animSpinCounter : function(animNodeId, inc, playerId) {
             var value = inc > 0 ? "+" + inc : inc;
             var classes = "scorenumber tmp_obj";
@@ -721,11 +756,11 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             // args.counter_name
             // args.counter_value
             // args.place
-            // args.inc_resource.args.inc
+            // args.inc
             var anim_node = args.place;
             if (anim_node && $(anim_node)) {
                 console.log("animCounter", args);
-                var tokenDiv = this.getTokenDiv('counter_name', args);
+                var tokenDiv = this.divInlineToken(args['counter_name']);
                 this.animEvaporResource(anim_node, args.inc, tokenDiv);
             }
         },
@@ -739,6 +774,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         },
         placeToken : function(token, tokenInfo, args) {
             try {
+                if (!tokenInfo) {
+                    tokenInfo = this.gamedatas.tokens[token];
+                }
                 var placeInfo = this.getPlaceRedirect(token, tokenInfo);
                 var place = placeInfo.location;
                 if (typeof args == 'undefined') {
@@ -768,7 +806,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 }
                 if (tokenNode == null) {
                     if (placeInfo.temp) { return; }
-                    tokenNode = this.createToken(token, tokenInfo, place);
+                    tokenNode = this.createToken(token, tokenInfo, placeInfo.createOn ? placeInfo.createOn : place);
                     if (tokenNode == null) { return; }
                 }
                 if (place == "dev_null") {
@@ -784,27 +822,28 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                     dojo.style(token, 'transform', placeInfo.transform);
                 }
                 if (placeInfo.zindex) {
-                    dojo.style(token, 'z-index', parseInt(placeInfo.zindex));
+                    dojo.style(token, 'zIndex', parseInt(placeInfo.zindex));
                 }
                 if (placeInfo.inlinecoords) {
-                    this.slideToObjectAbsolute(token, place, placeInfo.x, placeInfo.y, 500);
+                    this.slideToObjectAbsolute(token, place, placeInfo.x, placeInfo.y, 500, 0, null, placeInfo.relation);
                 } else {
                     this.stripPosition(token);
                     this.stripTransition(token);
                     if (tokenNode.parentNode.id == place) {
                         // already there
+                        //console.log(token+" already there at "+place);
                     } else {
                         if (noAnnimation) {
                             if (placeInfo.temp) {
                                 dojo.destroy(token);
                             } else {
-                                dojo.place(token, place);
+                                dojo.place(token, place, placeInfo.relation);
                             }
                         } else {
                             if (placeInfo.temp) {
-                                this.slideToObjectRelative(token, place, 500, 0, this.fadeOutAndDestroy);
+                                this.slideToObjectRelative(token, place, 500, 0, this.fadeOutAndDestroy, placeInfo.relation);
                             } else {
-                                this.slideToObjectRelative(token, place, 500);
+                                this.slideToObjectRelative(token, place, 500, 0, null, placeInfo.relation);
                             }
                         }
                     }
@@ -819,18 +858,34 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 // this.showMessage(token + " -> FAILED -> " + place + "\n" + e, "error");
             }
         },
+        createDivFromInfo : function(token, extraClasses, id) {
+            var info = this.getTokenDisplayInfo(token);
+            if (info == null) {
+                console.error("Don't know how to create ", token);
+                return null;
+            }
+            
+            if (typeof extraClasses == 'undefined') extraClasses = '';
+            if (typeof id == 'undefined') id = info.key;
+            return this.createDiv(info.imageTypes + " " + extraClasses, id);
+        },
+        createDiv : function(classes, id, value) {
+            if (typeof value == 'undefined') value = "";
+            var jstpl_token = id? '<div class="${classes} ${id}" id="${id}">${value}</div>': '<div class="${classes}">${value}</div>';
+            var tokenDiv = this.format_string_recursive(jstpl_token, {
+                id : id,
+                classes : classes,
+                value: value
+            });
+            return tokenDiv;
+        },
         createToken : function(token, tokenInfo, place, connectFunc) {
             var info = this.getTokenDisplayInfo(token);
             if (info == null) {
                 console.error("Don't know how to create ", token, tokenInfo);
                 return;
             }
-            var tokenMainType = info.mainType;
-            var jstpl_token = '<div class="${classes} ${id} token" id="${id}"></div>';
-            var tokenDiv = this.format_string_recursive(jstpl_token, {
-                "id" : token,
-                "classes" : info.imageTypes,
-            });
+            var tokenDiv = this.createDivFromInfo(token, "token");
             if (!connectFunc && info.connectFunc) {
                 connectFunc = info.connectFunc;
             }
@@ -838,7 +893,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 if (tokenInfo && tokenInfo.place) {
                     place = tokenInfo.place;
                 }
-                // console.log(token + ": " + tokenInfo.key + " - created -> " + place + " " + tokenInfo.state);
+                // console.log(token + ":  - created -> " + place, tokenInfo);
                 tokenNode = dojo.place(tokenDiv, place);
                 if (connectFunc) {
                     // console.log("new connect "+tokenNode+" -> "+connectFunc);
@@ -861,6 +916,8 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             for ( var key in counters) {
                 if (counters.hasOwnProperty(key) && $(key)) {
                     safeCounters[key] = counters[key];
+                } else {
+                    //console.log("unknown counter "+key);
                 }
             }
             this.updateCounters(safeCounters);
@@ -938,7 +995,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             dojo.subscribe('score', this, "notif_score");
             dojo.subscribe('log', this, "notif_log");
             dojo.subscribe('animate', this, "notif_animate");
-            this.notifqueue.setSynchronous('tokenMoved', 500);
+            this.notifqueue.setSynchronous('tokenMoved', 550);
             this.notifqueue.setSynchronous('animate', 1000);
         },
         notif_playerLog : function(notif) {
@@ -960,6 +1017,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.gamedatas.tokens[token].state = notif.args.new_state;
             console.log("** notif moved " + token + " -> " + notif.args.place_id + " (" + notif.args.new_state + ")");
             this.gamedatas_local.tokens[token] = dojo.clone(this.gamedatas.tokens[token]);
+            this.gamedatas_server.tokens[token] = dojo.clone(this.gamedatas.tokens[token]);
             this.placeTokenWithTips(token, this.gamedatas.tokens[token], notif.args);
         },
         notif_log : function(notif) {
@@ -972,10 +1030,10 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 this.gamedatas.counters[notif.args.counter_name].counter_value = notif.args.counter_value;
                 this.gamedatas_local.counters[notif.args.counter_name].counter_value = notif.args.counter_value;
                 this.gamedatas_server.counters[notif.args.counter_name].counter_value = notif.args.counter_value;
-                this.updateCounters(this.gamedatas.counters);
+                this.updateCountersSafe(this.gamedatas.counters);
                 this.animCounter(notif.args);
             } catch (ex) {
-                console.error("Cannot update " + notif.args.counter_name, notif, ex.stack);
+                console.error("Cannot update " + notif.args.counter_name, notif, ex, ex.stack);
             }
         },
         notif_score : function(notif) {

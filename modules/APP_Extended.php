@@ -48,7 +48,7 @@ abstract class APP_Extended extends Table {
         // INIT GAME STATISTIC
         $all_stats = $this->getStatTypes();
         $player_stats = $all_stats ['player'];
-        // all my stats starts with la_, that is not French article
+        // auto-initialize all stats that starts with game_
         foreach ( $player_stats as $key => $value ) {
             if (startsWith($key, 'game_')) {
                 $this->initStat('player', $key, 0);
@@ -58,7 +58,6 @@ abstract class APP_Extended extends Table {
             }
         }
         $table_stats = $all_stats ['table'];
-        // all my stats starts with la_, that is not French article
         foreach ( $table_stats as $key => $value ) {
             if (startsWith($key, 'game_')) {
                 $this->initStat('table', $key, 0);
