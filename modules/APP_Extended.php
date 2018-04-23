@@ -321,3 +321,16 @@ function getPart($haystack, $i) {
     $parts = explode('_', $haystack);
     return $parts [$i];
 }
+function getPartsPrefix($haystack, $i) {
+    $parts = explode('_', $haystack);
+    $len = count($parts);
+    if ($i < 0) {
+        $i = $len + $i;
+    }
+    if ($i <= 0)
+        return '';
+    for (; $i < $len; $i ++) {
+        unset($parts [$i]);
+    }
+    return implode('_', $parts);
+}

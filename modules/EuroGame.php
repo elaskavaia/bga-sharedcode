@@ -59,7 +59,7 @@ abstract class EuroGame extends APP_Extended {
         $result ['players'] = self::getCollectionFromDb($sql);
         $result ['token_types'] = $this->token_types;
         $result ['tokens'] = array ();
-        $result ['counters'] = array ();
+        $result ['counters'] = $this->getDefaultCounters();
         $locs = $this->tokens->countTokensInLocations();
         $color = $this->getPlayerColor($current_player_id);
         foreach ( $locs as $location => $count ) {
@@ -84,7 +84,9 @@ abstract class EuroGame extends APP_Extended {
         }
         return $result;
     }
-
+    protected function getDefaultCounters() {
+        return [];
+    }
     protected function isContentAllowedForLocation($player_id, $location) {
         if (startsWith($location, 'discard') || startsWith($location, 'deck'))
             return false;
@@ -96,7 +98,11 @@ abstract class EuroGame extends APP_Extended {
             return false;
         return true;
     }
-
+    
+    function dbSetTokenState($token_id, $state = null, $notif = '*', $args = null) {
+        $this->dbSetTokenLocation($token_id, null, $state, $notif, $args);
+    }
+    
     function dbSetTokenLocation($token_id, $place_id, $state = null, $notif = '*', $args = null) {
         $this->systemAssertTrue("token_id is null/empty $token_id, $place_id $notif", $token_id != null && $token_id != '');
         if ($args == null)
@@ -105,6 +111,9 @@ abstract class EuroGame extends APP_Extended {
             $notif = clienttranslate('${player_name} moves ${token_name} into ${place_name}');
         if ($state === null) {
             $state = $this->tokens->getTokenState($token_id);
+        }
+        if ($place_id === null) {
+            $place_id = $this->tokens->getTokenLocation($token_id);
         }
         $this->tokens->moveToken($token_id, $place_id, $state);
         $notifyArgs = array ('token_id' => $token_id,'place_id' => $place_id,
