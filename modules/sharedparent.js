@@ -505,8 +505,11 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 tpl = {};
             }
             if (typeof moreargs != 'undefined') {
-                Object.assign(tpl, moreargs);
-
+                for ( var key in moreargs) {
+                    if (moreargs.hasOwnProperty(key)) {
+                        tpl[key]=moreargs[key];
+                    }
+                }
             }
             console.log('tpl', tpl);
             var title = "";
@@ -759,7 +762,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             // args.inc
             var anim_node = args.place;
             if (anim_node && $(anim_node)) {
-                console.log("animCounter", args);
+                //console.log("animCounter", args);
                 var tokenDiv = this.divInlineToken(args['counter_name']);
                 this.animEvaporResource(anim_node, args.inc, tokenDiv);
             }
@@ -768,7 +771,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             var anim_node = args.place;
             if (anim_node && $(anim_node)) {
                 // local animation
-                console.log("animScore", args);
+                //console.log("animScore", args);
                 this.animSpinCounter(anim_node, args.inc, args.player_id);
             }
         },
@@ -795,10 +798,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                     }
                     return;
                 }
-                if (!$(place)) {
-                    console.error("Unknown place " + place + " for " + tokenInfo.key + " " + token);
-                    return;
-                }
+
                 if (this.on_client_state) {
                     if (this.restoreList.indexOf(token) < 0) {
                         this.restoreList.push(token);
@@ -806,8 +806,12 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 }
                 if (tokenNode == null) {
                     if (placeInfo.temp) { return; }
-                    tokenNode = this.createToken(token, tokenInfo, placeInfo.createOn ? placeInfo.createOn : place);
+                    tokenNode = this.createToken(token, tokenInfo, placeInfo.createOn ? placeInfo.createOn : place, placeInfo.onclick);
                     if (tokenNode == null) { return; }
+                }
+                if (!$(place)) {
+                    console.error("Unknown place " + place + " for " + tokenInfo.key + " " + token);
+                    return;
                 }
                 if (place == "dev_null") {
                     // no annimation
