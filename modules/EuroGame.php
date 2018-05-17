@@ -170,4 +170,11 @@ abstract class EuroGame extends APP_Extended {
                 
         ]);
     }
+    
+    function notifyCounter($location) {
+        $key = $location . "_counter";
+        $this->notifyWithName("counter", '', [
+                'counter_name'=> $key,
+                'counter_value'=>($this->tokens->countTokensInLocation($location)) ]);
+    }
 }
