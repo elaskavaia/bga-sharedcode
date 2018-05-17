@@ -552,12 +552,14 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 var tokenInfo = this.getTokenDisplayInfo(token);
                 // console.log(tokenInfo);
                 if (!tokenInfo) return;
-                var main = this.getTooptipHtmlForToken(token);
+         
 
                 if (!tokenInfo.tooltip && tokenInfo.name) {
                     $(token).title = this.getTr(tokenInfo.name);
                     return;
                 }
+                
+                var main = this.getTooptipHtmlForTokenInfo(tokenInfo);
                 if (main) {
                     this.addTooltipHtml(attachTo, main);
                     dojo.removeAttr(attachTo, 'title'); // unset title so both title and tooltip do not show up
@@ -572,12 +574,33 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             var tokenInfo = this.getTokenDisplayInfo(token);
             // console.log(tokenInfo);
             if (!tokenInfo) return;
+            return this.getTooptipHtmlForTokenInfo(tokenInfo);
+            
+        },
+        getTooptipHtmlForTokenInfo : function(tokenInfo) {
             var main = this.getTooptipHtml(tokenInfo.name, tokenInfo.tooltip, tokenInfo.imageTypes, "<hr/>");
             var action = tokenInfo.tooltip_action;
             if (action && main !== null) {
                 main += "<br/>" + this.getActionLine(action);
             }
             return main;
+        },
+
+        getTooptipHtml : function(name, message, imgTypes, sep, dyn) {
+            if (name == null || message == "-") return "";
+            if (!message) message = "";
+            if (!dyn) dyn = "";
+            var divImg = "";
+            var containerType = "tooltipcontainer ";
+            if (imgTypes) {
+                divImg = "<div class='tooltipimage " + imgTypes + "'></div>";
+                var itypes = imgTypes.split(" ");
+                for (var i = 0; i < itypes.length; i++) {
+                    containerType+=itypes[i]+"_tooltipcontainer ";
+                }
+            }
+            return "<div class='"+containerType+"'><span class='tooltiptitle'>" + this.getTr(name) + "</span>" + sep + "<div>" + divImg +
+                    "<div class='tooltipmessage tooltiptext'>" + this.getTr(message) + dyn + "</div></div></div>";
         },
         getTokenName : function(token) {
             var tokenInfo = this.getTokenDisplayInfo(token);
@@ -595,22 +618,6 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 name = this.clienttranslate_string(name);
             }
             return name;
-        },
-        getTooptipHtml : function(name, message, imgTypes, sep, dyn) {
-            if (name == null || message == "-") return "";
-            if (!message) message = "";
-            if (!dyn) dyn = "";
-            var divImg = "";
-            var containerType = "tooltipcontainer ";
-            if (imgTypes) {
-                divImg = "<div class='tooltipimage " + imgTypes + "'></div>";
-                var itypes = imgTypes.split(" ");
-                for (var i = 0; i < itypes.length; i++) {
-                    containerType+=itypes[i]+"_tooltipcontainer ";
-                }
-            }
-            return "<div class='"+containerType+"'><span class='tooltiptitle'>" + this.getTr(name) + "</span>" + sep + "<div>" + divImg +
-                    "<div class='tooltipmessage tooltiptext'>" + this.getTr(message) + dyn + "</div></div></div>";
         },
         getActionLine : function(text) {
             return "<img class='imgtext' src='" + g_themeurl + "img/layout/help_click.png' alt='action' /> <span class='tooltiptext'>" +
