@@ -398,6 +398,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
            
             } 
        
+            if (typeof desc == 'undefined' || !desc) {
+                desc = '';
+            }
      
             if (this.clientStateArgs.action) args.actname = this.getTr(this.clientStateArgs.action);
             if (typeof moreargs != 'undefined') {
@@ -553,6 +556,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 // console.log(tokenInfo);
                 if (!tokenInfo) return;
          
+                if (!tokenInfo.tooltip && !tokenInfo.name) {
+                    return;
+                }
 
                 if (!tokenInfo.tooltip && tokenInfo.name) {
                     $(token).title = this.getTr(tokenInfo.name);
@@ -1003,6 +1009,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             dojo.subscribe('tokenMovedAsync', this, "notif_tokenMoved"); // same as tokenMoved but no delay
             dojo.subscribe('playerLog', this, "notif_playerLog");
             dojo.subscribe('counter', this, "notif_counter");
+            dojo.subscribe('counterAsync', this, "notif_counter"); // same as conter but no delay
             dojo.subscribe('score', this, "notif_score");
             dojo.subscribe('log', this, "notif_log");
             dojo.subscribe('animate', this, "notif_animate");
@@ -1026,7 +1033,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             }
             this.gamedatas.tokens[token].location = notif.args.place_id;
             this.gamedatas.tokens[token].state = notif.args.new_state;
-            console.log("** notif moved " + token + " -> " + notif.args.place_id + " (" + notif.args.new_state + ")");
+//            console.log("** notif moved " + token + " -> " + notif.args.place_id + " (" + notif.args.new_state + ")");
             this.gamedatas_local.tokens[token] = dojo.clone(this.gamedatas.tokens[token]);
             this.gamedatas_server.tokens[token] = dojo.clone(this.gamedatas.tokens[token]);
             this.placeTokenWithTips(token, this.gamedatas.tokens[token], notif.args);
@@ -1042,6 +1049,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 this.gamedatas_local.counters[notif.args.counter_name].counter_value = notif.args.counter_value;
                 this.gamedatas_server.counters[notif.args.counter_name].counter_value = notif.args.counter_value;
                 this.updateCountersSafe(this.gamedatas.counters);
+//                console.log("** notif counter " + notif.args.counter_name + " -> " + notif.args.counter_value);
                 this.animCounter(notif.args);
             } catch (ex) {
                 console.error("Cannot update " + notif.args.counter_name, notif, ex, ex.stack);
