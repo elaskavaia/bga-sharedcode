@@ -305,6 +305,45 @@ abstract class APP_Extended extends Table {
             $this->dump('err', $e);
         }
     }
+    
+    function setAllPlayersNonMultiactive() {
+        self::DbQuery('UPDATE player SET player_is_multiactive = 0');
+    }
+    
+    function setSinglePlayerNonMultiactive($player_id) {
+        $sql = "UPDATE player SET player_is_multiactive = 0 WHERE player_id = $player_id";
+        self::DbQuery($sql);   
+    }
+    
+    function isPlayerMaskSet($player_id, $variable) {
+        $mask = $this->getGameStateValue($variable);
+        $no = $this->getPlayerPosition($player_id);
+        $bit = (1 << $no);
+        if (($mask & $bit) == 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+    
+    function setPlayerMask($player_id, $variable, $force = false) {
+        $mask = $this->getGameStateValue($variable);
+        $no = $this->getPlayerPosition($player_id);
+        $bit = (1 << $no);
+        if ($force || ($mask & $bit) == 0) {
+            $mask |= $bit; // mark that player did the follow action
+        } else {
+            $this->systemAssertTrue("Player already has this mask set for $variable");
+        }
+        $this->setGameStateValue($variable, $mask);
+    }
+    function clearPlayerMask($player_id, $variable) {
+        $mask = $this->getGameStateValue($variable);
+        $no = $this->getPlayerPosition($player_id);
+        $bit = (1 << $no);
+        $mask &= ~$bit; // clear bit
+        $this->setGameStateValue($variable, $mask);
+    }
 }
 
 function startsWith($haystack, $needle) {
