@@ -65,8 +65,6 @@ abstract class EuroGame extends APP_Extended {
         foreach ( $locs as $location => $count ) {
             if ($this->isCounterAllowedForLocation($current_player_id, $location)) {
                 $this->fillCounters($result ['counters'], [ $location => $count ]);
-            } else {
-                continue;
             }
             $content = $this->isContentAllowedForLocation($current_player_id, $location);
             if ($content !== false) {
@@ -84,19 +82,74 @@ abstract class EuroGame extends APP_Extended {
         }
         return $result;
     }
+
     protected function getDefaultCounters() {
-        return [];
+        $types = $this->token_types;
+        $res = [ ];
+        $this->players_basic = $this->loadPlayersBasicInfos();
+        foreach ( $types as $key => $info ) {
+            if (array_key_exists('loc', $info) && $info ['loc'] && $info ['counter'] == 1) {
+                if ($info ['loc'] == 1) {
+                    $this->setCounter($res, "${key}_counter", 0);
+                } else  if ($info ['loc'] == 2) {
+                    foreach ( $this->players_basic as $player_id => $player_info ) {
+                        $color = $player_info ['player_color'];               
+                        $this->setCounter($res, "${key}_${color}_counter", 0);
+                    }
+                }
+            }
+        }
+        return $res;
     }
+
     protected function isContentAllowedForLocation($player_id, $location) {
-        if (startsWith($location, 'discard') || startsWith($location, 'deck'))
+        if ($location === 'dev_null' || $location === 'GINDEX')
             return false;
-        return true;
+        $key = $location;
+        $attr = 'content';
+        if (! array_key_exists($key, $this->token_types)) {
+            $key = getPartsPrefix($location, - 1);
+        }
+        if (array_key_exists($key, $this->token_types)) {
+            $info = $this->token_types [$key];
+            if (array_key_exists('loc', $info) && $info ['loc']) {
+                if ($info [$attr] == 1) {
+                    return true;
+                }
+                if ($info [$attr] == 2) {
+                    $color = $this->getPlayerColor($player_id);
+                    return endsWith($location, $color);
+                }
+            } else {
+                return true; // not listed as location
+            }
+        } else {
+            return true; // not listed allowed
+        }
+        return false;
     }
 
     protected function isCounterAllowedForLocation($player_id, $location) {
         if ($location === 'dev_null' || $location === 'GINDEX')
             return false;
-        return true;
+        $key = $location;
+        $attr = 'counter';
+        if (! array_key_exists($key, $this->token_types)) {
+            $key = getPartsPrefix($location, - 1);
+        }
+        if (array_key_exists($key, $this->token_types)) {
+            $info = $this->token_types [$key];
+            if (array_key_exists('loc', $info) && $info ['loc']) {
+                if ($info [$attr] == 1) {
+                    return true;
+                }
+                if ($info [$attr] == 2) {
+                    $color = $this->getPlayerColor($player_id);
+                    return endsWith($location, $color);
+                }
+            }
+        }
+        return false;
     }
     
     function dbSetTokenState($token_id, $state = null, $notif = '*', $args = null) {
@@ -112,18 +165,30 @@ abstract class EuroGame extends APP_Extended {
         if ($state === null) {
             $state = $this->tokens->getTokenState($token_id);
         }
+        $place_from = $this->tokens->getTokenLocation($token_id);
+        $this->systemAssertTrue("token_id does not exists, create first: $token_id", $place_from);
         if ($place_id === null) {
-            $place_id = $this->tokens->getTokenLocation($token_id);
-        }
+            $place_id = $place_from;
+        } 
         $this->tokens->moveToken($token_id, $place_id, $state);
         $notifyArgs = array ('token_id' => $token_id,'place_id' => $place_id,
                 'token_name' => $token_id,
                 'place_name' => $place_id,'new_state' => $state );
         $args = array_merge($notifyArgs, $args);
             //$this->warn("$type $notif ".$args['token_id']." -> ".$args['place_id']."|");
-    
+        if (array_key_exists('player_id', $args)) {
+            $player_id = $args ['player_id'];
+        } else {
+            $player_id = $this->getActivePlayerId();
+        }
         
-        $this->notifyWithName("tokenMoved", $notif, $args);
+        $this->notifyWithName("tokenMoved", $notif, $args, $player_id);
+        if ($this->isCounterAllowedForLocation($player_id, $place_from)) {
+            $this->notifyCounter($place_from, [ 'nod' => true ]);
+        }
+        if ($place_id != $place_from && $this->isCounterAllowedForLocation($player_id, $place_id)) {
+            $this->notifyCounter($place_id, [ 'nod' => true ]);
+        }
     }
     
     /**
@@ -171,10 +236,11 @@ abstract class EuroGame extends APP_Extended {
         ]);
     }
     
-    function notifyCounter($location) {
+    function notifyCounter($location, $notifyArgs = null) {
         $key = $location . "_counter";
-        $this->notifyWithName("counter", '', [
-                'counter_name'=> $key,
-                'counter_value'=>($this->tokens->countTokensInLocation($location)) ]);
+        $args = [ 'counter_name' => $key,'counter_value' => ($this->tokens->countTokensInLocation($location)) ];
+        if ($notifyArgs != null)
+            $args = array_merge($notifyArgs, $args);
+        $this->notifyWithName("counter", '', $args);
     }
 }
