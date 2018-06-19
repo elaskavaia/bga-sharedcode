@@ -21,7 +21,6 @@ abstract class EuroGame extends APP_Extended {
 
     public function __construct() {
         parent::__construct();
-        self::initGameStateLabels(array ("move_nbr" => 6 ));
         $this->tokens = new Tokens();
     }
 
@@ -235,12 +234,17 @@ abstract class EuroGame extends APP_Extended {
                 
         ]);
     }
-    
+
     function notifyCounter($location, $notifyArgs = null) {
         $key = $location . "_counter";
-        $args = [ 'counter_name' => $key,'counter_value' => ($this->tokens->countTokensInLocation($location)) ];
+        $value = ($this->tokens->countTokensInLocation($location));
+        $this->notifyCounterDirect($key, $value, '', $notifyArgs);
+    }
+
+    function notifyCounterDirect($key, $value, $message, $notifyArgs = null) {
+        $args = [ 'counter_name' => $key,'counter_value' => $value ];
         if ($notifyArgs != null)
             $args = array_merge($notifyArgs, $args);
-        $this->notifyWithName("counter", '', $args);
+        $this->notifyWithName("counter", $message, $args);
     }
 }

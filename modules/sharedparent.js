@@ -276,8 +276,9 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             this.delayedExec(function() {
                 self.stripTransition(token);
                 self.stripPosition(token);
-                var box = self.attachToNewParentNoDestroy(token, finalPlace, relation);
                 self.setTransition(token, "all " + duration + "ms ease-in-out");
+                var box = self.attachToNewParentNoDestroy(token, finalPlace, relation);
+                
                 self.placeOnObjectDirect(token, finalPlace, box.l, box.t);
             }, function() {
                 self.stripTransition(token);
@@ -514,7 +515,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                     }
                 }
             }
-            console.log('tpl', tpl);
+           // console.log('tpl', tpl);
             var title = "";
             if (this.isCurrentPlayerActive() && text !== null) {
                 tpl.you = this.divYou();
@@ -875,6 +876,11 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
                 // this.showMessage(token + " -> FAILED -> " + place + "\n" + e, "error");
             }
         },
+        countOccurences : function(needle, heystack) {
+            for (var count = -1, index = -2; index != -1; count++, index = heystack.indexOf(needle, index + 1))
+                ;
+            return count;
+        },
         createDivFromInfo : function(token, extraClasses, id) {
             var info = this.getTokenDisplayInfo(token);
             if (info == null) {
@@ -981,6 +987,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             args.you = this.divYou();
             var message = this.format_string_recursive(log, args);
             this.showMessage(log, 'error');
+            console.error(log);
             return;
         },
         // /////////////////////////////////////////////////

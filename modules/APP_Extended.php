@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This class contains more useful method which is missing from Table class.
  * To use extend this instead instead of Table, i.e
@@ -14,11 +13,12 @@
  </code>
  *
  */
+define("GS_PLAYER_TURN_NUMBER", 'playerturn_nbr');
+
 abstract class APP_Extended extends Table {
 
     function __construct() {
         parent::__construct();
-        self::initGameStateLabels(array ("move_nbr" => 6 ));
         $this->gameinit = false;
     }
 
@@ -96,7 +96,7 @@ abstract class APP_Extended extends Table {
     function systemAssertTrue($log, $cond = false) {
         if ($cond)
             return;
-        $move = $this->getGameStateValue('move_nbr');
+        $move = $this->getGameStateValue(GS_PLAYER_TURN_NUMBER);
         //trigger_error("bt") ;
         //$bt = debug_backtrace();
         //$this->dump('bt',$bt);
@@ -159,13 +159,11 @@ abstract class APP_Extended extends Table {
      * @return string hex color as in players table for the player with $player_id
      */
     function getPlayerColor($player_id) {
-        if (! isset($this->players_basic)) {
-            $this->players_basic = $this->loadPlayersBasicInfos();
-        }
-        if (! isset($this->players_basic [$player_id])) {
+        $players = $this->loadPlayersBasicInfos();
+        if (! isset($players [$player_id])) {
             return 0;
         }
-        return $this->players_basic [$player_id] ['player_color'];
+        return $players [$player_id] ['player_color'];
     }
 
     /**
@@ -173,13 +171,11 @@ abstract class APP_Extended extends Table {
      * @return string player name based on $player_id
      */
     function getPlayerName($player_id) {
-        if (! isset($this->players_basic)) {
-            $this->players_basic = $this->loadPlayersBasicInfos();
-        }
-        if (! isset($this->players_basic [$player_id])) {
+        $players = $this->loadPlayersBasicInfos();
+        if (! isset($players [$player_id])) {
             return "unknown";
         }
-        return $this->players_basic [$player_id] ['player_name'];
+        return $players [$player_id] ['player_name'];
     }
 
     /**
@@ -187,12 +183,10 @@ abstract class APP_Extended extends Table {
      * @return integer player id based on hex $color
      */
     function getPlayerIdByColor($color) {
-        if (! isset($this->players_basic)) {
-            $this->players_basic = $this->loadPlayersBasicInfos();
-        }
+        $players = $this->loadPlayersBasicInfos();
         if (! isset($this->player_colors)) {
             $this->player_colors = array ();
-            foreach ( $this->players_basic as $player_id => $info ) {
+            foreach ( $players as $player_id => $info ) {
                 $this->player_colors [$info ['player_color']] = $player_id;
             }
         }
@@ -207,24 +201,25 @@ abstract class APP_Extended extends Table {
      * @return integer player position (as player_no) from database
      */
     function getPlayerPosition($player_id) {
-        if (! isset($this->players_basic)) {
-            $this->players_basic = $this->loadPlayersBasicInfos();
+        $players = $this->loadPlayersBasicInfos();
+        if (! isset($players [$player_id])) {
+            return -1;
         }
-        if (! isset($this->players_basic [$player_id])) {
-            return 0;
-        }
-        return $this->players_basic [$player_id] ['player_no'];
+        return $players [$player_id] ['player_no'];
     }
 
     /**
      *
      * @return integer number of players
+     * @deprecated use getPlayersNumber()
      */
     public function getNumPlayers() {
-        if (! isset($this->players_basic)) {
-            $this->players_basic = $this->loadPlayersBasicInfos();
-        }
-        return count($this->players_basic);
+        return $this->getPlayersNumber();
+    }
+
+    public function getStateName() {
+        $state = $this->gamestate->state();
+        return $state ['name'];
     }
 
     /**
@@ -273,8 +268,8 @@ abstract class APP_Extended extends Table {
      * @return number - current score after increase/descrease
      */
     function dbIncScoreValueAndNotify($player_id, $inc, $notif = '*', $stat = '', $args = null) {
-        if ($args==null) $args = [];
-        
+        if ($args == null)
+            $args = [ ];
         $count = $this->dbIncScore($player_id, $inc);
         if ($notif == '*') {
             if ($inc >= 0)
@@ -283,8 +278,8 @@ abstract class APP_Extended extends Table {
                 $notif = clienttranslate('${player_name} loses ${modinc} point(s)');
         }
         $this->notifyWithName("score", $notif, // 
-                array_merge(array ('player_score' => $count,'inc' => $inc, 'mod' => abs($inc) ), $args), // 
-                $player_id);
+        array_merge(array ('player_score' => $count,'inc' => $inc,'mod' => abs($inc) ), $args), // 
+        $player_id);
         if ($stat) {
             $this->dbIncStatChecked($inc, $stat, $player_id);
         }
@@ -305,16 +300,21 @@ abstract class APP_Extended extends Table {
             $this->dump('err', $e);
         }
     }
-    
+
     function setAllPlayersNonMultiactive() {
         self::DbQuery('UPDATE player SET player_is_multiactive = 0');
     }
-    
+
     function setSinglePlayerNonMultiactive($player_id) {
         $sql = "UPDATE player SET player_is_multiactive = 0 WHERE player_id = $player_id";
-        self::DbQuery($sql);   
+        self::DbQuery($sql);
     }
-    
+
+    function setSinglePlayerMultiactive($player_id) {
+        $sql = "UPDATE player SET player_is_multiactive = 1 WHERE player_id = $player_id";
+        self::DbQuery($sql);
+    }
+
     function isPlayerMaskSet($player_id, $variable) {
         $mask = $this->getGameStateValue($variable);
         $no = $this->getPlayerPosition($player_id);
@@ -325,7 +325,7 @@ abstract class APP_Extended extends Table {
             return true;
         }
     }
-    
+
     function setPlayerMask($player_id, $variable, $force = false) {
         $mask = $this->getGameStateValue($variable);
         $no = $this->getPlayerPosition($player_id);
@@ -337,11 +337,12 @@ abstract class APP_Extended extends Table {
         }
         $this->setGameStateValue($variable, $mask);
     }
+
     function clearPlayerMask($player_id, $variable) {
         $mask = $this->getGameStateValue($variable);
         $no = $this->getPlayerPosition($player_id);
         $bit = (1 << $no);
-        $mask &= ~$bit; // clear bit
+        $mask &= ~ $bit; // clear bit
         $this->setGameStateValue($variable, $mask);
     }
 }
@@ -360,6 +361,7 @@ function getPart($haystack, $i) {
     $parts = explode('_', $haystack);
     return $parts [$i];
 }
+
 function getPartsPrefix($haystack, $i) {
     $parts = explode('_', $haystack);
     $len = count($parts);
