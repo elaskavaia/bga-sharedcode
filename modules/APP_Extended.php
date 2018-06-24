@@ -301,17 +301,16 @@ abstract class APP_Extended extends Table {
         }
     }
 
-    function setAllPlayersNonMultiactive() {
-        self::DbQuery('UPDATE player SET player_is_multiactive = 0');
-    }
 
-    function setSinglePlayerNonMultiactive($player_id) {
-        $sql = "UPDATE player SET player_is_multiactive = 0 WHERE player_id = $player_id";
-        self::DbQuery($sql);
-    }
-
-    function setSinglePlayerMultiactive($player_id) {
-        $sql = "UPDATE player SET player_is_multiactive = 1 WHERE player_id = $player_id";
+    function setPlayerMultiactiveNoNotify($player_id = -1, $value = 1) {
+        if (! $value)
+            $value = 0;
+        else
+            $value = 1;
+        $sql = "UPDATE player SET player_is_multiactive = '$value'";
+        if ($player_id != - 1) {
+            $sql .= " WHERE player_id = $player_id";
+        }
         self::DbQuery($sql);
     }
 
