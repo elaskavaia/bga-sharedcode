@@ -505,8 +505,8 @@ class Tokens extends APP_GameClass {
         $extra = "";
         if ($like)
             $extra = "%";
-        if (preg_match("/^[A-Za-z_0-9${extra}-]+$/", $location) == 0) {
-            throw new feException("location must be  alphanum and underscore non empty string");
+        if (preg_match("/^[A-Za-z${extra}][A-Za-z_0-9${extra}-]*$/", $location) == 0) {
+            throw new feException("location must be alphanum and underscore non empty string");
         }
     }
 

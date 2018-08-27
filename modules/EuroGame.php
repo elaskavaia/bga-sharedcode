@@ -172,13 +172,17 @@ abstract class EuroGame extends APP_Extended {
         $this->tokens->moveToken($token_id, $place_id, $state);
         $notifyArgs = array ('token_id' => $token_id,'place_id' => $place_id,
                 'token_name' => $token_id,
-                'place_name' => $place_id,'new_state' => $state );
+                'place_name' => $place_id,'new_state' => $state, 'you'=>'you' );
         $args = array_merge($notifyArgs, $args);
             //$this->warn("$type $notif ".$args['token_id']." -> ".$args['place_id']."|");
         if (array_key_exists('player_id', $args)) {
             $player_id = $args ['player_id'];
         } else {
             $player_id = $this->getActivePlayerId();
+        }
+        
+        if (strstr($notif, '${you}')) {
+            $notifyArgs ['you'] = 'You';// translated on client side, this is for replay after
         }
         
         $this->notifyWithName("tokenMoved", $notif, $args, $player_id);

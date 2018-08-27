@@ -362,8 +362,11 @@ function endsWith($haystack, $needle) {
     return $length === 0 || (substr($haystack, - $length) === $needle);
 }
 
-function getPart($haystack, $i) {
+function getPart($haystack, $i, $bNoexeption = false) {
     $parts = explode('_', $haystack);
+    $len = count($parts);
+    if ($bNoexeption && $i>=$len)
+        return "";
     return $parts [$i];
 }
 

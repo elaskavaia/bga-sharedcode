@@ -133,8 +133,8 @@ class Table extends APP_GameClass {
 
 
 
-    function setStat($key, $value) {
-        echo "stat: $key=$value\n";
+    function setStat( $value, $name, $player_id = null, $bDoNotLoop=false ) {
+     echo "stat: $name=$value\n";
     }
 
     function getStatTypes() {
