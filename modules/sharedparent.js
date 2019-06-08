@@ -425,6 +425,11 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         },
         cancelLocalStateEffects : function() {
             this.clientStateArgs = {};
+            if (typeof this.gamedatas.gamestate.reflexion.initial != 'undefined') {
+                this.gamedatas_server.gamestate.reflexion.initial = this.gamedatas.gamestate.reflexion.initial;
+                this.gamedatas_server.gamestate.reflexion.initial_ts = this.gamedatas.gamestate.reflexion.initial_ts;
+            }
+
             this.gamedatas_local = dojo.clone(this.gamedatas_server);
             this.gamedatas = dojo.clone(this.gamedatas_server);
             if (this.restoreList) {
