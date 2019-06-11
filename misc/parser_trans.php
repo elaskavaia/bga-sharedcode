@@ -64,7 +64,7 @@ class PhpParser {
     /**
      * Parse tpl file for server translation keys and write them to the serverside keys destination file.
      * @param string $filepath
-     * @param file_handle $OutputFileServer
+     * @param file handle $OutputFileServer
      */
     private function parse_tpl( $file ) {
         $this->curfile = $file;

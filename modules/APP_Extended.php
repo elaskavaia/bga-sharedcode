@@ -313,9 +313,9 @@ abstract class APP_Extended extends Table {
             $value = 0;
         else
             $value = 1;
-        $sql = "UPDATE player SET player_is_multiactive = '$value'";
+        $sql = "UPDATE player SET player_is_multiactive = '$value' WHERE player_zombie = 0 and player_eliminated = 0";
         if ($player_id > 0) {
-            $sql .= " WHERE player_id = $player_id";
+            $sql .= " AND player_id = $player_id";
         }
         self::DbQuery($sql);
     }
