@@ -51,11 +51,21 @@ function genbody($incsv) {
     $i = 0;
     $prev = "";
     $ctype = "";
+    $comment = "";
     while ( ($line = fgets($ins)) !== false ) {
+        $line=trim($line);
+        if (empty($line)) continue;
+        if (startsWith($line, '#')) {
+            $comment.="// $line\n";
+            continue;
+        }
         $fields = explode('|', $line);
-        list ( $id, $ftype, $name, $desc ) = $fields;
+        list ( $id, $ftype, $name) = $fields;
         $act = '';
-        $extra='';
+        $extra = '';
+        $desc = '';
+        if (count($fields) >= 4)
+            $desc = $fields [3];
         if (count($fields) >= 5)
             $act = $fields [4];
         if ($name == 'element_name')
@@ -80,6 +90,10 @@ function genbody($incsv) {
         if ($id == "") {
             $id = "${type}_${i}";
         }
+        if ($comment) {
+            fwrite($out, "$comment");
+            $comment="";
+        }
         fwrite($out, "'$id' => array(\n");
         fwrite($out, "  'type' => '$ftype',\n");
         if ($name)
@@ -103,6 +117,18 @@ function genbody($incsv) {
         $prev = $type;
     }
 }
+
+function startsWith($haystack, $needle) {
+    // search backwards starting from haystack length characters from the end
+    return $needle === "" || strrpos($haystack, $needle, - strlen($haystack)) !== false;
+}
+
+function endsWith($haystack, $needle) {
+    // search backwards starting from haystack length characters from the end
+    return $needle === "" || strrpos($haystack, $needle, - strlen($needle)) !== false;
+}
+
+
 $incsv = $argv [1];
 if (isset($argv [2])) {
     $infile = $argv [2];
