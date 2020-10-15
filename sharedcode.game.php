@@ -223,7 +223,7 @@ class SharedCode extends EuroGame {
 
     function arg_playerTurnPlayCubes() {
         // Get some values from the current game situation in database...
-        $takeCubeNumber = rand(0, 10);
+        $takeCubeNumber = bga_rand(0, 10);
         $counter = self::getGameStateValue('resource_id_counter');
         // return values:
         return array ('cubeTypeNumber' => $takeCubeNumber,'resource_id_counter' => $counter );
