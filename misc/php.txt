@@ -1,14 +1,16 @@
-Class hierarchy
-===============================
-APP_Object
- APP_DbObject
-  APP_GameClass
-    Table
-    Deck
+This is reference for public method defined in Table and its ancestors, this information obtained by using php reflection
+
+== Class hierarchy ==
+
+* APP_Object
+** APP_DbObject
+***  APP_GameClass
+****    Table
+****    [[Deck]]
 
 
-Methods in the Deck class (PHP)
-===============================
+== Methods in the Table class ==
+
 Table::getGameName
 Table::_
 Table::Table
