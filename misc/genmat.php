@@ -1,7 +1,7 @@
 <?php
 /**
  * This script generates (updates) material.inc.php from CSV like file (pipe separated) defining game element problems.
- * File material.inc.php must have soecial mark up to identify insertion points (see example below). 
+ * File material.inc.php must have special mark up to identify insertion points (see example below). 
  * You need to install php cli to run it.
  * 
  * usage: php genmap.php <input.csv> <path to material.inc.php>
