@@ -224,92 +224,92 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             dojo.style(token, "-moz-transition", value);
             dojo.style(token, "-o-transition", value);
         },
-        /**
-         * This method will attach mobile to a new_parent without destroying, unlike original attachToNewParent which destroys mobile and
-         * all its connectors (onClick, etc)
-         */
-        attachToNewParentNoDestroy : function(mobile, new_parent, relation) {
-            //console.log("attaching ",mobile,new_parent,relation);
-            if (mobile === null) {
-                console.error("attachToNewParent: mobile obj is null");
-                return;
-            }
-            if (new_parent === null) {
-                console.error("attachToNewParent: new_parent is null");
-                return;
-            }
-            if (typeof mobile == "string") {
-                mobile = $(mobile);
-            }
-            if (typeof new_parent == "string") {
-                new_parent = $(new_parent);
-            }
-            if (typeof relation == "undefined") {
-                relation = "last";
-            }
-            var src = dojo.position(mobile);
-            dojo.style(mobile, "position", "absolute");
-            dojo.place(mobile, new_parent, relation);
-            var tgt = dojo.position(mobile);
-            var box = dojo.marginBox(mobile);
-            var cbox = dojo.contentBox(mobile);
-            var left = box.l + src.x - tgt.x;
-            var top = box.t + src.y - tgt.y;
-            dojo.style(mobile, {
-                left : left + "px",
-                top : top + "px"
-            });
-            // console.log("attache " + left + "," + top);
-            box.l += box.w - cbox.w;
-            box.t += box.h - cbox.h;
-            return box;
-        },
-        /**
-         * This method is similar to slideToObject but works on object which do not use inline style positioning. It also attaches object to
-         * new parent immediately, so parent is correct during animation
-         */
-        slideToObjectRelative : function(token, finalPlace, duration, delay, onEnd, relation) {
-            if (typeof token == 'string') {
-                token = $(token);
-            }
-            var self = this;
-            this.delayedExec(function() {
-                self.stripTransition(token);
-                self.stripPosition(token);
-                self.setTransition(token, "all " + duration + "ms ease-in-out");
-                var box = self.attachToNewParentNoDestroy(token, finalPlace, relation);
-                
-                self.placeOnObjectDirect(token, finalPlace, box.l, box.t);
-            }, function() {
-                self.stripTransition(token);
-                self.stripPosition(token);
-                if (onEnd) onEnd(token);
-            }, duration, delay);
-        },
-        slideToObjectAbsolute : function(token, finalPlace, x, y, duration, delay, onEnd, relation) {
-            if (typeof token == 'string') {
-                token = $(token);
-            }
-            var self = this;
-            this.delayedExec(function() {
-                self.stripTransition(token);
-                var box = self.attachToNewParentNoDestroy(token, finalPlace, relation);
-                self.setTransition(token, "all " + duration + "ms ease-in-out");
-                self.placeOnObjectDirect(token, finalPlace, x, y);
-            }, function() {
-                self.stripTransition(token);
-                if (onEnd) onEnd(token);
-            }, duration, delay);
-        },
-        placeOnObjectDirect : function(mobileObj, targetObj, x, y) {
-            var left = dojo.style(mobileObj, "left");
-            var top = dojo.style(mobileObj, "top");
-            // console.log("place " + x + "," + y);
-            dojo.style(mobileObj, {
-                left : x + "px",
-                top : y + "px"
-            });
-        },
+      		/**
+		 * This method will attach mobile to a new_parent without destroying, unlike original attachToNewParent which destroys mobile and
+		 * all its connectors (onClick, etc)
+		 */
+		attachToNewParentNoDestroy: function(mobile, new_parent, relation) {
+			//console.log("attaching ",mobile,new_parent,relation);
+			if (mobile === null) {
+				console.error("attachToNewParent: mobile obj is null");
+				return;
+			}
+			if (new_parent === null) {
+				console.error("attachToNewParent: new_parent is null");
+				return;
+			}
+			if (typeof mobile == "string") {
+				mobile = $(mobile);
+			}
+			if (typeof new_parent == "string") {
+				new_parent = $(new_parent);
+			}
+			if (typeof relation == "undefined") {
+				relation = "last";
+			}
+			var src = dojo.position(mobile);
+			dojo.style(mobile, "position", "absolute");
+			dojo.place(mobile, new_parent, relation);
+			var tgt = dojo.position(mobile);
+			var box = dojo.marginBox(mobile);
+			var cbox = dojo.contentBox(mobile);
+			var left = box.l + src.x - tgt.x;
+			var top = box.t + src.y - tgt.y;
+			this.positionObjectDirectly(mobile, left, top);
+			box.l += box.w - cbox.w;
+			box.t += box.h - cbox.h;
+			return box;
+		},
+		/**
+		 * This method is similar to slideToObject but works on object which do not use inline style positioning. It also attaches object to
+		 * new parent immediately, so parent is correct during animation
+		 */
+		slideToObjectRelative: function(token, finalPlace, duration, delay, onEnd, relation) {
+			if (typeof token == 'string') {
+				token = $(token);
+			}
+
+			this.delayedExec(() => {
+				dojo.addClass(token, 'moving_token');
+				this.setTransition(token, "none");
+				this.stripPosition(token);
+				var box = this.attachToNewParentNoDestroy(token, finalPlace, relation);
+				this.setTransition(token, "all " + duration + "ms ease-in-out");
+				this.positionObjectDirectly(token, box.l, box.t);
+			}, () => {
+				this.stripTransition(token);
+				this.stripPosition(token);
+				dojo.removeClass(token, 'moving_token');
+				if (onEnd) onEnd(token);
+			}, duration, delay);
+		},
+		slideToObjectAbsolute: function(token, finalPlace, x, y, duration, delay, onEnd, relation) {
+			if (typeof token == 'string') {
+				token = $(token);
+			}
+			this.delayedExec(() => {
+				dojo.addClass(token, 'moving_token');
+				this.setTransition(token, "none");
+				this.attachToNewParentNoDestroy(token, finalPlace, relation);
+				this.setTransition(token, "all " + duration + "ms ease-in-out");
+				this.positionObjectDirectly(token, x, y);
+			}, () => {
+				this.stripTransition(token);
+				dojo.removeClass(token, 'moving_token');
+				if (onEnd) onEnd(token);
+			}, duration, delay);
+		},
+
+		positionObjectDirectly: function(mobileObj, x, y) {
+			// do not remove this "dead" code some-how it makes difference
+			dojo.style(mobileObj, "left"); // bug? re-compute style
+			// console.log("place " + x + "," + y);
+			dojo.style(mobileObj, {
+				left: x + "px",
+				top: y + "px"
+			});
+			dojo.style(mobileObj, "left"); // bug? re-compute style
+		},
         delayedExec : function(onStart, onEnd, duration, delay) {
             if (typeof duration == "undefined") {
                 duration = 500;
