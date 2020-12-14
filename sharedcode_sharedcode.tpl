@@ -32,12 +32,22 @@
 		<div id="action_space_1" class="action_space action_space_1">
 			<span class="splabel">Moving tokens and counters</span>
 		</div>
-		<div id="action_space_2" class="action_space action_space_2"></div>
-		<div id="action_space_3" class="action_space action_space_3"></div>
+		<div id="action_space_2" class="action_space action_space_2">
+			<span class="splabel">Playing with cards</span>
+		</div>
+		<div id="action_space_3" class="action_space action_space_3">
+			<span class="splabel">Something else</span>
+		</div>
 		<div id="action_space_4" class="action_space action_space_4"></div>
 
 		<div id="basket_1" class="basket basket_1"></div>
 		<div id="basket_2" class="basket basket_2"></div>
+	</div>
+	<div class="cardgame">
+		<h2>My Hand</h2>
+	     <div id="hand" class="hand active_hand whiteblock"></div>
+	     <h2>Play Area</h2>
+	     <div id="play_area" class="play_area whiteblock"></div>
 	</div>
 	<div class="funcontrols">
 		<div class="flip-container">

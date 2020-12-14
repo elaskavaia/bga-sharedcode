@@ -16,18 +16,12 @@ require_once ('APP_Extended.php');
 require_once ('tokens.php');
 
 abstract class EuroGame extends APP_Extended {
-    protected $tokens;
-    protected $token_types;
+    public $tokens;
+    public $token_types;
 
     public function __construct() {
         parent::__construct();
         $this->tokens = new Tokens();
-    }
-
-    protected function initTables() {
-        $this->tokens->initGlobalIndex('GINDEX', 0);
-        $this->players_basic = $this->loadPlayersBasicInfos();
-        //$num = $this->getNumPlayers();
     }
 
     protected function setCounter(&$array, $key, $value) {
@@ -60,15 +54,18 @@ abstract class EuroGame extends APP_Extended {
         $result ['tokens'] = array ();
         $result ['counters'] = $this->getDefaultCounters();
         $locs = $this->tokens->countTokensInLocations();
-        $color = $this->getPlayerColor($current_player_id);
+        //$color = $this->getPlayerColor($current_player_id);
         foreach ( $locs as $location => $count ) {
+            $info = $this->token_types [$location] ?? array ();
+            $sort = $info ['sort'] ?? null;
+            
             if ($this->isCounterAllowedForLocation($current_player_id, $location)) {
                 $this->fillCounters($result ['counters'], [ $location => $count ]);
             }
             $content = $this->isContentAllowedForLocation($current_player_id, $location);
             if ($content !== false) {
                 if ($content === true) {
-                    $tokens = $this->tokens->getTokensInLocation($location);
+                    $tokens = $this->tokens->getTokensInLocation($location, null, $sort);
                     $this->fillTokensFromArray($result ['tokens'], $tokens);
                 } else {
                     $num = floor($content);
@@ -85,13 +82,13 @@ abstract class EuroGame extends APP_Extended {
     protected function getDefaultCounters() {
         $types = $this->token_types;
         $res = [ ];
-        $this->players_basic = $this->loadPlayersBasicInfos();
+        $players_basic = $this->loadPlayersBasicInfos();
         foreach ( $types as $key => $info ) {
             if (array_key_exists('loc', $info) && $info ['loc'] && $info ['counter'] == 1) {
                 if ($info ['loc'] == 1) {
                     $this->setCounter($res, "${key}_counter", 0);
                 } else  if ($info ['loc'] == 2) {
-                    foreach ( $this->players_basic as $player_id => $player_info ) {
+                    foreach ( $players_basic as $player_id => $player_info ) {
                         $color = $player_info ['player_color'];               
                         $this->setCounter($res, "${key}_${color}_counter", 0);
                     }
@@ -102,7 +99,7 @@ abstract class EuroGame extends APP_Extended {
     }
 
     protected function isContentAllowedForLocation($player_id, $location) {
-        if ($location === 'dev_null' || $location === 'GINDEX')
+        if ($location === 'dev_null')
             return false;
         $key = $location;
         $attr = 'content';
@@ -129,7 +126,7 @@ abstract class EuroGame extends APP_Extended {
     }
 
     protected function isCounterAllowedForLocation($player_id, $location) {
-        if ($location === 'dev_null' || $location === 'GINDEX')
+        if ($location === 'dev_null')
             return false;
         $key = $location;
         $attr = 'counter';
@@ -170,9 +167,12 @@ abstract class EuroGame extends APP_Extended {
             $place_id = $place_from;
         } 
         $this->tokens->moveToken($token_id, $place_id, $state);
-        $notifyArgs = array ('token_id' => $token_id,'place_id' => $place_id,
+        $notifyArgs = array (
+                'token_id' => $token_id,
+                'place_id' => $place_id,
                 'token_name' => $token_id,
-                'place_name' => $place_id,'new_state' => $state, 'you'=>'you' );
+                'place_name' => $place_id,
+                'new_state' => $state );
         $args = array_merge($notifyArgs, $args);
             //$this->warn("$type $notif ".$args['token_id']." -> ".$args['place_id']."|");
         if (array_key_exists('player_id', $args)) {
@@ -250,5 +250,12 @@ abstract class EuroGame extends APP_Extended {
         if ($notifyArgs != null)
             $args = array_merge($notifyArgs, $args);
         $this->notifyWithName("counter", $message, $args);
+    }
+    
+    function notifyCounterInc($key, $value, $message, $notifyArgs = null) {
+        $args = [ 'counter_name' => $key,'counter_inc' => $value ];
+        if ($notifyArgs != null)
+            $args = array_merge($notifyArgs, $args);
+            $this->notifyWithName("counter", $message, $args);
     }
 }

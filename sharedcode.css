@@ -253,6 +253,13 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 		margin-right: 30px;
 }
 
+/** Stock areas */
+.play_area, .hand {
+   min-width: 300px;
+   min-height: 78px;
+   padding: 10px;	
+}
+
 /** Card flipping effect */
 
 /* entire container, keeps perspective */

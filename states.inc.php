@@ -54,6 +54,7 @@ if (!defined('STATE_END_GAME')) { // guard since this included multiple times
    define("STATE_PLAYER_TURN", 2);
    define("STATE_GAME_TURN", 3);
    define("STATE_PLAYER_TURN_CUBES", 4);
+   define("STATE_PLAYER_TURN_CARDS", 5);
    define("STATE_END_GAME", 99);
 }
  
@@ -80,6 +81,7 @@ $machinestates = array(
     		"transitions" => array( 
     		        "loopback" => STATE_PLAYER_TURN,
     		        "playCubes" => STATE_PLAYER_TURN_CUBES,
+    		        "playCards" => STATE_PLAYER_TURN_CARDS,
     		        "pass" => STATE_GAME_TURN )
     ),
         
@@ -104,6 +106,17 @@ $machinestates = array(
                     "loopback" => STATE_PLAYER_TURN_CUBES,
                     "next" => STATE_GAME_TURN )
     ),
+        STATE_PLAYER_TURN_CARDS => array(
+                "name" => "playerTurnPlayCards",
+                "description" => clienttranslate('${actplayer} must select to draw card or play card'),
+                "descriptionmyturn" => clienttranslate('${you}  must select to draw card or play card'),
+                "type" => "activeplayer",
+                'args' => 'arg_playerTurnPlayCards',
+                "possibleactions" => array( "drawCard", "playCard" ),
+                "transitions" => array(
+                "loopback" => STATE_PLAYER_TURN_CARDS,
+                "next" => STATE_GAME_TURN )
+        ),
 
    
     // Final state.

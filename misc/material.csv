@@ -1,0 +1,6 @@
+element_id|element_type|element_name|element_description|action
+#this used to generate part of matherial.inc.php using genmat.php
+wcube|cube|Cube
+card_red|card {'t'=>1,'cn'=>'red','ipos'=>3}|Red Spell|This is tooltip for red spell
+card_blue|card  {'t'=>2,'cn'=>'blue','ipos'=>4}|Blue Spell|This is tooltip for blue spell|Click to cast it
+card_green|card  {'t'=>3,'cn'=>'green','ipos'=>6}|Green Spell

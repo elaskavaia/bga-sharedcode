@@ -32,7 +32,7 @@ class Tokens extends APP_GameClass {
         $this->g_index = array ();
     }
 
-    // MUST be called before any other method if db is not called 'token'
+    // MUST be called before any other method if db table is not called 'token'
     function init($table) {
         $this->table = $table;
     }
@@ -109,6 +109,20 @@ class Tokens extends APP_GameClass {
         $sql = "INSERT INTO " . $this->table . " (token_key,token_location,token_state)";
         $sql .= " VALUES " . implode(",", $values);
         $this->DbQuery($sql);
+        return $key;
+    }
+    
+    /**
+     * Create tokens during the game (dynamic piles) with auto increment number
+     * token must be in form of "prefix_index" where prefix is passed to this function, and index is generated as max number of tokens starting prefix pre-existing in db
+     * @param string $type
+     * @param string $location
+     * @return string - token key
+     */
+    function createTokenAutoInc($type, $location = 'limbo', $token_state = 0){
+        $allsuf = $this->getTokensOfTypeInLocation($type);
+        $resnum = count($allsuf);
+        return $this->createToken("${type}_${resnum}", $location, $token_state);
     }
 
     function createTokensPack($key, $location, $nbr = 1, $nbr_start = 1, $iterArr = null, $token_state = null) {
@@ -173,6 +187,10 @@ class Tokens extends APP_GameClass {
             $n ++;
         }
     }
+    
+    function deleteAll() {
+        self::DbQuery( "DELETE FROM ". $this->table );
+    }
 
     // Pick the first "$nbr" cards on top of specified deck and place it in target location
     // Return cards infos or void array if no card in the specified location
@@ -202,10 +220,17 @@ class Tokens extends APP_GameClass {
     /**
      * Return token on top of this location, top defined as item with higher state value
      */
-    function getTokenOnTop($location) {
+    function getTokenOnTop($location, $no_deck_reform = true) {
         $result_arr = $this->getTokensOnTop(1, $location);
         if (count($result_arr) > 0)
             return $result_arr [0];
+        if (isset($this->autoreshuffle_custom [$location]) && $this->autoreshuffle && !$no_deck_reform) {
+            // No more cards in deck & reshuffle is active => form another deck
+            self::reformDeckFromDiscard($location);
+            $result_arr = $this->getTokensOnTop(1, $location);
+            if (count($result_arr) > 0)
+                return $result_arr [0];
+        }
         return null;
     }
 
@@ -254,24 +279,30 @@ class Tokens extends APP_GameClass {
         return $state;
     }
 
-    // Move a card to specific location
+    /** Move a token to specific location in specific state, if state set to null do not change state */
     function moveToken($token_key, $location, $state = 0) {
         self::checkLocation($location);
-        self::checkState($state);
+        self::checkState($state, true);
         self::checkKey($token_key);
         $sql = "UPDATE " . $this->table;
-        $sql .= " SET token_location='$location', token_state='$state'";
+        $sql .= " SET token_location='$location'";
+        if ($state !== null) {
+            $sql .= ", token_state='$state'";
+        }
         $sql .= " WHERE token_key='$token_key'";
         self::DbQuery($sql);
     }
 
-    // Move cards to specific location
+    /** Move tokens (array of ids) to specific location in specific state, if state set to null do not change state */
     function moveTokens($tokens, $location, $state = 0) {
         self::checkLocation($location);
-        self::checkState($state);
+        self::checkState($state, true);
         self::checkTokenKeyArray($tokens);
         $sql = "UPDATE " . $this->table;
-        $sql .= " SET token_location='$location', token_state='$state'";
+        $sql .= " SET token_location='$location'";
+        if ($state !== null) {
+            $sql .= ", token_state='$state'";
+        }
         $sql .= " WHERE token_key IN ('" . implode("','", $tokens) . "')";
         self::DbQuery($sql);
     }
@@ -386,6 +417,11 @@ class Tokens extends APP_GameClass {
         }
         return $result;
     }
+    
+    function getTokenOfTypeInLocation($type, $location = null, $state = null, $order_by = null) {
+        $res = $this->getTokensOfTypeInLocation($type, $location, $state, $order_by);
+        return reset($res);
+    }
 
     function getTokenState($token_id) {
         $res = $this->getTokenInfo($token_id);
@@ -478,7 +514,7 @@ class Tokens extends APP_GameClass {
         return $result;
     }
 
-    function varsub($line, $keymap, $usegindex = false) {
+    function varsub($line, $keymap) {
         if ($line === null)
             throw new feException("varsub: line cannot be null");
         if (strpos($line, "{") !== false) {
@@ -487,14 +523,6 @@ class Tokens extends APP_GameClass {
                     $line = preg_replace("/\{$key\}/", $value, $line);
                 }
             }
-            if ($usegindex)
-                foreach ( $this->g_index as $key => $value ) {
-                    if (strpos($line, "{$key}") !== false) {
-                        $value ++;
-                        $line = preg_replace("/\{$key\}/", $value, $line);
-                        $this->g_index [$key] = $value;
-                    }
-                }
         }
         return $line;
     }
@@ -566,53 +594,5 @@ class Tokens extends APP_GameClass {
     function setCustomFields($fields_array) {
         $this->checkTokenKeyArray($fields_array);
         $this->custom_fields = $fields_array;
-    }
-
-    function initGlobalIndex($key, $value = 1) {
-        if (! array_key_exists($key, $this->g_index)) {
-            $this->checkKey($key);
-            $this->checkPosInt($value);
-            $sql = "INSERT INTO " . $this->table . " (token_key,token_location,token_state)";
-            $sql .= " VALUES ('$key','$key','$value')";
-            $this->DbQuery($sql);
-            $this->g_index [$key] = $value;
-        } else {
-            $this->g_index [$key] = $value;
-        }
-        return $value;
-    }
-
-    private function setGlobalIndex($key, $value) {
-        $sql = "UPDATE " . $this->table;
-        $sql .= " SET token_state='$value'";
-        $sql .= " WHERE token_key='$key'";
-        self::DbQuery($sql);
-        $this->g_index [$key] = $value;
-        return $value;
-    }
-
-    function syncGlobalIndex($key) {
-        $this->checkKey($key);
-        $sql = "SELECT token_state";
-        $sql .= " FROM " . $this->table;
-        $sql .= " WHERE token_key='$key'";
-        $dbres = self::DbQuery($sql);
-        $row = mysql_fetch_assoc($dbres);
-        if ($row)
-            $value = $row ['token_state'];
-        else {
-            unset($this->g_index [$key]);
-            $value = $this->initGlobalIndex($key, 1);
-        }
-        $this->g_index [$key] = $value;
-        return $value;
-    }
-
-    function commitGlobalIndex($key) {
-        if (! array_key_exists($key, $this->g_index)) {
-            throw new feException("global index $key is not defined");
-        }
-        $this->setGlobalIndex($key, $this->g_index [$key]);
-        return $this->g_index [$key];
     }
 }

@@ -16,11 +16,39 @@
 define("GS_PLAYER_TURN_NUMBER", 'playerturn_nbr');
 
 abstract class APP_Extended extends Table {
-
     function __construct() {
         parent::__construct();
-        $this->gameinit = false;
     }
+    
+    /*
+     * setupNewGame:
+     *
+     * This method is called only once, when a new game is launched.
+     * In this method, you must setup the game according to the game rules, so that
+     * the game is ready to be played.
+     */
+    protected function setupNewGame($players, $options = array ()) {
+        /**
+         * ********** Start the game initialization ****
+         */
+        $this->initPlayers($players);
+        $this->initStats();
+        // Setup the initial game situation here
+        $this->initTables();
+        /**
+         * ********** End of the game initialization ****
+         */
+    }
+    
+    
+    /**
+     * override to setup all custom tables
+     */
+    protected function initTables() {
+        
+    }
+    
+    
 
     public function initPlayers($players) {
         // Set the colors of the players with HTML color code
@@ -42,6 +70,7 @@ abstract class APP_Extended extends Table {
         if ($gameinfos ['favorite_colors_support'])
             self::reattributeColorsBasedOnPreferences($players, $gameinfos ['player_colors']);
         self::reloadPlayersBasicInfos();
+        $this->activeNextPlayer(); // just in case so its not 0, dev code can change it later
     }
 
     public function initStats() {
@@ -49,6 +78,7 @@ abstract class APP_Extended extends Table {
         $all_stats = $this->getStatTypes();
         $player_stats = $all_stats ['player'];
         // auto-initialize all stats that starts with game_
+        // we need a prefix because there is some other system stuff
         foreach ( $player_stats as $key => $value ) {
             if (startsWith($key, 'game_')) {
                 $this->initStat('player', $key, 0);
@@ -73,8 +103,10 @@ abstract class APP_Extended extends Table {
      * This will throw an exception if condition is false.
      * The message should be translated and shown to the user.
      *
-     * @param $log string
-     *            user side log message, translation is needed, use self::_() when passing string to it
+     * @param $message string
+     *            user side error message, translation is needed, use self::_() when passing string to it
+     * @param $cond boolean condition of assert
+     * @param $log string optional log message, not need to translate
      * @throws BgaUserException
      */
     function userAssertTrue($message, $cond = false, $log = "") {
@@ -91,6 +123,7 @@ abstract class APP_Extended extends Table {
      *
      * @param $log string
      *            server side log message, no translation needed
+     * @param $cond boolean condition of assert
      * @throws BgaUserException
      */
     function systemAssertTrue($log, $cond = false) {
@@ -112,9 +145,10 @@ abstract class APP_Extended extends Table {
         if (array_key_exists('player_id', $args) && $player_id == - 1) {
             $player_id = $args ['player_id'];
         }
-        if ($player_id == - 1)
-            $player_id = $this->getActivePlayerId();
-        $args ['player_id'] = $player_id;
+        if ($player_id == -1)
+            $player_id = $this->getMostlyActivePlayerId();
+        if ($player_id != 'all')
+            $args ['player_id'] = $player_id;
         if ($message) {
             $player_name = $this->getPlayerName($player_id);
             $args ['player_name'] = $player_name;
@@ -134,6 +168,14 @@ abstract class APP_Extended extends Table {
         }
     }
 
+    function getMostlyActivePlayerId() {
+        $state = $this->gamestate->state();
+        if ($state ['type'] === "multipleactiveplayer") {
+            return $this->getCurrentPlayerId();   
+        } else {
+            return $this->getActivePlayerId();
+        }
+    }
     function notifyAnimate() {
         $this->notifyAllPlayers('animate', '', array ());
     }
@@ -208,24 +250,30 @@ abstract class APP_Extended extends Table {
         return $players [$player_id] ['player_no'];
     }
 
-    /**
-     *
-     * @return integer number of players
-     * @deprecated use getPlayersNumber()
-     */
-    public function getNumPlayers() {
-        return $this->getPlayersNumber();
-    }
-
     public function getStateName() {
         $state = $this->gamestate->state();
         return $state ['name'];
     }
 
     /**
+     * @return array of player ids
+     */
+    function getPlayerIds() {
+        $players = $this->loadPlayersBasicInfos();
+        return array_keys($players);
+    }
+    
+    function debugConsole($info, $args = array()) {
+        $this->notifyAllPlayers("log", $info, $args);
+        $this->warn($info);
+    }
+
+    /**
      * Change activate player, also increasing turns_number stats and giving extra time
      */
     function setNextActivePlayerCustom($next_player_id) {
+        if ($this->getActivePlayerId() == $next_player_id)
+            return;
         $this->giveExtraTime($next_player_id);
         $this->incStat(1, 'turns_number', $next_player_id);
         $this->incStat(1, 'turns_number');
@@ -275,7 +323,7 @@ abstract class APP_Extended extends Table {
             if ($inc >= 0)
                 $notif = clienttranslate('${player_name} scores ${inc} point(s)');
             else
-                $notif = clienttranslate('${player_name} loses ${modinc} point(s)');
+                $notif = clienttranslate('${player_name} loses ${mod} point(s)');
         }
         $this->notifyWithName("score", $notif, // 
         array_merge(array ('player_score' => $count,'inc' => $inc,'mod' => abs($inc) ), $args), // 
@@ -352,6 +400,8 @@ abstract class APP_Extended extends Table {
     }
 }
 
+// GLOBAL utility functions
+
 function startsWith($haystack, $needle) {
     // search backwards starting from haystack length characters from the end
     return $needle === "" || strrpos($haystack, $needle, - strlen($haystack)) !== false;
@@ -382,4 +432,13 @@ function getPartsPrefix($haystack, $i) {
         unset($parts [$i]);
     }
     return implode('_', $parts);
+}
+
+if (!function_exists('array_key_first')) {
+    function array_key_first(array $arr) {
+        foreach($arr as $key => $unused) {
+            return $key;
+        }
+        return NULL;
+    }
 }

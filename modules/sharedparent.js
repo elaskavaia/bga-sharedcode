@@ -548,36 +548,39 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             var tokenType = tt[0];
             return tokenType;
         },
-        updateTooltip : function(token, attachTo) {
-            if (typeof attachTo == 'undefined') {
-                attachTo = token;
-            }
-            if ($(attachTo)) {
-                // console.log("tooltips for "+token);
-                if (typeof token != 'string') {
-                    console.error("cannot calc tooltip" + token);
-                    return;
-                }
-                var tokenInfo = this.getTokenDisplayInfo(token);
-                // console.log(tokenInfo);
-                if (!tokenInfo) return;
-         
-                if (!tokenInfo.tooltip && !tokenInfo.name) {
-                    return;
-                }
+		updateTooltip: function(token, attachTo) {
+			if (typeof attachTo == 'undefined') {
+				attachTo = token;
+			}
+			if ($(attachTo)) {
+				// console.log("tooltips for "+token);
+				if (typeof token != 'string') {
+					console.error("cannot calc tooltip" + token);
+					return;
+				}
+				var tokenInfo = this.getTokenDisplayInfo(token);
+				// console.log(tokenInfo);
+				if (!tokenInfo) return;
 
-                if (!tokenInfo.tooltip && tokenInfo.name) {
-                    $(token).title = this.getTr(tokenInfo.name);
-                    return;
-                }
-                
-                var main = this.getTooptipHtmlForTokenInfo(tokenInfo);
-                if (main) {
-                    this.addTooltipHtml(attachTo, main);
-                    dojo.removeAttr(attachTo, 'title'); // unset title so both title and tooltip do not show up
-                }
-            }
-        },
+				if (!tokenInfo.tooltip && !tokenInfo.name) {
+					return;
+				}
+				if (tokenInfo.showname == false) {
+					return;
+				}
+
+				if (!tokenInfo.tooltip && tokenInfo.name) {
+					$(attachTo).title = this.getTr(tokenInfo.name);
+					return;
+				}
+
+				var main = this.getTooptipHtmlForTokenInfo(tokenInfo);
+				if (main) {
+					this.addTooltipHtml(attachTo, main);
+					dojo.removeAttr(attachTo, 'title'); // unset title so both title and tooltip do not show up
+				}
+			}
+		},
         getTooptipHtmlForToken : function(token) {
             if (typeof token != 'string') {
                 console.error("cannot calc tooltip" + token);

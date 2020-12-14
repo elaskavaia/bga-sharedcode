@@ -16,6 +16,7 @@
  *
  */
 require_once (APP_GAMEMODULE_PATH . 'module/table/table.game.php');
+require_once (APP_GAMEMODULE_PATH . 'module/common/deck.game.php');
 
 
 require_once ('modules/EuroGame.php');
@@ -42,7 +43,9 @@ class SharedCode extends EuroGame {
         //    "my_second_game_variant" => 101,
         //      ...
         ));
-        $this->gameinit = false;
+        $this->cards = self::getNew( "module.common.deck" );
+        $this->cards->init( "card" );
+
     }
 
     protected function getGameName() {
@@ -57,47 +60,41 @@ class SharedCode extends EuroGame {
      * In this method, you must setup the game according to the game rules, so that
      * the game is ready to be played.
      */
-    protected function setupNewGame($players, $options = array()) {
-        $this->gameinit = true;
-        try {
-            // Set the colors of the players with HTML color code
-            // The default below is red/green/blue/orange/brown
-            // The number of colors defined here must correspond to the maximum number of players allowed for the gams
-            $gameinfos = self::getGameinfos();
-            $default_colors = $gameinfos ['player_colors'];
-            // Create players
-            // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
-            $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
-            $values = array ();
-            foreach ( $players as $player_id => $player ) {
-                $color = array_shift($default_colors);
-                $values [] = "('" . $player_id . "','$color','" . $player ['player_canal'] . "','" . addslashes($player ['player_name']) . "','" . addslashes($player ['player_avatar']) . "')";
-            }
-            $sql .= implode($values, ',');
-            self::DbQuery($sql);
-            self::reattributeColorsBasedOnPreferences($players, $gameinfos ['player_colors']);
-            self::reloadPlayersBasicInfos();
-            /**
-             * ********** Start the game initialization ****
-             */
-            // Init global values with their initial values
-            self::setGameStateInitialValue('resource_id_counter', 1);
-            self::setGameStateInitialValue('round', 0);
-            // Init game statistics
-            // (note: statistics used in this file must be defined in your stats.inc.php file)
-            //self::initStat( 'table', 'table_teststat1', 0 );    // Init a table statistics
-            //self::initStat( 'player', 'player_teststat1', 0 );  // Init a player statistics (for all players)
-            // TODO: setup the initial game situation here
-
-        } catch ( Exception $e ) {
-            $this->dump('err', $e);
-            $this->error("Error during game initialization: $e");
-        }
-        $this->gameinit = false;
-        $this->activeNextPlayer();
+    protected function setupNewGame($players, $options = array ()) {
+        /**
+         * ********** Start the game initialization ****
+         */
+        $this->initPlayers($players);
+        $this->initStats();
+        // Setup the initial game situation here
+        $this->initTables();
     /**
      * ********** End of the game initialization ****
      */
+    }
+
+    protected function initTables() {
+  
+        // Create cards
+        $cards = array();
+ 
+        $cards[] = array( 'type' => 'card_red', 'type_arg' => 1, 'nbr' => 10);
+        $cards[] = array( 'type' => 'card_blue', 'type_arg' => 2, 'nbr' => 8);
+        $cards[] = array( 'type' => 'card_green', 'type_arg' => 3, 'nbr' => 5);
+     
+        
+        $this->cards->createCards( $cards, 'deck' );
+        $this->cards->shuffle('deck');
+        $players = self::loadPlayersBasicInfos();
+        foreach ( $players as $player_id => $player ) {
+            $this->cards->pickCards(3, 'deck', $player_id);
+   
+            //self::notifyPlayer($player_id, 'cardsMoved', '', array ('cards' => $cards, 'location' => 'hand' ));
+        }
+        
+        // Init global values with their initial values
+        self::setGameStateInitialValue('resource_id_counter', 1);
+        self::setGameStateInitialValue('round', 0);
     }
 
     /*
@@ -110,15 +107,12 @@ class SharedCode extends EuroGame {
      * _ when a player refreshes the game page (F5)
      */
     protected function getAllDatas() {
-        $result = array ('players' => array () );
-        $current_player_id = self::getCurrentPlayerId(); // !! We must only return informations visible by this player !!
-        // Get information about players
-        // Note: you can retrieve some extra field you added for "player" table in "dbmodel.sql" if you need it.
-        $sql = "SELECT player_id id, player_score score FROM player ";
-        $result ['players'] = self::getCollectionFromDb($sql);
-        // TODO: Gather all information about current game situation (visible by player $current_player_id).
-        $result ['tokens'] = [];
-        $result ['token_types'] = $this->token_types;
+        $result = parent::getAllDatas();
+        $current_player_id = self::getCurrentPlayerId();
+        $cards = $this->cards->getCardsInLocation( 'hand', $current_player_id+0, "type_arg" );
+        
+        $result['hand']=$cards;
+        $result['play_area']= $this->cards->getCardsInLocation( 'play_area', null, "location_arg"  );
         return $result;
     }
 
@@ -144,25 +138,7 @@ class SharedCode extends EuroGame {
         /*
      * In this space, you can put any utility methods useful for your game logic
      */
-    function dbSetTokenLocation($token_id, $place_id, $state = null, $notif = '*', $args = null) {
-        $this->systemAssertTrue("token_id is null/empty $token_id, $place_id $notif", $token_id != null && $token_id != '');
-        if ($args == null)
-            $args = array ();
-        if ($notif === '*')
-            $notif = clienttranslate('${player_name} moves ${token_name} into ${place_name}');
-        if ($state === null) {
-            $state = $this->tokens->getTokenState($token_id);
-        }
-        $this->tokens->moveToken($token_id, $place_id, $state);
-        $notifyArgs = array ('token_id' => $token_id,'place_id' => $place_id,'token_name' => $token_id,
-                'place_name' => $place_id,'new_state' => $state );
-        $args = array_merge($notifyArgs, $args);
-        $type = "tokenMoved";
 
-
-        //$this->warn("$type $notif ".$args['token_id']." -> ".$args['place_id']."|");
-        $this->notifyWithName($type, $notif, $args);
-    }
     
     //////////////////////////////////////////////////////////////////////////////
     //////////// Player actions
@@ -204,6 +180,21 @@ class SharedCode extends EuroGame {
         $this->gamestate->nextState('next');
     }
     
+    function action_drawCard() {
+        self::checkAction('drawCard');
+        $player_id = self::getActivePlayerId();
+        $this->dbSetTokenLocation($token_id, $place_id, 0);
+        $this->notifyPlayer($player_id, 'playerLog', '${You} moved cube', [ 'You' => 'You' ]);
+        $this->gamestate->nextState('next');
+    }
+    
+    function action_playCard($card_id) {
+        self::checkAction('playCard');
+        $player_id = self::getActivePlayerId();
+        $this->dbSetTokenLocation($token_id, $place_id, 0);
+        $this->gamestate->nextState('next');
+    }
+    
     function stMultiactive() {
         $this->gamestate->setAllPlayersMultiactive();
     }
@@ -227,6 +218,9 @@ class SharedCode extends EuroGame {
         $counter = self::getGameStateValue('resource_id_counter');
         // return values:
         return array ('cubeTypeNumber' => $takeCubeNumber,'resource_id_counter' => $counter );
+    }
+    function arg_playerTurnPlayCards() {
+        return [];
     }
         //////////////////////////////////////////////////////////////////////////////
         //////////// Game state actions
