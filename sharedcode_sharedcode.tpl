@@ -45,9 +45,9 @@
 	</div>
 	<div class="cardgame">
 		<h2>My Hand</h2>
-	     <div id="hand" class="hand active_hand whiteblock"></div>
+	     <div id="hand" class="hand active_hand whiteblock location"></div>
 	     <h2>Play Area</h2>
-	     <div id="play_area" class="play_area whiteblock"></div>
+	     <div id="playarea" class="playarea whiteblock location"></div>
 	</div>
 	<div class="funcontrols">
 		<div class="flip-container">

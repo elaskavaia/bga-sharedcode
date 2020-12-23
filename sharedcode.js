@@ -40,36 +40,36 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter", "ebg/st
 			this.connectClass("action_space", 'onclick', 'onActionSpace');
 			// connect cubes
 			this.connectClass("wcube", 'onclick', 'onCube');
+			this.connectClass("location", 'onclick', 'onLocation');
 
+			dojo.create("div", { class: "card purple", id: 'card_purple' }, 'basket_1');
 
-			this.cardwidth = 64;
-			this.cardheight = 78;
+			this.purpleDrag = this.createMyDraggable('card_purple', ['basket_1', 'basket_2']);
 			this.playerHand = new ebg.stock();
-			this.playerHand.create(this, $('hand'), this.cardwidth, this.cardheight);
+			this.initMyStock(this.playerHand, $('hand'));
+
+
 			this.playArea = new ebg.stock();
-			this.playArea.create(this, $('play_area'), this.cardwidth, this.cardheight);
-			for (var key in this.gamedatas.token_types) {
-				if (key.startsWith('card')) {
-					var cardInfo = this.gamedatas.token_types[key];
-					//78_64_stand_meeples.png
-					this.playerHand.addItemType(cardInfo.t, 0, g_gamethemeurl + 'img/78_64_stand_meeples.png', cardInfo.ipos);
-					this.playArea.addItemType(cardInfo.t, 0, g_gamethemeurl + 'img/78_64_stand_meeples.png', cardInfo.ipos);
-				}
-			}
+			this.initMyStock(this.playArea, $('playarea'));
+
+
 			var hand = this.gamedatas.hand;
 			for (var i = 0; i < hand.length; i++) {
 				var card = this.gamedatas.hand[i];
 				this.playerHand.addToStockWithId(card.type_arg, card.id);
 				var div = this.playerHand.getItemDivId(card.id);
-				dojo.addClass(div, "card " + card.type);
-				var cardInfo = this.gamedatas.token_types[card.type];
-				dojo.setStyle(div, "background-color", cardInfo.cn);
-				//console.log(`setting bg ${card.cn} on ${div}`);
-				this.updateTooltip(card.type,div);
+
+				this.createMyDraggableInStock(div, ['playarea']);
+			}
+			var hand = this.gamedatas.playarea;
+			for (var i = 0; i < hand.length; i++) {
+				var card = this.gamedatas.hand[i];
+				this.playArea.addToStockWithId(card.type_arg, card.id);
 			}
 
 			console.log("Ending game setup");
 		},
+
 		setupPlayer: function(playerId, playerInfo) {
 			var playerBoardDiv = dojo.byId('player_board_' + playerId);
 			var div = this.format_block('jstpl_player_board', playerInfo);
@@ -149,25 +149,188 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter", "ebg/st
 						});
 						this.addImageActionButton('button_take', tokenDiv, 'onTakeCube');
 						break;
-						
+
 					case 'playerTurnPlayCards':
-					   this.addActionButton('button_draw', _('Draw'), ()=>{
-						  this.ajaxAction('drawCard',{});
-					   });
-					   this.addActionButton('button_done', _('Done'), 'onDone');
-					   break;
+						dojo.query(".playarea,.hand").addClass('active_slot');
+						this.addActionButton('button_draw', _('Draw'), () => {
+							this.ajaxAction('drawCard', {});
+						});
+						this.addActionButton('button_done', _('Done'), 'onDone');
+						break;
 					case 'client_selectCardLocation':
-						this.clientStateArgs.action='playCard';
-						dojo.query(".play_area,.hand").addClass('active_slot');
+						this.clientStateArgs.action = 'playCard';
+						dojo.query(".playarea,.hand").addClass('active_slot');
 						dojo.addClass(this.clientStateArgs.token_id, 'selected');
 						this.addActionButton('button_cancel', _('Cancel'), 'onCancel');
 						break;
-						
+
 				}
 			}
 		},
 		// /////////////////////////////////////////////////
 		// // Utility methods
+
+
+		getDragTarget: function(item_id, allDragTargets, left, top) {
+			for (var i = 0; i < allDragTargets.length; i++) {
+				var pid = allDragTargets[i];
+				var coords = dojo.position(pid);
+				var coordsItem = dojo.position(item_id);
+
+				var inb = this.isInBounds(coordsItem.x, coordsItem.y, coords, 10);
+				//console.log("coords ", coords.x, coords.y, coords.w, coords.h, "pos", left, top, "coords2 ", coordsItem.x, coordsItem.y,"=>",inb);
+				if (inb) return pid;
+
+			}
+			return null;
+		},
+		isInBounds: function(x, y, box, margin) {
+			if (typeof margin == 'undefined') margin = 5;
+			if (x < box.x - margin) return false;
+			if (x > box.x + box.w + margin) return false;
+			if (y < box.y - margin) return false;
+			if (y > box.y + box.h + margin) return false;
+			return true;
+		},
+		createMyDraggable: function(targetDivId, allDragTargets) {
+			var draggableObj = new ebg.draggable();
+			draggableObj.create(this, targetDivId, targetDivId);
+
+			dojo.connect(draggableObj, 'onStartDragging', this, (item_id, left, top) => {
+				console.log("onStart", item_id, left, top);
+				this.attachToNewParentNoDestroy(targetDivId, $(targetDivId).parentNode);
+
+				for (var i = 0; i < allDragTargets.length; i++) {
+					dojo.addClass(allDragTargets[i], "drag_target");
+				}
+
+			});
+			dojo.connect(draggableObj, 'onDragging', this, (item_id, left, top, dx, dy) => {
+
+				//console.log("onDrag", item_id, left, top, dx, dy);
+
+				var targetParent = this.getDragTarget(item_id, allDragTargets, left, top);
+				if (targetParent) {
+					dojo.query(".drag_target_hover").removeClass("drag_target_hover");
+					dojo.addClass(targetParent, "drag_target_hover");
+				}
+
+			});
+			dojo.connect(draggableObj, 'onEndDragging', this, (item_id, left, top, bDragged) => {
+				console.log("onDrop", item_id, left, top, bDragged);
+
+				if (bDragged) {
+					var targetParent = this.getDragTarget(item_id, allDragTargets, left, top);
+					if (targetParent) {
+						this.attachToNewParentNoDestroy(item_id, targetParent);
+						this.stripPosition(item_id);
+					} else {
+						bDragged = false;
+					}
+				}
+				if (!bDragged) {
+					this.stripPosition(item_id);
+				}
+				for (var i = 0; i < allDragTargets.length; i++) {
+					dojo.removeClass(allDragTargets[i], "drag_target");
+					dojo.removeClass(allDragTargets[i], "drag_target_hover");
+				}
+			});
+			return draggableObj;
+		},
+
+		getStockByTargetId: function(locationId) {
+			var tostock = null;
+			if (locationId == 'playarea') {
+				tostock = this.playArea;
+			} else if (locationId == 'hand') {
+				tostock = this.playerHand;
+			}
+			return tostock;
+		},
+		getStockSourceByDivId: function(cardDivId) {
+			var first = getPart(cardDivId, 0);
+			return this.getStockByTargetId(first);
+		},
+		getStockCardIdByDivId: function(cardDivId) {
+			var num = getIntPart(cardDivId, -1);
+			return num;
+		},
+
+		createMyDraggableInStock: function(targetDivId, allDragTargets) {
+			var draggableObj = new ebg.draggable();
+			draggableObj.create(this, targetDivId, targetDivId);
+
+			dojo.connect(draggableObj, 'onStartDragging', this, (item_id, left, top) => {
+				//console.log("onStart", item_id, left, top);
+			});
+			dojo.connect(draggableObj, 'onDragging', this, (item_id, left, top, dx, dy) => {
+				//console.log("onDrag", item_id, left, top, dx, dy);
+				var targetParent = this.getDragTarget(item_id, allDragTargets, left, top);
+				if (targetParent) {
+					dojo.query(".drag_target_hover").removeClass("drag_target_hover");
+					dojo.addClass(targetParent, "drag_target_hover");
+				}
+
+			});
+			dojo.connect(draggableObj, 'onEndDragging', this, (item_id, left, top, bDragged) => {
+				if (!bDragged) return;
+				//console.log("onDrop", item_id, left, top, bDragged);
+				var targetParent = this.getDragTarget(item_id, allDragTargets, left, top);
+				const fromstock = this.getStockSourceByDivId(item_id);
+				const cardId = this.getStockCardIdByDivId(item_id);
+				const tostock = this.getStockByTargetId(targetParent);
+				if (tostock && tostock != fromstock) {
+					var cardType = fromstock.getItemTypeById(cardId);
+					tostock.addToStockWithId(cardType, cardId);
+					fromstock.removeFromStockById(cardId);
+				} else {
+					fromstock.resetItemsPosition();
+				}
+
+				dojo.query(".drag_target_hover").removeClass("drag_target_hover");
+			});
+			return draggableObj;
+		},
+
+		// initialize any stock component that can work with my cards
+		initMyStock: function(mystock, parent) {
+			mystock.create(this, parent, 64, 78);
+
+			mystock.onItemDelete = (card_div, card_type_id, card_id) => {
+				console.log("card deleted from myStock: " + card_id);
+			};
+			mystock.onItemCreate = (div, card_type_id, card_id) => {
+				console.log("card added myStock: " + card_id);
+
+				var cardInfo = this.getCardInfoByTypeId(card_type_id);
+				dojo.addClass(div, "card " + cardInfo.type);
+
+				dojo.setStyle(div, "background-color", cardInfo.cn);
+				//console.log(`setting bg ${card.cn} on ${div}`);
+				this.updateTooltip(cardInfo.type, div);
+			};
+			//var cardImage =  g_gamethemeurl + 'img/78_64_stand_meeples.png';
+			var cardImage = g_gamethemeurl + 'img/none.png';
+			for (var key in this.gamedatas.token_types) {
+				if (key.startsWith('card')) {
+					var cardInfo = this.gamedatas.token_types[key];
+
+					mystock.addItemType(cardInfo.t, 0, cardImage, cardInfo.ipos);
+				}
+			}
+		},
+		getCardInfoByTypeId: function(card_type_id) {
+			for (var key in this.gamedatas.token_types) {
+				if (key.startsWith('card')) {
+					var cardInfo = this.gamedatas.token_types[key];
+					if (parseInt(cardInfo.t) == parseInt(card_type_id)) {
+						return cardInfo;
+					}
+				}
+			}
+		},
+
 		/** @Override */
 		format_string_recursive: function(log, args) {
 			try {
@@ -277,18 +440,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter", "ebg/st
 				this.ajaxAction("moveCube", this.clientStateArgs);
 			}
 		},
-		onLocation: function(event) {
-			var id = event.currentTarget.id;
-			dojo.stopEvent(event);
-			console.log("on zone " + id);
-			if (!this.checkActivePlayerAndSlot(id)) return;
-			if (this.clientStateArgs.token_id) {
-				dojo.addClass(id, "selected");
-				this.clientStateArgs.place_id = id;
-				// client side animation
-				
-			}
-		},
+
 		onActionSpace: function(event) {
 			var id = event.currentTarget.id;
 			dojo.stopEvent(event);
@@ -320,12 +472,32 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter", "ebg/st
 			var id = event.currentTarget.id;
 			dojo.stopEvent(event);
 			console.log("on card " + id);
+			//..
+		},
+
+		onLocation: function(event) {
+			var id = event.currentTarget.id;
+			dojo.stopEvent(event);
+			console.log("on zone " + id);
 			if (!this.checkActivePlayerAndSlot(id)) return;
+			var fromstock = this.playerHand;
+			const tostock = this.getStockByTargetId(id);
+			if (!tostock) {
+				this.showError('Invalid move');
+				return;
+			}
+			if (fromstock == tostock) fromstock = this.playArea;
+
+			var selected = fromstock.getSelectedItems();
 			dojo.addClass(id, "selected");
-			this.clientStateArgs.token_id = id;
-			this.setClientState("client_selectCardLocation", {
-				descriptionmyturn: _('${you} must select location for the card'),
-			});
+			this.clientStateArgs.place_id = id;
+
+			for (var i = 0; i < selected.length; i++) {
+				var scard = selected[i];
+				// client side animation
+				tostock.addToStockWithId(scard.type, scard.id, fromstock.container_div.id);
+				fromstock.removeFromStockById(scard.id);
+			}
 		},
 		/**
 		 * This is light weight undo support. You use local states, and this one erases it.

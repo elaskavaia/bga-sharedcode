@@ -28,11 +28,11 @@ function joinId(first, second) {
     return first + '_' + second;
 };
 function getIntPart(word, i) {
-    var arr = word.split('_');
-    return parseInt(arr[i]);
+    return parseInt(getPart(word, i));
 };
 function getPart(word, i) {
     var arr = word.split('_');
+    if (i<0) i=arr.length+i;
     return arr[i];
 };
 function getFirstParts(word, count) {

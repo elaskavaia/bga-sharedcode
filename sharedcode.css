@@ -254,7 +254,7 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 }
 
 /** Stock areas */
-.play_area, .hand {
+.playarea, .hand {
    min-width: 300px;
    min-height: 78px;
    padding: 10px;	
@@ -316,6 +316,22 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 
 .back.card {
 	background-color: blue;
+}
+.purple {
+	background-color: purple;
+}
+.purple.card {
+	width: 64px;
+	height: 73px;
+}
+
+/** */
+.drag_target {
+	outline: dotted blue;
+}
+
+.drag_target_hover {
+	outline: solid blue;
 }
 
 /** Dice rolling effect */

@@ -112,7 +112,7 @@ class SharedCode extends EuroGame {
         $cards = $this->cards->getCardsInLocation( 'hand', $current_player_id+0, "type_arg" );
         
         $result['hand']=$cards;
-        $result['play_area']= $this->cards->getCardsInLocation( 'play_area', null, "location_arg"  );
+        $result['playarea']= $this->cards->getCardsInLocation( 'playarea', null, "location_arg"  );
         return $result;
     }
 
@@ -158,6 +158,9 @@ class SharedCode extends EuroGame {
         switch ($action_id) {
             case 'action_space_1':
                 $this->gamestate->nextState('playCubes');
+                return;
+            case 'action_space_2':
+                $this->gamestate->nextState('playCards');
                 return;
             default:
                 $this->userAssertTrue(self::_("Action is not supported yet"),false,$action_id);
