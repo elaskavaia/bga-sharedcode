@@ -152,9 +152,11 @@ function genbody($incsv) {
             if ($key=='id') continue;
             if (startsWith($key, "-")) continue;
             if (!$value && $value!=='0') continue;
+            $value=str_replace("’", "'", $value);
+            $value=str_replace("‘", "'", $value);
             $value=varsub($value,$fields);
             if ($key=='php') {
-                $value=str_replace("’", "'", $value);
+
                // $value=str_replace(",", ",\n  ", $value);// XXX remove
                
                 fwrite($out, "  $value,\n");
