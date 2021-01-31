@@ -1,6 +1,6 @@
 <?php
 define( "APP_GAMEMODULE_PATH", "./" ); // include path to mocks, this defined "Table" and other classes
-require_once ('../sharedcode.game.php'); // include real game class
+require_once ('sharedcode.game.php'); // include real game class
 
 class SharedCodeTest1 extends SharedCode {
 
