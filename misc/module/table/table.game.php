@@ -123,6 +123,9 @@ class Table extends APP_GameClass {
         return 0;
     }
 
+    function setGameStateValue($value_label, $value_value) {
+    }
+
     function _($s) {
         return $s;
     }
@@ -150,6 +153,15 @@ class Table extends APP_GameClass {
             $id ++;
         }
         return $values;
+    }
+
+    function getGameinfos() {
+        unset($gameinfos);
+        require ('gameinfos.inc.php');
+        if (isset($gameinfos)) {
+            return $gameinfos;
+        }
+        throw new feException("gameinfos.inp.php suppose to define \$gameinfos variable");
     }
 }
 
@@ -186,4 +198,8 @@ function clienttranslate($x) {
 
 function mysql_fetch_assoc($res) {
     return array ();
+}
+
+function totranslate($text) {
+    return $text;
 }
