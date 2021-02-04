@@ -263,6 +263,35 @@ abstract class APP_Extended extends Table {
         return array_keys($players);
     }
     
+    function getPlayerIdsInOrder($starting) {
+        $player_ids = $this->getPlayerIds();
+        $rotate_count = array_search($starting, $player_ids);
+        if ($rotate_count === false) {
+            return $player_ids;
+        }
+        for ($i = 0; $i < $rotate_count; $i++) {
+            array_push($player_ids, array_shift($player_ids));
+        }
+        return $player_ids;
+    }
+    
+    /**
+     * Return player table in order starting from $staring player id, if $starting is not in the player table
+     * i.e. spectator returns same as loadPlayersBasicInfos(), i.e. natural player order
+     * This is useful in view.php file
+     * @param number $starting - player number
+     * @return string[][] - map of playerId => playerInfo
+     */
+    function getPlayersInOrder($starting) {
+        $players = $this->loadPlayersBasicInfos();
+        $player_ids = $this->getPlayerIdsInOrder($starting);
+        $result = [];
+        foreach ($player_ids as $player_id) {
+            $result[$player_id]=$players[$player_id];
+        }
+        return $result;
+    }
+    
     function debugConsole($info, $args = array()) {
         $this->notifyAllPlayers("log", $info, $args);
         $this->warn($info);
