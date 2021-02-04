@@ -1,205 +1,125 @@
 <?php
 
-/**
- * Collection of stub classes for testing
- */
+define('APP_GAMEMODULE_PATH', '');
 
 class APP_Object {    
-    function dump($v, $value) {
-        echo "$v=";
-        var_dump($value);
-    }
-    
-    function info($value) {
-        echo "$value\n";
-    }
-    
-    function trace($value) {
-        echo "$value\n";
-    }
-    
-    function debug($value) {
-        echo "$value\n";
-    }
-    
-    function watch($value) {
-        echo "$value\n";
-    }
-    
-    function warn($value) {
-        echo "$value\n";
-    }
-    
-    function error($msg) {
-        echo "$msg\n";
-    }
+    static function dump($name_of_variable, $variable) {}
+    static function info($message) {}
+    static function trace($message) {}
+    static function debug($message) {}
+    static function watch($message) {}
+    static function warn($message) {}
+    static function error($message) {}
 }
+
 class APP_DbObject extends APP_Object{
-    public $query;
-
-    function DbQuery($str) {
-        $this->query = $str;
-        echo "dbquery: $str\n";
-    }
-
-    function getCollectionFromDB($query, $single = false) {
-        echo "dbquery coll: $query\n";
-        return array ();
-    }
-
-    function getObjectListFromDB($query, $single = false) {
-        echo "dbquery list: $query\n";
-        return array ();
-    }
-
-    function getUniqueValueFromDB() {
-        return 0;
-    }
-    
-
+    static function DbQuery($sql) {}
+    static function getUniqueValueFromDB($sql) {}
+    static function getCollectionFromDB($sql, $bSingleValue=false) {return array();}
+    static function getNonEmptyCollectionFromDB($sql) {return array();}
+    static function getObjectFromDB($sql) {return array();}
+    static function getNonEmptyObjectFromDB($sql) {return array();}
+    static function getObjectListFromDB($sql, $bUniqueValue=false) {return array();}
+    static function getDoubleKeyCollectionFromDB($sql, $bSingleValue=false) {return array();}
+    static function DbGetLastId() {}
+    static function DbAffectedRow() {}
+    static function escapeStringForDB($string) {}
 }
 
 class APP_GameClass extends APP_DbObject {
-    public function __construct() {
-        
-    }
+    public function __construct() {}
 }
 
 class GameState {
-
-    function GameState() {
-    }
-
-    function state() {
-        return array ();
-    }
+    function GameState() {}
+    function state() {}
+    function changeActivePlayer($player_id) {}
+    function setAllPlayersMultiactive() {}
+    function setAllPlayersNonMultiactive($next_state) {}
+    function setPlayersMultiactive($players, $next_state, $bExclusive = false) {}
+    function setPlayerNonMultiactive($player_id, $next_state) {}
+    function getActivePlayerList() {}
+    function updateMultiactiveOrNextState($next_state_if_none) {}
+    function nextState($transition) {}
+    function checkPossibleAction($action) {}
 }
 
-class BgaUserException extends Exception {
-}
-
-class BgaVisibleSystemException extends Exception {
-}
-
-class feException extends Exception {
-}
-
+class BgaUserException extends Exception {}
+class BgaVisibleSystemException extends Exception {}
+class feException extends Exception {}
 
 class Table extends APP_GameClass {
+    public static $gamestate;
+    public static $players;
 
     public function __construct() {
         parent::__construct();
         $this->gamestate = new GameState();
-        $this->players = array (
-                1 => array ('player_name' => $this->getActivePlayerName(),'player_color' => 'ff0000' ),
-                2 => array ('player_name' => 'player2','player_color' => '0000ff' ) );
+        $this->players = array ();
     }
 
-    function getActivePlayerId() {
-        return 1;
-    }
+    static function getPlayersNumber() {return 0;}
+    static function getActivePlayerId() {return 0;}
+    static function getActivePlayerName() {return '';}
+    static function loadPlayersBasicInfos() {return array();}
+    static function getCurrentPlayerId() {return 0;}
+    static function getCurrentPlayerName() {return '';}
+    static function getCurrentPlayerColor() {return '';}
+    static function isCurrentPlayerZombie() {return false;}
+    static function getActivePlayerColor() {return '';}
 
-    function getActivePlayerName() {
-        return "player1";
-    }
+    static function initGameStateLabels($labels) {}
+    static function setGameStateInitialValue($value_label, $value_value) {}
+    static function getGameStateValue($value_label) {return 0;}
+    static function setGameStateValue($value_label, $value_value) {}
+    static function incGameStateValue($value_label, $increment) {return 0;}
 
-    function initGameStateLabels($labels) {
-    }
+    static function activeNextPlayer() {}
+    static function activePrevPlayer() {}
+    static function checkAction($actionName, $bThrowException=true) {}
+    
+    static function getNextPlayerTable() {return 0;}
+    static function getPrevPlayerTable() {return 0;}
+    static function getPlayerAfter($player_id) {return 0;}
+    static function getPlayerBefore($player_id) {return 0;}
+    static function createNextPlayerTable($players, $bLoop=true) {return array();}
+    static function createPrevPlayerTable($players, $bLoop=true) {return array();}
 
-    function notifyAllPlayers($type, $message, $args) {
-        $args2 = array ();
-        foreach ( $args as $key => $val ) {
-            $key = '${' . $key . '}';
-            $args2 [$key] = $val;
-        }
-        echo "$type: $message\n";
-        //. strtr($message,                $args2)
-        echo "\n";
-    }
+    static function notifyAllPlayers($notification_type, $notification_log, $notification_args) {}
+    static function notifyPlayer($player_id, $notification_type, $notification_log, $notification_args) {}
 
+    static function initStat($table_or_player, $name, $value, $player_id = null) {}
+    static function setStat($value, $name, $player_id = null) {}
+    static function incStat($delta, $name, $player_id = null) {}
+    static function getStat($name, $player_id = null) {return 0;}
 
+    static function _($s) {return $s;}
 
-    function getGameStateValue($var) {
-        return 0;
-    }
-
-    function setGameStateValue($value_label, $value_value) {
-    }
-
-    function _($s) {
-        return $s;
-    }
-
-    function getPlayersNumber() {
-        return 2;
-    }
-
-
-
-    function setStat( $value, $name, $player_id = null, $bDoNotLoop=false ) {
-     echo "stat: $name=$value\n";
-    }
-
-    function getStatTypes() {
-        return array ();
-    }
-
-    function loadPlayersBasicInfos() {
-        $default_colors = array ("ff0000","008000","0000ff","ffa500","4c1b5b" );
-        $values = array ();
-        $id = 1;
-        foreach ( $default_colors as $color ) {
-            $values [$id] = array ('player_id' => $id,'player_color' => $color,'player_name' => "player$id" );
-            $id ++;
-        }
-        return $values;
-    }
-
-    function getGameinfos() {
-        unset($gameinfos);
-        require ('gameinfos.inc.php');
-        if (isset($gameinfos)) {
-            return $gameinfos;
-        }
-        throw new feException("gameinfos.inp.php suppose to define \$gameinfos variable");
-    }
+    static function reattributeColorsBasedOnPreferences($players, $colors) {}
+    static function reloadPlayersBasicInfos() {}
+    static function getNew($deck_definition) {}
+    static function giveExtraTime($player_id) {}
+    static function getStandardGameResultObject() {return array();}
+    static function applyDbChangeToAllDB($sql) {} // DEPRECATED
+    static function applyDbUpgradeToAllDB($sql) {} // DEPRECATED
 }
 
 class Page {
     public $blocks = array ();
 
-    public function begin_block($template, $block) {
-        $this->blocks [$block] = array ();
-    }
-
-    public function insert_block($block, $args) {
-        $this->blocks [$block] [] = $args;
-    }
+    public function begin_block($template, $block) {}
+    public function insert_block($block, $args) {}
 }
 
 class GUser {
-
-    public function get_id() {
-        return 1;
-    }
+    public function get_id() {return 0;}
 }
 
-class game_view {
-    
-}
+class game_view {}
+class APP_GameAction {}
 
-class APP_GameAction {
-    
-}
-
-function clienttranslate($x) {
-    return $x;
-}
-
-function mysql_fetch_assoc($res) {
-    return array ();
-}
-
-function totranslate($text) {
-    return $text;
-}
+function clienttranslate($x) {return $x;}
+function mysql_fetch_assoc($res) {return array();}
+function bga_rand($min, $max) {return 0;}
+function getKeysWithMaximum($array) {return array();}
+function getKeyWithMaximum($array) {return '';}
