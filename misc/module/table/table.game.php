@@ -383,7 +383,7 @@ function bga_rand($min, $max) {
     return 0;
 }
 
-function getKeysWithMaximum($array) {
+function getKeysWithMaximum( $array, $bWithMaximum=true ) {
     return array ();
 }
 
