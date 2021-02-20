@@ -216,9 +216,15 @@ abstract class Table extends APP_GameClass {
         return 0;
     }
     
+    /**
+     *   Make the next player active (in natural order)
+     */
     protected function activeNextPlayer() {
     }
     
+    /**
+     *   Make the previous player active  (in natural order)
+     */
     protected function activePrevPlayer() {
     }
     
