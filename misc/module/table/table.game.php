@@ -1,5 +1,8 @@
 <?php
-define('APP_GAMEMODULE_PATH', '');
+
+if ( !defined('APP_GAMEMODULE_PATH')) { 
+    define('APP_GAMEMODULE_PATH', '');
+}
 
 /**
  * Collection of stub classes for testing and stubs

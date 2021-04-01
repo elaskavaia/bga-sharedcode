@@ -8,7 +8,9 @@
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com. See
  * http://en.boardgamearena.com/#!doc/Studio for more information.
  */
-define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter", "ebg/stock",
+define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter", 
+    "ebg/stock", // stock
+    "ebg/scrollmap", // scollmap
 	// load my own module!!!
 	g_gamethemeurl + "modules/sharedparent.js"], function(dojo,
 		declare) {
@@ -19,6 +21,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter", "ebg/st
 			// Here, you can init the global variables of your user interface
 			// Example:
 			// this.myGlobalValue = 0;
+			        // Scrollable area        	
+        	this.scrollmap = new ebg.scrollmap();
 		},
 		/*
 		 * setup:
@@ -66,6 +70,10 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter", "ebg/st
 				var card = this.gamedatas.hand[i];
 				this.playArea.addToStockWithId(card.type_arg, card.id);
 			}
+			// Make map scrollable        	
+			this.scrollmap.create($('map_container'), $('map_scrollable'), $('map_surface'), $('map_scrollable_oversurface'));
+			this.scrollmap.setupOnScreenArrows(150); // this will hook buttons to onclick functions with 150px scroll step
+			dojo.create("div", { class: "smeeple" }, "map_scrollable_oversurface");
 
 			console.log("Ending game setup");
 		},

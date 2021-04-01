@@ -247,7 +247,9 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 .basket>* {
 	display: inline-block;
 }
-
+.funcontrols{
+	height: 350px;
+}
 .funcontrols>*{
 		display: inline-block;
 		margin-right: 30px;
@@ -633,3 +635,69 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
     transition: transform 2s ease-out
 }
 
+
+/** Scrollable area **/
+
+#map_container {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    
+    border: solid yellow;
+    margin-top: 10px;
+    margin-left: 500px;
+    width: 300px;
+}
+
+.map_scrollable_layer {
+    position: absolute;
+    min-height: 100px;
+    min-width: 100px;
+}
+.map_scrollable_oversurface{
+	background-color: #98d7dae8;
+}
+.map_scrollable{
+	background-color: #525e62;
+}
+.map_surface {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    cursor: move;
+}
+
+/** Move arrows **/
+
+.movetop,.moveleft,.moveright,.movedown {
+    display: block;
+    position: absolute;
+    background-image: url('../../../img/common/arrows.png');
+    width: 32px;
+    height: 32px;
+}
+
+.movetop {
+    top: 0px;
+    left: calc(50% - 32px / 2);
+    background-position: 0px 32px;
+}
+.moveleft {
+    top: calc(50% - 32px / 2);
+    left: 0px;
+    background-position: 32px 0px;
+}
+.moveright {
+    top: calc(50% - 32px / 2);
+    right: 0px;
+    background-position: 0px 0px;
+}
+.movedown {
+    bottom: 0px;
+    left: calc(50% - 32px / 2);
+    
+    background-position: 32px 32px;
+}

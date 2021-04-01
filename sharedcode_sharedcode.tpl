@@ -153,7 +153,19 @@
 			</div>
 		</div>
 	</div>
+	<div class="scrollmappanel">
+	<h2>Scroll Map Area</h2>
+		<div id="map_container" class="map_container">
+			<div id="map_scrollable" class="map_scrollable map_scrollable_layer map_layer"></div>
+			<div id="map_surface" class="map_surface map_layer"></div>
+			<div id="map_scrollable_oversurface" class="map_scrollable_oversurface map_scrollable_layer map_layer"></div>
 
+			<div class="movetop movearrow"></div>
+			<div class="movedown movearrow"></div>
+			<div class="moveleft movearrow"></div>
+			<div class="moveright movearrow"></div>
+		</div>
+	</div>
 </div>
 <script type="text/javascript">
     // Javascript HTML templates
