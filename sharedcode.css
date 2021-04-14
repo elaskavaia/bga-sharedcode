@@ -669,6 +669,12 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
     height: 100%;
     cursor: move;
 }
+.map_scrollable_oversurface{
+	pointer-events: none;
+}
+.map_scrollable_oversurface > *{
+	pointer-events: initial;
+}
 
 /** Move arrows **/
 
