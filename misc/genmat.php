@@ -52,13 +52,13 @@ $g_field_names = null;
 
 $g_index = 1;
 
-$g_trans = [ 'name','tooltip','tooptip_action' ];
+$g_trans = [ 'name','tooltip','tooltip_action' ];
 
 function handle_header($fields) {
     global $g_field_names;
     if ($fields [0] == 'element_id') {
         // old style header
-        $g_field_names = [ 'id','type','name','tooltip','tooptip_action' ];
+        $g_field_names = [ 'id','type','name','tooltip','tooltip_action' ];
     } else {
         $g_field_names = $fields;
         if (array_search('id',$g_field_names)===false) {
