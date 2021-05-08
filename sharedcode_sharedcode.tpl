@@ -44,12 +44,13 @@
 		<div id="basket_2" class="basket basket_2"></div>
 	</div>
 	<div class="cardgame">
-		<h2>My Hand</h2>
+		<h2>My Hand (Stock and DragNDrop)</h2>
 	     <div id="hand" class="hand active_hand whiteblock location"></div>
-	     <h2>Play Area</h2>
+	     <h2>Play Area (Stock)</h2>
 	     <div id="playarea" class="playarea whiteblock location"></div>
 	</div>
 	<div class="funcontrols">
+		<h2>Flip Cards and Roll Dice animations</h2>
 		<div class="flip-container">
 			<div class="flipper">
 				<div class="front card" id="card1">
@@ -165,6 +166,26 @@
 			<div class="moveleft movearrow"></div>
 			<div class="moveright movearrow"></div>
 		</div>
+	</div>
+	
+	<div class="flexbox">
+	<h2>Flexbox Animation (No stock)</h2>
+		<div id="flex1" class="tableau cards-flexbox location_x">
+		    <div id="card_x_1" class="purple card card_x"></div>
+		    <div id="card_x_2" class="red card card_x"></div>
+		    <div id="card_x_3" class="green card card_x"></div>
+		</div>
+		<div id="flex2" class="playzone cards-flexbox location_x">
+			<div id="card_x_4" class="blue card card_x"></div>
+		</div>
+		<h3>Absolute positioning zone</h3>
+		<div id="abs1" class="playzone abszone location_x">
+				<div id="card_x_5" class="gray card card_x selected" style="position: absolute;top: 50px; left: 50px"></div>
+		</div>
+		<div id="abs2" class="playzone abszone location_x">
+			
+		</div>
+
 	</div>
 </div>
 <script type="text/javascript">

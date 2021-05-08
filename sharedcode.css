@@ -25,9 +25,16 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
 	box-shadow: 1px 1px 2px 1px #222;
 }
 
+.notransition {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
+}
+
 .selected {
-	outline-color: blue;
-	box-shadow: 1px 1px 2px 1px #444, 0 0 5px blue, 0 0 5px darkblue;
+	outline-color: blue !important;
+	box-shadow: 1px 1px 2px 1px #444, 0 0 5px blue, 0 0 5px darkblue !important;
 }
 
 .active_slot:hover {
@@ -706,4 +713,45 @@ See http://en.boardgamearena.com/#!doc/Studio for more information.
     left: calc(50% - 32px / 2);
     
     background-position: 32px 32px;
+}
+
+/* flexbox*/
+
+.card_x {
+	background-color: white;
+	width: 64px;
+	height: 73px;
+	transition: all 0.5s;
+}
+.cards-flexbox {
+	width: 400px;
+	height: 200px;
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+	align-items: flex-start;
+	outline: green 1px solid;
+}
+.abszone {
+	width: 400px;
+	height: 200px;
+	outline: red 1px solid;
+	position: relative;
+	padding: 10px;
+}
+.abszone > * {
+	margin-top: 20px;
+}
+.gray {
+	background-color: gray;
+}
+.purple {
+	background-color: purple;
+}
+.red {
+	background-color: red;
+}
+.blue {
+	background-color: blue;
 }

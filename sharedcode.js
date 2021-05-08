@@ -74,6 +74,17 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter",
 			this.scrollmap.create($('map_container'), $('map_scrollable'), $('map_surface'), $('map_scrollable_oversurface'));
 			this.scrollmap.setupOnScreenArrows(150); // this will hook buttons to onclick functions with 150px scroll step
 			dojo.create("div", { class: "smeeple" }, "map_scrollable_oversurface");
+			
+			//Add animation hooks for flexbox
+			this.connectClass("card_x", 'onclick', 'onCardX');
+			this.connectClass("location_x", 'onclick', 'onLocationX');
+			
+			// add reload Css debug button
+			var parent = document.querySelector('.debug_section');
+			if (parent) {
+				var butt = dojo.create('a', { class: 'bgabutton bgabutton_gray', innerHTML: "Reload CSS" }, parent);
+				dojo.connect(butt, 'onclick', () => reloadCss());
+			}
 
 			console.log("Ending game setup");
 		},
@@ -481,6 +492,51 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter",
 			dojo.stopEvent(event);
 			console.log("on card " + id);
 			//..
+		},
+		
+		onCardX: function(event) {
+			var id = event.currentTarget.id;
+			dojo.stopEvent(event);
+			console.log("on card " + id);
+			//..
+			this.moveClass("selected",id);
+		},
+		
+		onLocationX: function(event) {
+			var id = event.currentTarget.id;
+			dojo.stopEvent(event);
+			console.log("on location " + id);
+
+			var node = document.querySelector(".selected.card_x");
+			if (!node) {
+				this.showError('Nothing is selected');
+				return;
+			}
+			var newLocId = id;
+			var to = $(newLocId);
+			var relation;
+
+			if (newLocId.startsWith('abs')) {
+				// Then refer to 
+				var rect = event.target.getBoundingClientRect();
+				var x = event.clientX - rect.left; //x position within the element.
+				var y = event.clientY - rect.top;  //y position within the element.
+
+				this.slideToObjectAbsolute(node, to, x, y, 1000, 0, null);
+			} else {
+				var num = getPart(node.id, 2);
+
+				while (--num > 0) {
+					var tnode = $('card_x_' + num);
+					if (tnode && tnode.parentNode.id == newLocId) {
+						newLocId = tnode;
+						relation = 'after';
+						break;
+					}
+				}
+				var to = $(newLocId);
+				this.slideToObjectRelative(node, to, 1000, 0, null, relation);
+			}
 		},
 
 		onLocation: function(event) {

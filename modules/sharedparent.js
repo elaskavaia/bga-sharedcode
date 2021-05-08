@@ -57,6 +57,24 @@ function cleanArray(actual) {
     }
     return newArray;
 };
+
+function reloadCss() {
+	var links = document.getElementsByTagName("link");
+	for (var cl in links) {
+		var link = links[cl];
+		if (link.rel === "stylesheet" && link.href.includes("99999")) {
+			var index = link.href.indexOf("?timestamp="); 
+			var href = link.href;
+			if (index >= 0) {
+				href = href.substring(0, index);
+			}
+
+			link.href = href + "?timestamp=" + Date.now();
+
+			console.log("reloading " + link.href);
+		}
+	}
+}
 /* ! https://mths.be/startswith v0.2.0 by @mathias */
 if (!String.prototype.startsWith) {
     (function() {
@@ -110,6 +128,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         constructor : function() {
             console.log('sharedparent constructor');
             this.globalid = 1; // global id used to inject tmp id's of objects
+			this.defaultAnimationDuration=500;
         },
         setup : function(gamedatas) {
             this.inherited(arguments);
@@ -209,10 +228,14 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
         stripPosition : function(token) {
             // console.log(token + " STRIPPING");
             // remove any added positioning style
-            dojo.style(token, "display", "");
-            dojo.style(token, "top", "");
-            dojo.style(token, "left", "");
-            dojo.style(token, "position", "");
+			token = $(token);
+
+			token.style.removeProperty("display");
+			token.style.removeProperty("top");
+			token.style.removeProperty("bottom");
+			token.style.removeProperty("left");
+			token.style.removeProperty("right");
+			token.style.removeProperty("position");
             // dojo.style(token, "transform", null);
         },
         stripTransition : function(token) {
@@ -224,81 +247,103 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             dojo.style(token, "-moz-transition", value);
             dojo.style(token, "-o-transition", value);
         },
-      		/**
+		/**
 		 * This method will attach mobile to a new_parent without destroying, unlike original attachToNewParent which destroys mobile and
 		 * all its connectors (onClick, etc)
 		 */
-		attachToNewParentNoDestroy: function(mobile, new_parent, relation) {
+		attachToNewParentNoDestroy: function(mobile_in, new_parent_in, relation, place_position) {
 			//console.log("attaching ",mobile,new_parent,relation);
-			if (mobile === null) {
-				console.error("attachToNewParent: mobile obj is null");
-				return;
-			}
-			if (new_parent === null) {
-				console.error("attachToNewParent: new_parent is null");
-				return;
-			}
-			if (typeof mobile == "string") {
-				mobile = $(mobile);
-			}
-			if (typeof new_parent == "string") {
-				new_parent = $(new_parent);
-			}
-			if (typeof relation == "undefined") {
-				relation = "last";
-			}
+			const mobile = $(mobile_in);
+			const new_parent = $(new_parent_in);
+
 			var src = dojo.position(mobile);
-			dojo.style(mobile, "position", "absolute");
+			if (place_position)
+				mobile.style.position = place_position;
 			dojo.place(mobile, new_parent, relation);
+			mobile.offsetTop;//force re-flow
 			var tgt = dojo.position(mobile);
 			var box = dojo.marginBox(mobile);
 			var cbox = dojo.contentBox(mobile);
 			var left = box.l + src.x - tgt.x;
 			var top = box.t + src.y - tgt.y;
-			this.positionObjectDirectly(mobile, left, top);
+
+			mobile.style.position = "absolute";
+			mobile.style.left = left + "px";
+			mobile.style.top = top + "px";
 			box.l += box.w - cbox.w;
 			box.t += box.h - cbox.h;
+			mobile.offsetTop;//force re-flow
 			return box;
 		},
-		/**
+		
+		/*
 		 * This method is similar to slideToObject but works on object which do not use inline style positioning. It also attaches object to
 		 * new parent immediately, so parent is correct during animation
 		 */
 		slideToObjectRelative: function(token, finalPlace, duration, delay, onEnd, relation) {
-			if (typeof token == 'string') {
-				token = $(token);
-			}
-
+			token = $(token);
 			this.delayedExec(() => {
-				dojo.addClass(token, 'moving_token');
-				this.setTransition(token, "none");
-				this.stripPosition(token);
-				var box = this.attachToNewParentNoDestroy(token, finalPlace, relation);
-				this.setTransition(token, "all " + duration + "ms ease-in-out");
-				this.positionObjectDirectly(token, box.l, box.t);
+				token.style.transition = "none";
+				token.classList.add('moving_token');
+				var box = this.attachToNewParentNoDestroy(token, finalPlace, relation, 'static');
+				token.offsetHeight; // re-flow
+				token.style.transition = "all " + duration + "ms ease-in-out";
+				token.style.left = box.l + "px";
+				token.style.top = box.t + "px";
 			}, () => {
-				this.stripTransition(token);
+				token.style.removeProperty("transition");
 				this.stripPosition(token);
-				dojo.removeClass(token, 'moving_token');
+				token.classList.remove('moving_token');
 				if (onEnd) onEnd(token);
 			}, duration, delay);
 		},
 		slideToObjectAbsolute: function(token, finalPlace, x, y, duration, delay, onEnd, relation) {
-			if (typeof token == 'string') {
-				token = $(token);
-			}
+			token = $(token);			
 			this.delayedExec(() => {
-				dojo.addClass(token, 'moving_token');
-				this.setTransition(token, "none");
-				this.attachToNewParentNoDestroy(token, finalPlace, relation);
-				this.setTransition(token, "all " + duration + "ms ease-in-out");
-				this.positionObjectDirectly(token, x, y);
+				token.style.transition = "none";
+				token.classList.add('moving_token');
+				this.attachToNewParentNoDestroy(token, finalPlace, relation, 'absolute');
+				token.offsetHeight; // re-flow
+				token.style.transition = "all " + duration + "ms ease-in-out";
+				token.style.left = x + "px";
+				token.style.top = y + "px";
 			}, () => {
-				this.stripTransition(token);
-				dojo.removeClass(token, 'moving_token');
+				token.style.removeProperty("transition");
+				token.classList.remove('moving_token');
 				if (onEnd) onEnd(token);
 			}, duration, delay);
 		},
+		
+			slideToObjectRelativeDojo: function(token_in, finalPlace, duration, delay, onEnd, relation) {
+				const token = $(token_in);
+
+				if (duration === undefined) {
+					duration = 500;
+				}
+				if (delay === undefined) {
+					delay = 0;
+				}
+				if (this.instantaneousMode) {
+					delay = 0;
+					duration = 0;
+				}
+		
+				var combinedOnEnd = (node) => { this.stripPosition(node); if (onEnd) onEnd(node); };
+				this.stripPosition(token);
+				var box = this.attachToNewParentNoDestroy(token, finalPlace, relation);
+
+				var anim = dojo.fx.slideTo({
+					node: token,
+					top: box.t,
+					left: box.l,
+					delay: delay,
+					duration: duration,
+					unit: "px",
+					onEnd: combinedOnEnd
+				});
+				anim.play();
+				return anim;
+			},
 
 		positionObjectDirectly: function(mobileObj, x, y) {
 			// do not remove this "dead" code some-how it makes difference
@@ -312,7 +357,7 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
 		},
         delayedExec : function(onStart, onEnd, duration, delay) {
             if (typeof duration == "undefined") {
-                duration = 500;
+                duration = this.defaultAnimationDuration;
             }
             if (typeof delay == "undefined") {
                 delay = 0;
@@ -977,6 +1022,34 @@ define([ "dojo", "dojo/_base/declare", "ebg/core/gamegui" ], function(dojo, decl
             }
             return div;
         },
+		queryIds: function(query) {
+			var idlist = [];
+			dojo.query(query).forEach((node) => idlist.push(node.id));
+			return idlist;
+		},
+		
+		/** Move class to targetNode, removes from all others. If targetNode is null just removes all of this class. */
+		moveClass: function(className, targetNode) {
+			document.querySelectorAll('.' + className).forEach(item => item.classList.remove(className));
+			if (targetNode) $(targetNode).classList.add(className);
+		},
+		removeClass: function(className, rootNode) {
+			if (!rootNode)
+				rootNode = document;
+			else
+				rootNode = $(rootNode);
+			rootNode.querySelectorAll('.' + className).forEach(item => item.classList.remove(className));
+		},
+
+		queryFirst: function(query) {
+			return document.querySelector(query);
+		},
+		
+		queryFirstId: function(query, defaultValue) {
+			var res = document.querySelector(query);
+			if (!res) return defaultValue;
+			return res.id;
+		},
         formatLogNode : function(clone, token_id) {
             var name = this.getTokenName(token_id);
             var logid = "log" + (this.globalid++) + "_" + token_id;
