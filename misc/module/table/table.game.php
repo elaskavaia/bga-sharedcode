@@ -42,12 +42,12 @@ class APP_Object {
 class APP_DbObject extends APP_Object {
     public $query;
     
-    function DbQuery($str) {
+    static function DbQuery($str) {
         $this->query = $str;
         echo "dbquery: $str\n";
     }
     
-    function getUniqueValueFromDB($sql) {
+    static function getUniqueValueFromDB($sql) {
         return 0;
     }
     
@@ -154,11 +154,11 @@ abstract class Table extends APP_GameClass {
     /** Report gamename for translation function */
     abstract protected function getGameName( );
     
-    function getActivePlayerId() {
+    static function getActivePlayerId() {
         return 1;
     }
     
-    function getActivePlayerName() {
+    static function getActivePlayerName() {
         return "player1";
     }
     
@@ -170,7 +170,7 @@ abstract class Table extends APP_GameClass {
         return [ ];
     }
     
-    function loadPlayersBasicInfos() {
+    static function loadPlayersBasicInfos() {
         $default_colors = array ("ff0000","008000","0000ff","ffa500","4c1b5b" );
         $values = array ();
         $id = 1;
@@ -181,15 +181,15 @@ abstract class Table extends APP_GameClass {
         return $values;
     }
     
-    protected function getCurrentPlayerId() {
+    protected static function getCurrentPlayerId() {
         return 0;
     }
     
-    protected function getCurrentPlayerName() {
+    protected static function getCurrentPlayerName() {
         return '';
     }
     
-    protected function getCurrentPlayerColor() {
+    protected static function getCurrentPlayerColor() {
         return '';
     }
     
@@ -202,27 +202,27 @@ abstract class Table extends APP_GameClass {
      * Setup correspondance "labels to id"
      * @param [] $labels - map string -> int (label of state variable -> numeric id in the database)
      */
-    function initGameStateLabels($labels) {
+    static function initGameStateLabels($labels) {
     }
     
-    function setGameStateInitialValue($value_label, $value_value) {
+    static function setGameStateInitialValue($value_label, $value_value) {
     }
     
-    function getGameStateValue($value_label) {
+    static function getGameStateValue($value_label) {
         return 0;
     }
     
-    function setGameStateValue($value_label, $value_value) {
+    static function setGameStateValue($value_label, $value_value) {
     }
     
-    function incGameStateValue($value_label, $increment) {
+    static function incGameStateValue($value_label, $increment) {
         return 0;
     }
     
     /**
      *   Make the next player active (in natural order)
      */
-    protected function activeNextPlayer() {
+    protected static function activeNextPlayer() {
     }
     
     /**
@@ -237,7 +237,7 @@ abstract class Table extends APP_GameClass {
      * @param string $actionName
      * @param boolean $bThrowException
      */
-    function checkAction($actionName, $bThrowException = true) {
+    static function checkAction($actionName, $bThrowException = true) {
     }
     
     function getNextPlayerTable() {
@@ -248,11 +248,11 @@ abstract class Table extends APP_GameClass {
         return 0;
     }
     
-    function getPlayerAfter($player_id) {
+    static function getPlayerAfter($player_id) {
         return 0;
     }
     
-    function getPlayerBefore($player_id) {
+    static function getPlayerBefore($player_id) {
         return 0;
     }
     
@@ -264,7 +264,7 @@ abstract class Table extends APP_GameClass {
         return array ();
     }
     
-    function notifyAllPlayers($type, $message, $args) {
+    static function notifyAllPlayers($type, $message, $args) {
         $args2 = array ();
         foreach ( $args as $key => $val ) {
             $key = '${' . $key . '}';
@@ -275,28 +275,28 @@ abstract class Table extends APP_GameClass {
         echo "\n";
     }
     
-    function notifyPlayer($player_id, $notification_type, $notification_log, $notification_args) {
+    static function notifyPlayer($player_id, $notification_type, $notification_log, $notification_args) {
     }
     
     function getStatTypes() {
         return array ();
     }
     
-    function initStat($table_or_player, $name, $value, $player_id = null) {
+    static function initStat($table_or_player, $name, $value, $player_id = null) {
     }
     
-    function setStat($value, $name, $player_id = null, $bDoNotLoop = false) {
+    static function setStat($value, $name, $player_id = null, $bDoNotLoop = false) {
         echo "stat: $name=$value\n";
     }
     
-    function incStat($delta, $name, $player_id = null) {
+    static function incStat($delta, $name, $player_id = null) {
     }
     
-    function getStat($name, $player_id = null) {
+    static function getStat($name, $player_id = null) {
         return 0;
     }
     
-    function _($s) {
+    static function _($s) {
         return $s;
     }
     
@@ -304,18 +304,18 @@ abstract class Table extends APP_GameClass {
         return 2;
     }
     
-    function reattributeColorsBasedOnPreferences($players, $colors) {
+    static function reattributeColorsBasedOnPreferences($players, $colors) {
     }
     
-    function reloadPlayersBasicInfos() {
+    static function reloadPlayersBasicInfos() {
     }
     
-    function getNew($deck_definition) {
+    static function getNew($deck_definition) {
     }
     
     // Give standard extra time to this player
     // (standard extra time is a game option)
-    function giveExtraTime( $player_id, $specific_time=null ) {
+    static function giveExtraTime( $player_id, $specific_time=null ) {
         
     }
     
@@ -334,7 +334,7 @@ abstract class Table extends APP_GameClass {
     }
     
     
-    function getGameinfos() {
+    static function getGameinfos() {
         unset($gameinfos);
         require ('gameinfos.inc.php');
         if (isset($gameinfos)) {
