@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This class contains more useful method which is missing from Table class.
  * To use extend this instead instead of Table, i.e
@@ -15,11 +16,13 @@
  */
 define("GS_PLAYER_TURN_NUMBER", 'playerturn_nbr');
 
-abstract class APP_Extended extends Table {
-    function __construct() {
+abstract class APP_Extended extends Table
+{
+    function __construct()
+    {
         parent::__construct();
     }
-    
+
     /*
      * setupNewGame:
      *
@@ -27,7 +30,8 @@ abstract class APP_Extended extends Table {
      * In this method, you must setup the game according to the game rules, so that
      * the game is ready to be played.
      */
-    protected function setupNewGame($players, $options = array ()) {
+    protected function setupNewGame($players, $options = array())
+    {
         /**
          * ********** Start the game initialization ****
          */
@@ -39,47 +43,49 @@ abstract class APP_Extended extends Table {
          * ********** End of the game initialization ****
          */
     }
-    
-    
+
+
     /**
      * override to setup all custom tables
      */
-    protected function initTables() {
-        
+    protected function initTables()
+    {
     }
-    
-    
 
-    public function initPlayers($players) {
+
+
+    public function initPlayers($players)
+    {
         // Set the colors of the players with HTML color code
         // The default below is red/green/blue/orange/brown
         // The number of colors defined here must correspond to the maximum number of players allowed for the gams
         $gameinfos = self::getGameinfos();
-        $default_colors = $gameinfos ['player_colors'];
+        $default_colors = $gameinfos['player_colors'];
         shuffle($default_colors);
         // Create players
         // Note: if you added some extra field on "player" table in the database (dbmodel.sql), you can initialize it there.
         $sql = "INSERT INTO player (player_id, player_color, player_canal, player_name, player_avatar) VALUES ";
-        $values = array ();
-        foreach ( $players as $player_id => $player ) {
+        $values = array();
+        foreach ($players as $player_id => $player) {
             $color = array_shift($default_colors);
-            $values [] = "('" . $player_id . "','$color','" . $player ['player_canal'] . "','" . addslashes($player ['player_name']) . "','" . addslashes($player ['player_avatar']) . "')";
+            $values[] = "('" . $player_id . "','$color','" . $player['player_canal'] . "','" . addslashes($player['player_name']) . "','" . addslashes($player['player_avatar']) . "')";
         }
         $sql .= implode($values, ',');
         self::DbQuery($sql);
-        if ($gameinfos ['favorite_colors_support'])
-            self::reattributeColorsBasedOnPreferences($players, $gameinfos ['player_colors']);
+        if ($gameinfos['favorite_colors_support'])
+            self::reattributeColorsBasedOnPreferences($players, $gameinfos['player_colors']);
         self::reloadPlayersBasicInfos();
         $this->activeNextPlayer(); // just in case so its not 0, dev code can change it later
     }
 
-    public function initStats() {
+    public function initStats()
+    {
         // INIT GAME STATISTIC
         $all_stats = $this->getStatTypes();
-        $player_stats = $all_stats ['player'];
+        $player_stats = $all_stats['player'];
         // auto-initialize all stats that starts with game_
         // we need a prefix because there is some other system stuff
-        foreach ( $player_stats as $key => $value ) {
+        foreach ($player_stats as $key => $value) {
             if (startsWith($key, 'game_')) {
                 $this->initStat('player', $key, 0);
             }
@@ -87,8 +93,8 @@ abstract class APP_Extended extends Table {
                 $this->initStat('player', $key, 0);
             }
         }
-        $table_stats = $all_stats ['table'];
-        foreach ( $table_stats as $key => $value ) {
+        $table_stats = $all_stats['table'];
+        foreach ($table_stats as $key => $value) {
             if (startsWith($key, 'game_')) {
                 $this->initStat('table', $key, 0);
             }
@@ -109,7 +115,8 @@ abstract class APP_Extended extends Table {
      * @param $log string optional log message, not need to translate
      * @throws BgaUserException
      */
-    function userAssertTrue($message, $cond = false, $log = "") {
+    function userAssertTrue($message, $cond = false, $log = "")
+    {
         if ($cond)
             return;
         if ($log)
@@ -121,69 +128,75 @@ abstract class APP_Extended extends Table {
      * This will throw an exception if condition is false.
      * This only can happened if user hacks the game, client must prevent this
      *
-     * @param $log string
-     *            server side log message, no translation needed
-     * @param $cond boolean condition of assert
-     * @throws BgaUserException
+     * @param  string $log  
+     *                      server side log message, no translation needed
+     * @param  bool   $cond 
+     *                      condition of assert
+     * @throws   BgaUserException
      */
-    function systemAssertTrue($log, $cond = false) {
+    function systemAssertTrue($log, $cond = false)
+    {
         if ($cond)
             return;
-        $move = $this->getGameStateValue(GS_PLAYER_TURN_NUMBER);
-        //trigger_error("bt") ;
-        //$bt = debug_backtrace();
-        //$this->dump('bt',$bt);
+        $move = $this->getGameStateValue('playerturn_nbr');
         $this->error("Internal Error during move $move: $log|");
-        throw new BgaUserException(self::_("Internal Error. That should not have happened. Please raise a bug."));
+        $e = new Exception($log);
+        $this->error($e->getTraceAsString());
+        throw new BgaUserException($this->_("Internal Error. That should not have happened. Please raise a bug."));
     }
 
     // ------ NOTIFICATIONS ----------
-    function notifyWithName($type, $message = '', $args = null, $player_id = -1) {
+    function notifyWithName($type, $message = '', $args = null, $player_id = -1)
+    {
         if ($args == null)
-            $args = array ();
+            $args = array();
         $this->systemAssertTrue("Invalid notification signature", is_array($args));
-        if (array_key_exists('player_id', $args) && $player_id == - 1) {
-            $player_id = $args ['player_id'];
+        if (array_key_exists('player_id', $args) && $player_id == -1) {
+            $player_id = $args['player_id'];
         }
         if ($player_id == -1)
             $player_id = $this->getMostlyActivePlayerId();
         if ($player_id != 'all')
-            $args ['player_id'] = $player_id;
+            $args['player_id'] = $player_id;
         if ($message) {
             $player_name = $this->getPlayerName($player_id);
-            $args ['player_name'] = $player_name;
+            $args['player_name'] = $player_name;
         }
         if (array_key_exists('_notifType', $args)) {
-            $type = $args ['_notifType'];
-            unset($args ['_notifType']);
+            $type = $args['_notifType'];
+            unset($args['_notifType']);
         }
         if (array_key_exists('noa', $args) || array_key_exists('nop', $args) || array_key_exists('nod', $args)) {
             $type .= "Async";
         }
-        if (array_key_exists('_private', $args) && $args ['_private']) {
-            unset($args ['_private']);
+        if (array_key_exists('_private', $args) && $args['_private']) {
+            unset($args['_private']);
             $this->notifyPlayer($player_id, $type, $message, $args);
         } else {
             $this->notifyAllPlayers($type, $message, $args);
         }
     }
 
-    function getMostlyActivePlayerId() {
+    function getMostlyActivePlayerId()
+    {
         $state = $this->gamestate->state();
-        if ($state ['type'] === "multipleactiveplayer") {
-            return $this->getCurrentPlayerId();   
+        if ($state['type'] === "multipleactiveplayer") {
+            return $this->getCurrentPlayerId();
         } else {
             return $this->getActivePlayerId();
         }
     }
-    function notifyAnimate() {
-        $this->notifyAllPlayers('animate', '', array ());
+    function notifyAnimate()
+    {
+        $this->notifyAllPlayers('animate', '', array());
     }
 
-    function notifyAction($action_id) {
+    function notifyAction($action_id)
+    {
         //$this->notifyMoveNumber();
-        $this->notifyWithName('playerLog', clienttranslate('${player_name} took action ${token_name}'), array (
-                'token_id' => $action_id,'token_name' => $action_id ));
+        $this->notifyWithName('playerLog', clienttranslate('${player_name} took action ${token_name}'), array(
+            'token_id' => $action_id, 'token_name' => $action_id
+        ));
     }
 
     // ------ PLAYERS ----------
@@ -191,79 +204,87 @@ abstract class APP_Extended extends Table {
      *
      * @return integer first player in natural player order
      */
-    function getFirstPlayer() {
+    function getFirstPlayer()
+    {
         $table = $this->getNextPlayerTable();
-        return $table [0];
+        return $table[0];
     }
 
     /**
      *
      * @return string hex color as in players table for the player with $player_id
      */
-    function getPlayerColor($player_id) {
+    function getPlayerColor($player_id)
+    {
         $players = $this->loadPlayersBasicInfos();
-        if (! isset($players [$player_id])) {
+        if (!isset($players[$player_id])) {
             return 0;
         }
-        return $players [$player_id] ['player_color'];
+        return $players[$player_id]['player_color'];
     }
 
     /**
      *
      * @return string player name based on $player_id
      */
-    function getPlayerName($player_id) {
+    function getPlayerName($player_id)
+    {
         $players = $this->loadPlayersBasicInfos();
-        if (! isset($players [$player_id])) {
+        if (!isset($players[$player_id])) {
             return "unknown";
         }
-        return $players [$player_id] ['player_name'];
+        return $players[$player_id]['player_name'];
     }
 
     /**
      *
      * @return integer player id based on hex $color
      */
-    function getPlayerIdByColor($color) {
+    function getPlayerIdByColor($color)
+    {
         $players = $this->loadPlayersBasicInfos();
-        if (! isset($this->player_colors)) {
-            $this->player_colors = array ();
-            foreach ( $players as $player_id => $info ) {
-                $this->player_colors [$info ['player_color']] = $player_id;
+        if (!isset($this->player_colors)) {
+            $this->player_colors = array();
+            foreach ($players as $player_id => $info) {
+                $this->player_colors[$info['player_color']] = $player_id;
             }
         }
-        if (! isset($this->player_colors [$color])) {
+        if (!isset($this->player_colors[$color])) {
             return 0;
         }
-        return $this->player_colors [$color];
+        return $this->player_colors[$color];
     }
 
     /**
      *
      * @return integer player position (as player_no) from database
      */
-    function getPlayerPosition($player_id) {
+    function getPlayerPosition($player_id)
+    {
         $players = $this->loadPlayersBasicInfos();
-        if (! isset($players [$player_id])) {
+        if (!isset($players[$player_id])) {
             return -1;
         }
-        return $players [$player_id] ['player_no'];
+        return $players[$player_id]['player_no'];
     }
 
-    public function getStateName() {
+    public function getStateName()
+    {
         $state = $this->gamestate->state();
-        return $state ['name'];
+        return $state['name'];
     }
 
     /**
      * @return array of player ids
      */
-    function getPlayerIds() {
+    function getPlayerIds()
+    {
         $players = $this->loadPlayersBasicInfos();
         return array_keys($players);
     }
-    
-    function getPlayerIdsInOrder($starting) {
+
+    function getPlayerIdsInOrder($starting)
+    {
         $player_ids = $this->getPlayerIds();
         $rotate_count = array_search($starting, $player_ids);
         if ($rotate_count === false) {
@@ -274,7 +295,7 @@ abstract class APP_Extended extends Table {
         }
         return $player_ids;
     }
-    
+
     /**
      * Return player table in order starting from $staring player id, if $starting is not in the player table
      * i.e. spectator returns same as loadPlayersBasicInfos(), i.e. natural player order
@@ -282,17 +303,19 @@ abstract class APP_Extended extends Table {
      * @param number $starting - player number
      * @return string[][] - map of playerId => playerInfo
      */
-    function getPlayersInOrder($starting) {
+    function getPlayersInOrder($starting)
+    {
         $players = $this->loadPlayersBasicInfos();
         $player_ids = $this->getPlayerIdsInOrder($starting);
         $result = [];
         foreach ($player_ids as $player_id) {
-            $result[$player_id]=$players[$player_id];
+            $result[$player_id] = $players[$player_id];
         }
         return $result;
     }
-    
-    function debugConsole($info, $args = array()) {
+
+    function debugConsole($info, $args = array())
+    {
         $this->notifyAllPlayers("log", $info, $args);
         $this->warn($info);
     }
@@ -300,7 +323,8 @@ abstract class APP_Extended extends Table {
     /**
      * Change activate player, also increasing turns_number stats and giving extra time
      */
-    function setNextActivePlayerCustom($next_player_id) {
+    function setNextActivePlayerCustom($next_player_id)
+    {
         if ($this->getActivePlayerId() == $next_player_id)
             return;
         $this->giveExtraTime($next_player_id);
@@ -310,19 +334,23 @@ abstract class APP_Extended extends Table {
     }
 
     // ------ DB ----------
-    function dbGetScore($player_id) {
+    function dbGetScore($player_id)
+    {
         return $this->getUniqueValueFromDB("SELECT player_score FROM player WHERE player_id='$player_id'");
     }
 
-    function dbSetScore($player_id, $count) {
+    function dbSetScore($player_id, $count)
+    {
         $this->DbQuery("UPDATE player SET player_score='$count' WHERE player_id='$player_id'");
     }
 
-    function dbSetAuxScore($player_id, $score) {
+    function dbSetAuxScore($player_id, $score)
+    {
         $this->DbQuery("UPDATE player SET player_score_aux=$score WHERE player_id='$player_id'");
     }
 
-    function dbIncScore($player_id, $inc) {
+    function dbIncScore($player_id, $inc)
+    {
         $count = $this->dbGetScore($player_id);
         if ($inc != 0) {
             $count += $inc;
@@ -344,9 +372,10 @@ abstract class APP_Extended extends Table {
      *            - name of the player statistic to update (points source)
      * @return number - current score after increase/descrease
      */
-    function dbIncScoreValueAndNotify($player_id, $inc, $notif = '*', $stat = '', $args = null) {
+    function dbIncScoreValueAndNotify($player_id, $inc, $notif = '*', $stat = '', $args = null)
+    {
         if ($args == null)
-            $args = [ ];
+            $args = [];
         $count = $this->dbIncScore($player_id, $inc);
         if ($notif == '*') {
             if ($inc >= 0)
@@ -354,25 +383,29 @@ abstract class APP_Extended extends Table {
             else
                 $notif = clienttranslate('${player_name} loses ${mod} point(s)');
         }
-        $this->notifyWithName("score", $notif, // 
-        array_merge(array ('player_score' => $count,'inc' => $inc,'mod' => abs($inc) ), $args), // 
-        $player_id);
+        $this->notifyWithName(
+            "score",
+            $notif, // 
+            array_merge(array('player_score' => $count, 'inc' => $inc, 'mod' => abs($inc)), $args), // 
+            $player_id
+        );
         if ($stat) {
             $this->dbIncStatChecked($inc, $stat, $player_id);
         }
         return $count;
     }
 
-    function dbIncStatChecked($inc, $stat, $player_id) {
+    function dbIncStatChecked($inc, $stat, $player_id)
+    {
         try {
             $all_stats = $this->getStatTypes();
-            $player_stats = $all_stats ['player'];
-            if (isset($player_stats [$stat])) {
+            $player_stats = $all_stats['player'];
+            if (isset($player_stats[$stat])) {
                 $this->incStat($inc, $stat, $player_id);
             } else {
                 $this->error("statistic $stat is not defined");
             }
-        } catch ( Exception $e ) {
+        } catch (Exception $e) {
             $this->error("error while setting statistic $stat");
             $this->dump('err', $e);
         }
@@ -385,8 +418,9 @@ abstract class APP_Extended extends Table {
      * @param number $player_id, player id <=0 or null - means ALL
      * @param number $value - 1 multiactive, 0 non multiactive
      */
-    function dbSetPlayerMultiactive($player_id = -1, $value = 1) {
-        if (! $value)
+    function dbSetPlayerMultiactive($player_id = -1, $value = 1)
+    {
+        if (!$value)
             $value = 0;
         else
             $value = 1;
@@ -397,7 +431,8 @@ abstract class APP_Extended extends Table {
         self::DbQuery($sql);
     }
 
-    function isPlayerMaskSet($player_id, $variable) {
+    function isPlayerMaskSet($player_id, $variable)
+    {
         $mask = $this->getGameStateValue($variable);
         $no = $this->getPlayerPosition($player_id);
         $bit = (1 << $no);
@@ -408,7 +443,8 @@ abstract class APP_Extended extends Table {
         }
     }
 
-    function setPlayerMask($player_id, $variable, $force = false) {
+    function setPlayerMask($player_id, $variable, $force = false)
+    {
         $mask = $this->getGameStateValue($variable);
         $no = $this->getPlayerPosition($player_id);
         $bit = (1 << $no);
@@ -420,36 +456,41 @@ abstract class APP_Extended extends Table {
         $this->setGameStateValue($variable, $mask);
     }
 
-    function clearPlayerMask($player_id, $variable) {
+    function clearPlayerMask($player_id, $variable)
+    {
         $mask = $this->getGameStateValue($variable);
         $no = $this->getPlayerPosition($player_id);
         $bit = (1 << $no);
-        $mask &= ~ $bit; // clear bit
+        $mask &= ~$bit; // clear bit
         $this->setGameStateValue($variable, $mask);
     }
 }
 
 // GLOBAL utility functions
 
-function startsWith($haystack, $needle) {
+function startsWith($haystack, $needle)
+{
     // search backwards starting from haystack length characters from the end
-    return $needle === "" || strrpos($haystack, $needle, - strlen($haystack)) !== false;
+    return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== false;
 }
 
-function endsWith($haystack, $needle) {
+function endsWith($haystack, $needle)
+{
     $length = strlen($needle);
-    return $length === 0 || (substr($haystack, - $length) === $needle);
+    return $length === 0 || (substr($haystack, -$length) === $needle);
 }
 
-function getPart($haystack, $i, $bNoexeption = false) {
+function getPart($haystack, $i, $bNoexeption = false)
+{
     $parts = explode('_', $haystack);
     $len = count($parts);
-    if ($bNoexeption && $i>=$len)
+    if ($bNoexeption && $i >= $len)
         return "";
-    return $parts [$i];
+    return $parts[$i];
 }
 
-function getPartsPrefix($haystack, $i) {
+function getPartsPrefix($haystack, $i)
+{
     $parts = explode('_', $haystack);
     $len = count($parts);
     if ($i < 0) {
@@ -457,15 +498,16 @@ function getPartsPrefix($haystack, $i) {
     }
     if ($i <= 0)
         return '';
-    for (; $i < $len; $i ++) {
-        unset($parts [$i]);
+    for (; $i < $len; $i++) {
+        unset($parts[$i]);
     }
     return implode('_', $parts);
 }
 
 if (!function_exists('array_key_first')) {
-    function array_key_first(array $arr) {
-        foreach($arr as $key => $unused) {
+    function array_key_first(array $arr)
+    {
+        foreach ($arr as $key => $unused) {
             return $key;
         }
         return NULL;
