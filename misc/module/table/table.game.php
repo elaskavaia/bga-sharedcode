@@ -128,6 +128,11 @@ class GameState {
     
     function checkPossibleAction($action) {
     }
+    
+    function reloadState()
+    {
+        return $this->state();
+    }
 }
 
 class BgaUserException extends Exception {
@@ -195,6 +200,22 @@ abstract class Table extends APP_GameClass {
     
     function isCurrentPlayerZombie() {
         return false;
+    }
+    
+    public function getPlayerNameById( $player_id )
+    {
+        $players = self::loadPlayersBasicInfos();
+        return $players[ $player_id ]['player_name'];
+    }
+    public function getPlayerNoById( $player_id )
+    {
+        $players = self::loadPlayersBasicInfos();
+        return $players[ $player_id ]['player_no'];
+    }
+    public function getPlayerColorById( $player_id )
+    {
+        $players = self::loadPlayersBasicInfos();
+        return $players[ $player_id ]['player_color'];
     }
     
     
@@ -349,6 +370,18 @@ abstract class Table extends APP_GameClass {
     public function stMakeEveryoneActive() {
         $this->gamestate->setAllPlayersMultiactive();
     }
+    
+    /* save undo state after all transations are done */
+    function undoSavepoint()
+    {
+
+    }
+    
+    /* restored db to saved state */
+    function undoRestorePoint()
+    {
+    
+    }
 }
 
 class Page {
@@ -374,6 +407,9 @@ class game_view {
 }
 
 class APP_GameAction {
+    function getArg($name,$type,$mandatory=true,$default=null) {
+        return '';
+    }
 }
 
 function totranslate($text) {
