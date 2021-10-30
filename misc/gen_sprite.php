@@ -7,6 +7,7 @@ $to=40+4;
 $maxcol=4;
 $scol=$maxcol-1;
 $srow=((int)(($to-$from)/$maxcol));
+if ($srow==0) $srow=1;
 for ($num=$from;$num<=$to;$num++) {
     $index=$num-$from;
     $row=(int)($index/$maxcol);
