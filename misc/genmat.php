@@ -65,10 +65,6 @@ function handle_header($fields) {
             echo "Error: missing required id column in input file\n";
             exit(2);
         }
-        if (array_search('name',$g_field_names)===false) {
-            echo "Error: missing required name column in input file\n";
-            exit(2);
-        }
     }
     return true;
 }
@@ -131,7 +127,7 @@ function genbody($incsv) {
             $extra = substr($ftype, $pos + 1);
             $ftype = trim(substr($ftype, 0, $pos));
             $fields['type']=$ftype;
-            $pos = strpos($extra, '}');
+            $pos = strrpos($extra, '}');
             if ($pos !== false) {
                 $extra = substr($extra, 0, $pos);
                 $fields ['php']=$extra;
@@ -145,20 +141,22 @@ function genbody($incsv) {
         $id=varsub($id,$fields);
 
         
-    
-        fwrite($out, "'$id' => [\n");
+        $fullid=$id;
+        if (isset($fields['variant']))
+            $fullid="${id}@".$fields['variant'];
+        
+        fwrite($out, "'$fullid' => [\n");
 
         foreach ( $fields as $key => $value ) {
-            if ($key=='id') continue;
             if (startsWith($key, "-")) continue;
+            if ($key=='id') continue;
+            if ($key=='variant') continue;
             if (!$value && $value!=='0') continue;
             $value=str_replace("’", "'", $value);
             $value=str_replace("‘", "'", $value);
             $value=varsub($value,$fields);
             if ($key=='php') {
-
-               // $value=str_replace(",", ",\n  ", $value);// XXX remove
-               
+               // $value=str_replace(",", ",\n  ", $value);// XXX remove      
                 fwrite($out, "  $value,\n");
                 continue;
             }

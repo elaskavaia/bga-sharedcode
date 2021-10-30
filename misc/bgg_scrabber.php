@@ -17,6 +17,9 @@ function varsubdirect($key, $value, $incontents) {
     $incontents = preg_replace("/'$key'\s*=>.*/", "'$key' => $value,", $incontents);
     return $incontents;
 }
+function totranslate($x) {
+	return $x; // stub
+}
 
 // MAIN
 $indir = $argv [1];
@@ -53,7 +56,7 @@ foreach ( $links as $i => $link ) {
         $links_arr [$type] [$id] = $value;
     }
 }
-//print_r($links_arr);
+print_r($links_arr);
 
 $name = (String) $item->name [0]->attributes() ['value'];
 $incontents = varsubquoted("game_name", $name, $incontents);
