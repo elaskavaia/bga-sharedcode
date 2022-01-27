@@ -52,7 +52,7 @@ while ( $file = readdir($dir_handle) ) {
             $content= preg_replace( "/${oldprojectnameCap} implementation :/", "${newprojectnameCap} implementation :", $content);
             $content= preg_replace( "/\"bgagame\\.${oldprojectname}\"/", "\"bgagame.${newprojectname}\"", $content);
             $content= preg_replace( "/${oldprojectname}_${oldprojectname}/", "${newprojectname}_${newprojectname}", $content);
-            $content= preg_replace( "/action_${oldprojectname}/", "action_${newprojectname}", $content);
+            $content= preg_replace( "/action_${oldprojectname} /", "action_${newprojectname} ", $content);
             $content= preg_replace( "/\\/${oldprojectname}\\/${oldprojectname}\\//", "/${newprojectname}/${newprojectname}/", $content);
             $content= preg_replace( "/class ${oldprojectname} extends/i", "class $newprojectnameCap extends", $content);
             //function __construct(
