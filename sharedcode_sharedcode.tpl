@@ -49,6 +49,12 @@
 	     <h2>Play Area (Stock)</h2>
 	     <div id="playarea" class="playarea whiteblock location"></div>
 	</div>
+		<div class="dialog">
+	<h2>Various BGA Framework dialogs</h2>
+	<a href="#" class="action-button bgabutton bgabutton_blue" id="button_askForValueDialog">askForValueDialog</a>
+	<a href="#" class="action-button bgabutton bgabutton_blue" id="button_askForValueDialog2">edit value</a>
+	<a href="#" class="action-button bgabutton bgabutton_blue" id="button_multipleChoiceDialog">multipleChoiceDialog</a>
+	</div>
 	<div class="funcontrols">
 		<h2>Flip Cards and Roll Dice animations</h2>
 		<div class="flip-container">
@@ -187,6 +193,8 @@
 		</div>
 
 	</div>
+	
+
 </div>
 <script type="text/javascript">
     // Javascript HTML templates

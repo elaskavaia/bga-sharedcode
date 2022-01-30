@@ -78,7 +78,38 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter",
 			//Add animation hooks for flexbox
 			this.connectClass("card_x", 'onclick', 'onCardX');
 			this.connectClass("location_x", 'onclick', 'onLocationX');
+			// add dialog buttons
+			dojo.connect($('button_askForValueDialog'),'onclick', () => {
+				this.askForValueDialog("Enter VALUE",(x)=>alert("yes! "+x),"anything");
+			});
+			var button_ask = $('button_askForValueDialog2');
+			dojo.connect(button_ask,'onclick', () => {
+				this.askForValueDialog("Edit button text",(x)=>{button_ask.innerHTML=x;});
+				$('choicedlg_value').value=button_ask.innerHTML;
+			});
+			//multipleChoiceDialog
+			var button_md = $('button_multipleChoiceDialog');
+			dojo.connect(button_md,'onclick', () => {
+				this.multipleChoiceDialog("Select one",{
+					1: "One", 2: "Two", none: "None"
+				},(x)=>{button_md.innerHTML="multipleChoiceDialog picked "+x;});
 			
+			});
+//			var button_edittitle = $('button_editBugTitle');
+//			dojo.connect(button_edittitle, 'onclick', () => {
+//				var oldTitle=$('report_name').innerHTML;
+//				//#49: "Let developers rename bug reports"
+//				// we need to leave title without bug id and quotes
+//				oldTitle=oldTitle.split('"')[1];
+//				this.askForValueDialog(_("Edit bug title"), (title) => {
+//					this.ajaxcall('/bug/bug/editBugTitle.html', { name: title }, this, function(result) {
+//						mainsite.gotourl_forcereload('bug?id=' + this.report_id);
+//					});
+//				});
+//				// set default value (the old title), doing it after dialog is open because this method does not have default value parameter
+//				$('choicedlg_value').value = oldTitle; 
+//			});
+//			
 			// add reload Css debug button
 			var parent = document.querySelector('.debug_section');
 			if (parent) {
@@ -88,6 +119,8 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter",
 
 			console.log("Ending game setup");
 		},
+		
+	
 
 		setupPlayer: function(playerId, playerInfo) {
 			var playerBoardDiv = dojo.byId('player_board_' + playerId);
