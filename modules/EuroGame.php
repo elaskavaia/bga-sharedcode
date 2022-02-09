@@ -76,6 +76,17 @@ abstract class EuroGame extends APP_Extended {
                 }
             }
         }
+        $table_options = $this->getTableOptions();
+        $result ['table_options'] = [];
+        foreach ( $table_options as $option_id => $option ) {
+            $value = 0;
+            if (array_key_exists($option_id, $this->gamestate->table_globals)) {
+                $value = (int) $this->gamestate->table_globals [$option_id];
+            }
+            $result ['table_options'] [$option_id] = $option;
+            $result ['table_options'] [$option_id] ['value'] = $value;
+        }
+        
         return $result;
     }
 

@@ -35,7 +35,7 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter",
 		 * "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
 		 */
 		setup: function(gamedatas) {
-			console.log("Starting game setup");
+			console.log("Starting game setup",gamedatas);
 			this.inherited(arguments); // parent common setup
 			// TODO: Set up your game interface here, according to "gamedatas"
 			this.resourceIdCounterLocal = 1;
