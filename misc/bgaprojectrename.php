@@ -6,7 +6,7 @@
 if (! isset($argv [1])) {
     echo "Make a project copy by moving files into new project and renaming some known files and strings inside them\n";
     echo "The new project directory must be empty. The name of the new project is the name of the directory. It must be all lowercase.\n";
-    echo "usage: bgaprojectrename.php <oldProjectFullPath> <newProjectFullPath>\n";
+    echo "usage: bgaprojectrename.php <oldprojectfullpath> <newprojectfullpath>\n";
     exit(0);
 }
 $oldprojectpath = $argv [1];
@@ -52,7 +52,7 @@ while ( $file = readdir($dir_handle) ) {
             $content= preg_replace( "/${oldprojectnameCap} implementation :/", "${newprojectnameCap} implementation :", $content);
             $content= preg_replace( "/\"bgagame\\.${oldprojectname}\"/", "\"bgagame.${newprojectname}\"", $content);
             $content= preg_replace( "/${oldprojectname}_${oldprojectname}/", "${newprojectname}_${newprojectname}", $content);
-            $content= preg_replace( "/action_${oldprojectname} /", "action_${newprojectname} ", $content);
+            $content= preg_replace( "/action_${oldprojectname}\\b/", "action_${newprojectname}", $content);
             $content= preg_replace( "/\\/${oldprojectname}\\/${oldprojectname}\\//", "/${newprojectname}/${newprojectname}/", $content);
             $content= preg_replace( "/class ${oldprojectname} extends/i", "class $newprojectnameCap extends", $content);
             //function __construct(
