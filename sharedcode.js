@@ -420,7 +420,6 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui", "ebg/counter",
 						"color": getPart(token_id, 1),
 					});
 					return tokenDiv;
-					break;
 				case 'meeple':
 					if ($(token_id)) {
 						var clone = dojo.clone($(token_id));
