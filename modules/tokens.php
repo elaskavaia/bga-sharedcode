@@ -292,7 +292,7 @@ class Tokens extends APP_GameClass {
             $sql .= ", token_state='$state'";
         }
         $sql .= " WHERE token_key='$token_key'";
-        self::DbQuery($sql);
+        return self::DbQuery($sql);
     }
 
     /**
@@ -378,9 +378,10 @@ class Tokens extends APP_GameClass {
      * Get tokens of a specific type in a specific location, since there is no field for type we use like expression on
      * key
      *
-     * @param string $type
-     * @param string $location
-     * @param int $state
+     * @param string $type -  if type contains % it will be treated as LIKE, otherwise % will be appended
+     * @param string $location - if location contains % it will be treated as LIKE
+     * @param int|string $state - state can be just numeric or can be expression i.e. "!=0"
+     * @param string $order_by - field to order by, if used keys will be numberic in returned array
      *
      * @return array mixed
      */
@@ -395,7 +396,7 @@ class Tokens extends APP_GameClass {
             $sql .= " AND token_key LIKE '$type'";
         }
         if ($location !== null) {
-            self::checkLocation($location, true);
+            self::checkLocation($location, true, false);
             $like = "LIKE";
             if (strpos($location, "%") === false) {
                 $like = "=";
@@ -403,8 +404,9 @@ class Tokens extends APP_GameClass {
             $sql .= " AND token_location $like '$location' ";
         }
         if ($state !== null) {
-            self::checkState($state, true);
-            $sql .= " AND token_state = '$state'";
+            $op = $this->extractStateOperator($state);
+            self::checkState($state, false);
+            $sql .= " AND token_state $op '$state'";
         }
         if ($order_by !== null)
             $sql .= " ORDER BY $order_by";
@@ -507,9 +509,10 @@ class Tokens extends APP_GameClass {
     // Return an array "state" => number of tokens (for this location)
     function countTokensByState($location) {
         self::checkLocation($location);
-        $result = array ();
+        $result = [];
         $sql = "SELECT token_state, COUNT( token_key ) cnt FROM " . $this->table . " ";
-        $sql .= "WHERE token_location='$location' ";
+        if ($location !== null)
+            $sql .= "WHERE token_location='$location' ";
         $sql .= "GROUP BY token_state ";
         $dbres = self::DbQuery($sql);
         while ( $row = mysql_fetch_assoc($dbres) ) {
@@ -531,9 +534,12 @@ class Tokens extends APP_GameClass {
         return $line;
     }
 
-    final function checkLocation($location, $like = false) {
-        if ($location == null)
-            throw new feException("location cannot be null");
+    final function checkLocation($location, $like = false, $canBeNull = false) {
+        if ($location === null)
+            if ($canBeNull === false)
+                throw new feException("location cannot be null");
+            else
+                return;
         $extra = "";
         if ($like)
             $extra = "%";
@@ -542,29 +548,46 @@ class Tokens extends APP_GameClass {
         }
     }
 
+    function extractStateOperator(&$state) {
+        $op='';
+        if ($state !== null) {
+            $state = trim($state);
+            $matches = [ ];
+            $res = preg_match("/^(>=|>|<=|<|<>|!=|=|) *(-?[0-9]+)$/", $state, $matches, PREG_OFFSET_CAPTURE);
+            if ($res == 1) {
+                $op = $matches [1] [0];
+                $rest = $matches [2] [0];
+                $state = $rest;
+            }
+        }
+        if ( !$op)
+            $op = '=';
+        return $op;
+    }
+
     final function checkState($state, $canBeNull = false) {
         if ($state === null && $canBeNull == false)
             throw new feException("state cannot be null");
-        if ($state !== null && preg_match("/^-*[0-9]+$/", $state) == 0) {
+        if ($state !== null && preg_match("/^-?[0-9]+$/", $state) != 1) {
             // $bt = debug_backtrace();
             // trigger_error("bt ".print_r($bt[2],true)) ;
             throw new feException("state must be integer number");
         }
     }
 
-    final function checkTokenKeyArray($arr) {
-        if ($arr == null)
-            throw new feException("tokens cannot be null");
-        if ( !is_array($arr))
-            throw new feException("tokens must be an array");
-        foreach ( $arr as $key ) {
-            $this->checkKey($key);
+    final function checkTokenKeyArray($token_arr) {
+        $res = $this->checkListOrTokenArray($token_arr);
+        if ($res != 1) {
+            $debug = var_export($token_arr, true);
+            throw new feException("token_arr is not a list of token ids $res: $debug");
         }
     }
 
     final function checkKey($key, $like = false) {
         if ($key == null)
             throw new feException("key cannot be null");
+        if (!is_string($key))
+                throw new feException("key is not a string");
         $extra = "";
         if ($like)
             $extra = "%";
@@ -585,7 +608,119 @@ class Tokens extends APP_GameClass {
         }
     }
 
-    final function getSelectQuery() {
+    /**
+     * Checks that given array either list of keys or list returned by function such get getTokensInfo which is map of
+     * key => info pairs
+     * throws exception if not of any of this structures, otherwise it returns
+     *
+     * @param * $token_arr
+     * @return number below: <br>
+     *         0 - array is empty
+     *         1 - array of token ids
+     *         2 - array of key => info map with token_id as index
+     *         3 - array of key => info with number as index (returned by sorting methods)
+     */
+    final function checkListOrTokenArray($token_arr, $bThrow = true) {
+        try {
+            if ($token_arr === null)
+                throw new feException("token_arr cannot be null");
+            $debug = var_export($token_arr, true);
+            if ( !is_array($token_arr)) {
+                throw new feException("token_arr is not an array: $debug");
+            }
+            if (count($token_arr) == 0)
+                return 0;
+            $type = -1;
+            foreach ( $token_arr as $key => $info ) {
+                $typeone = $this->checkTokenIdOrInfo($info);
+                if ($type == -1)
+                    $type = $typeone;
+                else if ($type != $typeone)
+                    throw new feException("token_arr data has mixed types $type != $typeone: $debug");
+                if (is_numeric($key)) {
+                    // ok
+                    if ($typeone == 2)
+                        $typeone = 3;
+                } else if ($typeone == 2) {
+                    $k = $info ['key'];
+                    if ($key != $k) {
+                        throw new feException("token_arr data key info mismatch $key != $k: $debug");
+                    }
+                }
+                if ($key === 'key' || $key === 'location' || $key === 'state') {
+                    throw new feException("token_arr data is not right array: $key $debug");
+                }                      
+            }
+            return $type;
+        } catch ( feException $e ) {
+            if ($bThrow)
+                throw $e;
+            return -1;
+        }
+    }
+
+    final function checkTokenIdOrInfo($info, $bThrow = true) {
+        try {
+            if (is_array($info)) {
+                if (array_key_exists('key', $info)) {
+                    $this->checkKey($info['key']);
+                    return 2;
+                }
+                $debug = var_export($info, true);
+                throw new feException("token info structure is not correct: $debug");
+            } else {
+                $this->checkKey($info);
+                return 1;
+            }
+        } catch ( feException $e ) {
+            if ($bThrow)
+                throw $e;
+            return -1;
+        }
+    }
+
+    /**
+     * Converts arbitrary data structure to token key list
+     * Accepted structures
+     *    <li> string id
+     *    <li> info - i.e. ['key'=>'x', 'state'=>1, 'location'=>'y']
+     *    <li> info[] - info array (with key or integer as index) 
+     *    <li> id[] - id array 
+     * @param * $token_arr
+     * @return string[] - token id list
+     */
+    function toTokenKeyList($tokens) {
+        if ( !$tokens)
+            return [ ];
+        $kind = $this->checkTokenIdOrInfo($tokens, false);
+        switch ($kind) {
+            case 1 : // key
+                return [ $tokens ];
+            case 2 : // info
+                return [ $tokens ['key'] ];
+        }
+        $kind = $this->checkListOrTokenArray($tokens);
+        switch ($kind) {
+            case 0 :
+                return [ ];
+            case 1 :
+                return $tokens;
+            case 2 :
+                return array_keys($tokens);
+            case 3 :
+                $keys = [ ];
+                foreach ( $tokens as $info ) {
+                    $keys [] = $info ['key'];
+                }
+                return $keys;
+            default :
+                $debug = var_export($tokens, true);
+                throw new feException("tokens structure is not supported: $debug");
+        }
+    }
+
+
+     function getSelectQuery() {
         $sql = "SELECT token_key AS \"key\", token_location AS \"location\", token_state AS \"state\"";
         if (count($this->custom_fields)) {
             $sql .= ", ";
