@@ -54,13 +54,20 @@ $g_index = 1;
 
 $g_trans = [ 'name','tooltip','tooltip_action' ];
 
+$g_quotes_id = true;
+
 function handle_header($fields) {
     global $g_field_names;
+    if ($fields [0] == 'idconst') {
+        $fields [0] = 'id';
+        $g_quotes_id = false;
+    }
     if ($fields [0] == 'element_id') {
         // old style header
         $g_field_names = [ 'id','type','name','tooltip','tooltip_action' ];
     } else {
         $g_field_names = $fields;
+    
         if (array_search('id',$g_field_names)===false) {
             echo "Error: missing required id column in input file\n";
             exit(2);
@@ -85,28 +92,32 @@ function genbody($incsv) {
     global $out;
     $ins = fopen($incsv, "r") or die("Unable to open file! $ins");
     $comment = "";
-    global $g_field_names, $g_index;
+    global $g_field_names, $g_index, $g_quotes_id;
     
 
+    $limit = false;
     while ( ($line = fgets($ins)) !== false ) {
         $line=trim($line);
-        if (empty($line)) continue;
-        //special comment
-        #$matches = [ ];
-        #if (preg_match("#default  *(?P<name>\w+)=(?P<value>.*)", $line, $matches)) {
-        #    $g_field_defaults [$matches ['name']] = $matches ['value'];
-        #    continue;
-        #}
-        
+        if (empty($line))
+            continue;
+            //special comment
+            #$matches = [ ];
+            #if (preg_match("#default  *(?P<name>\w+)=(?P<value>.*)", $line, $matches)) {
+            #    $g_field_defaults [$matches ['name']] = $matches ['value'];
+            #    continue;
+            #}
         if (startsWith($line, '#')) {
-            $comment.="// $line\n";
+            $comment .= "// $line\n";
             continue;
         }
-        $raw_fields = explode('|', $line);
-        if ($g_field_names==null) {
+        if ($g_field_names == null) {
+            $raw_fields = explode('|', $line);
+            $limit = count($raw_fields);
             if (handle_header($raw_fields))
                 continue;
         }
+        $raw_fields = explode('|', $line, $limit);
+ 
         $fields=[];
         $f=0;
         foreach ($g_field_names as $key) {
@@ -139,13 +150,24 @@ function genbody($incsv) {
             $comment="";
         }
         $id=varsub($id,$fields);
-
+        $fullid = $id;
+        if (isset($fields ['variant']))
+            $fullid = "${id}@" . $fields ['variant'];
+        $con = "";
+        $concomment = "";
+        if (isset($fields ['-con'])) {
+            $con = $fields ['-con'];
+            if ($con) {
+                print("define(\"$con\", $id);\n");
+                $concomment = "// $con";
+            }
+        }
+                   
+        if (is_numeric($fullid)|| $g_quotes_id == false)
+            fwrite($out, " $fullid => [ $concomment\n");
+        else
+            fwrite($out, " '$fullid' => [ $concomment\n");
         
-        $fullid=$id;
-        if (isset($fields['variant']))
-            $fullid="${id}@".$fields['variant'];
-        
-        fwrite($out, "'$fullid' => [\n");
 
         foreach ( $fields as $key => $value ) {
             if (startsWith($key, "-")) continue;
