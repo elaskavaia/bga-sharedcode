@@ -159,7 +159,7 @@ abstract class APP_Extended extends Table
         if ($player_id != 'all')
             $args['player_id'] = $player_id;
         if ($message) {
-            $player_name = $this->getPlayerName($player_id);
+            $player_name = $this->getPlayerNameById($player_id);
             $args['player_name'] = $player_name;
         }
         if (array_key_exists('_notifType', $args)) {
@@ -221,19 +221,6 @@ abstract class APP_Extended extends Table
             return 0;
         }
         return $players[$player_id]['player_color'];
-    }
-
-    /**
-     *
-     * @return string player name based on $player_id
-     */
-    function getPlayerName($player_id)
-    {
-        $players = $this->loadPlayersBasicInfos();
-        if (!isset($players[$player_id])) {
-            return "unknown";
-        }
-        return $players[$player_id]['player_name'];
     }
 
     /**
