@@ -175,6 +175,10 @@ abstract class Table extends APP_GameClass {
     /** Report gamename for translation function */
     abstract protected function getGameName( );
     
+    function getAllTableDatas() {
+        return [];
+    }
+    
     function getActivePlayerId() {
         return 1;
     }
@@ -397,6 +401,14 @@ abstract class Table extends APP_GameClass {
     function undoRestorePoint()
     {
     
+    }
+    
+    function getBgaEnvironment(){
+        return "studio";
+    }
+    
+    function say($text){
+        return;
     }
 }
 
