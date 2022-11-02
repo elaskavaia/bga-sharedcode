@@ -87,6 +87,10 @@ class APP_DbObject extends APP_Object {
     }
 }
 
+class APP_Action extends APP_DbObject {
+    
+}
+
 class APP_GameClass extends APP_DbObject {
     
     public function __construct() {
@@ -434,10 +438,42 @@ class GUser {
 class game_view {
 }
 
-class APP_GameAction {
+
+// Arg types
+define( 'AT_int', 0 );        //  an integer
+define( 'AT_posint', 1 );     //  a positive integer 
+define( 'AT_float', 2 );      //  a float
+define( 'AT_email', 3 );      //  an email  
+define( 'AT_url', 4 );        //  a URL
+define( 'AT_bool', 5 );       //  1/0/true/false
+define( 'AT_enum', 6 );       //  argTypeDetails list the possible values
+define( 'AT_alphanum', 7 );   //  only 0-9a-zA-Z_ and space
+define( 'AT_username', 8 );   //  TEL username policy: alphanum caracters + accents
+define( 'AT_login', 9 );      //  AT_username | AT_email
+define( 'AT_numberlist', 13 );   //  exemple: 1,4;2,3;-1,2
+define( 'AT_uuid', 17 );         // an UUID under the forme 0123-4567-89ab-cdef
+define( 'AT_version', 18 );         // A tournoi site version (ex: 100516-1243)
+define( 'AT_cityname', 20 );         // City name: 0-9a-zA-Z_ , space, accents, ' and -
+define( 'AT_filename', 21 );         // File name: 0-9a-zA-Z_ , and "."
+define( 'AT_groupname', 22 );   //  4-50 alphanum caracters + accents + :
+define( 'AT_timezone', 23 );   //  alphanum caracters + /
+define( 'AT_mediawikipage', 24 );   // Mediawiki valid page name
+define( 'AT_html_id', 26 );   // HTML identifier: 0-9a-zA-Z_-
+define( 'AT_alphanum_dash', 27 );   //  only 0-9a-zA-Z_ and space + dash
+define( 'AT_date', 28 );   //  0-9 + "/" + "-"
+define( 'AT_num', 29 );   //  0-9
+define( 'AT_alpha_strict', 30 );   //  only a-zA-Z
+define( 'AT_namewithaccent', 31 );         // Like City name: 0-9a-zA-Z_ , space, accents, ' and -
+define( 'AT_json', 32 );         // JSON string
+define( 'AT_base64', 33 );         // Base64 string
+
+class APP_GameAction extends  APP_Action {
     function getArg($name,$type,$mandatory=true,$default=null) {
         return '';
     }
+    protected function setAjaxMode( $bCheckCsrf=true )     {}
+    protected function ajaxResponse( $data = '' ) {}
+    protected function isArg( $argName ) { return true;}
 }
 
 function totranslate($text) {
