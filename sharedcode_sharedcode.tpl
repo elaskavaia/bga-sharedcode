@@ -56,6 +56,7 @@
         <label for="v-overlap">vertical_overlap %<input type="text" id="v-overlap" name="v-overlap"  size=3 value="0" /></label>
 
 		<label for="item_margin">item_margin<input type="text" id="item_margin" name="item_margin"  size=3 value="5" /></label>
+		<label>v-stock width<input type="text" id="s_width" name="s_width"  size=3 value="65" /></label>
 		<label for="centerItems"><input type="checkbox" id="centerItems" name="centerItems"/>&nbsp;centerItems</label>
         <label for="s_autowidth"><input type="checkbox" id="s_autowidth" name="s_autowidth" />autowith</label>
         <label for="s_as_offset"><input type="checkbox" id="s_as_offset" name="s_as_offset" />use_vertical_overlap_as_offset</label>

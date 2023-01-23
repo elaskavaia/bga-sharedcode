@@ -418,12 +418,13 @@ define([
       stock.horizontal_overlap = parseInt($("h-overlap").value);
       stock.vertical_overlap = parseInt($("v-overlap").value);
       stock.item_margin = parseInt($("item_margin").value);
+	  const s_width = parseInt($("s_width").value);
       stock.autowidth = !!$("s_autowidth").checked;
       stock.use_vertical_overlap_as_offset = !!$("s_as_offset").checked;
       stock.centerItems = !!$("centerItems").checked;
 
       if ($("radio-vertical").checked) {
-        stock.container_div.style.width = "65px";
+        stock.container_div.style.width = s_width+"px";
       }
 
       stock.updateDisplay();
