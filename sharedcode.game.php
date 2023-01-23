@@ -88,8 +88,6 @@ class SharedCode extends EuroGame {
         $players = self::loadPlayersBasicInfos();
         foreach ( $players as $player_id => $player ) {
             $this->cards->pickCards(3, 'deck', $player_id);
-   
-            //self::notifyPlayer($player_id, 'cardsMoved', '', array ('cards' => $cards, 'location' => 'hand' ));
         }
         
         // Init global values with their initial values
@@ -170,15 +168,12 @@ class SharedCode extends EuroGame {
 
     function action_takeCube($token_id, $place_id) {
         self::checkAction('takeCube');
-        $player_id = self::getActivePlayerId();
         $this->dbSetTokenLocation($token_id, $place_id, 0);
-        $this->notifyPlayer($player_id, 'playerLog', '${You} moved cube', [ 'You' => 'You' ]);
         $this->gamestate->nextState('next');
     }
 
     function action_moveCube($token_id, $place_id) {
         self::checkAction('moveCube');
-        $player_id = self::getActivePlayerId();
         $this->dbSetTokenLocation($token_id, $place_id, 0);
         $this->gamestate->nextState('next');
     }
@@ -186,15 +181,16 @@ class SharedCode extends EuroGame {
     function action_drawCard() {
         self::checkAction('drawCard');
         $player_id = self::getActivePlayerId();
-        $this->dbSetTokenLocation($token_id, $place_id, 0);
-        $this->notifyPlayer($player_id, 'playerLog', '${You} moved cube', [ 'You' => 'You' ]);
+        $cards = $this->cards->pickCards(1, 'deck', $player_id);
+        $this->notifyPlayer($player_id, 'moveCard', '${You} draw a card', [ 'You' => 'You', 'card' => $cards[0] ]);
         $this->gamestate->nextState('next');
     }
     
     function action_playCard($card_id) {
         self::checkAction('playCard');
         $player_id = self::getActivePlayerId();
-        $this->dbSetTokenLocation($token_id, $place_id, 0);
+        $this->cards->moveCard($card_id,'playarea');
+        $this->notifyWithName('moveCard', '${player_name} draw a card', [  'card' => $this->cards->getCard($card_id) ], $player_id);
         $this->gamestate->nextState('next');
     }
     

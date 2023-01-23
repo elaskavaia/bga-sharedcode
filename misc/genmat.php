@@ -154,21 +154,21 @@ function genbody($incsv) {
         if (isset($fields ['variant']))
             $fullid = "${id}@" . $fields ['variant'];
         $con = "";
-        $concomment = "";
+        $concomment = " //";
         if (isset($fields ['-con'])) {
             $con = $fields ['-con'];
             if ($con) {
                 print("define(\"$con\", $id);\n");
-                $concomment = "// $con";
+                $concomment = " // $con";
             }
         }
                    
         if (is_numeric($fullid)|| $g_quotes_id == false)
-            fwrite($out, " $fullid => [ $concomment\n");
+            fwrite($out, " $fullid");
         else
-            fwrite($out, " '$fullid' => [ $concomment\n");
+            fwrite($out, " '$fullid'");
         
-
+        fwrite($out, " => [ ${concomment}\n");
         foreach ( $fields as $key => $value ) {
             if (startsWith($key, "-")) continue;
             if ($key=='id') continue;

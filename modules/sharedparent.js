@@ -31,6 +31,7 @@ function getIntPart(word, i) {
     return parseInt(getPart(word, i));
 };
 function getPart(word, i) {
+    if (typeof word !== 'string') throw new Error("Not a string: "+word);
     var arr = word.split('_');
     if (i < 0) i = arr.length + i;
     return arr[i];
@@ -425,17 +426,19 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui"], function (dojo, decla
             this.ajaxClientStateAction();
         },
         ajaxClientStateAction: function (action) {
+            const args = dojo.clone(this.clientStateArgs);
             if (typeof action == 'undefined') {
-                action = this.clientStateArgs.action;
+                action = args.action;
+                delete args.action;
             }
-            if (this.clientStateArgs.handler) {
-                var handler = this.clientStateArgs.handler;
-                delete this.clientStateArgs.handler;
+            if (args.handler) {
+                var handler = args.handler;
+                delete args.handler;
                 handler();
                 return;
             }
-            console.log("sending " + action);
-            this.ajaxAction(action, this.clientStateArgs);
+            console.log("sending " + action,args);
+            this.ajaxAction(action, args);
         },
         setClientStateAction: function (stateName, desc, delay, moreargs) {
             var args = {};
@@ -1079,6 +1082,21 @@ define(["dojo", "dojo/_base/declare", "ebg/core/gamegui"], function (dojo, decla
                 { url: url + '" target="_blank' }) + '</b>');
             }
             return this.inherited(arguments);
+        },
+
+        onScriptError: function (msg, url, linenumber) {
+            console.log('onScriptError');
+
+            if (this.page_is_unloading) {
+                // Don't report errors during page unloading
+                return;
+            }
+
+            // In anycase, report these errors in the console
+            console.error(msg);
+            console.error('url=' + url);
+            console.error('line=' + linenumber);
+            this.inherited(arguments);
         },
         // /////////////////////////////////////////////////
         // // Player's action

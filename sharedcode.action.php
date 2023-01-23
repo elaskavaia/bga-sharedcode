@@ -57,6 +57,20 @@ class action_sharedcode extends APP_GameAction {
         self::ajaxResponse();
     }
     
+    public function drawCard() {
+        self::setAjaxMode();
+        $this->game->action_drawCard();
+        self::ajaxResponse();
+    }
+    
+    public function playCard() {
+        self::setAjaxMode();
+        $arg1 = self::getArg("card_id", AT_alphanum, true);
+        $this->game->action_playCard($arg1);
+        self::ajaxResponse();
+    }
+    
+    
     public function pass() {
         self::setAjaxMode();
         $this->game->action_pass();
