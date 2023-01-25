@@ -373,7 +373,7 @@ define([
     // initialize any stock component that can work with my cards
     initMyStock: function (mystock, parent) {
       mystock.create(this, parent, 64, 78);
-      mystock.order_items = false;
+      //mystock.order_items = false;
       mystock.selectionApparance = "class";
       mystock.selectionClass = "selected";
       mystock.onChangeSelection = (parent_id, item_id) => {
@@ -422,6 +422,7 @@ define([
       stock.autowidth = !!$("s_autowidth").checked;
       stock.use_vertical_overlap_as_offset = !!$("s_as_offset").checked;
       stock.centerItems = !!$("centerItems").checked;
+      stock.order_items = !!$("order_items").checked;
 
       if ($("radio-vertical").checked) {
         stock.container_div.style.width = s_width+"px";

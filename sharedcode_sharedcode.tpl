@@ -60,6 +60,8 @@
 		<label for="centerItems"><input type="checkbox" id="centerItems" name="centerItems"/>&nbsp;centerItems</label>
         <label for="s_autowidth"><input type="checkbox" id="s_autowidth" name="s_autowidth" />autowith</label>
         <label for="s_as_offset"><input type="checkbox" id="s_as_offset" name="s_as_offset" />use_vertical_overlap_as_offset</label>
+        <label><input type="checkbox" id="order_items" name="order_items" />order_items</label>
+        
 	
 
       </div>
