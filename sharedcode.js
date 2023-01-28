@@ -234,14 +234,14 @@ define([
             this.addActionButton("button_done", _("Done"), "onDone");
             break;
           case "client_selectCard":
-			this.setDescriptionOnMyTurn(_("Select card from hand"));
+            this.setDescriptionOnMyTurn(_("Select card from hand"));
             dojo.query(".hand > .card").addClass("active_slot");
             this.addActionButton("button_cancel", _("Cancel"), "onCancel");
             break;
           case "client_selectCardLocation":
-			this.setDescriptionOnMyTurn(_("Select location"));
+            this.setDescriptionOnMyTurn(_("Select location"));
             dojo.query(".playarea,.hand").addClass("active_slot");
-			const selItem = document.querySelector(`[data-card-id='${this.clientStateArgs.card_id}']`);
+            const selItem = document.querySelector(`[data-card-id='${this.clientStateArgs.card_id}']`);
             dojo.addClass(selItem, "selected");
             this.addActionButton("button_cancel", _("Cancel"), "onCancel");
             break;
@@ -418,14 +418,14 @@ define([
       stock.horizontal_overlap = parseInt($("h-overlap").value);
       stock.vertical_overlap = parseInt($("v-overlap").value);
       stock.item_margin = parseInt($("item_margin").value);
-	  const s_width = parseInt($("s_width").value);
+      const s_width = parseInt($("s_width").value);
       stock.autowidth = !!$("s_autowidth").checked;
       stock.use_vertical_overlap_as_offset = !!$("s_as_offset").checked;
       stock.centerItems = !!$("centerItems").checked;
       stock.order_items = !!$("order_items").checked;
 
       if ($("radio-vertical").checked) {
-        stock.container_div.style.width = s_width+"px";
+        stock.container_div.style.width = s_width + "px";
       }
 
       stock.updateDisplay();
@@ -451,7 +451,7 @@ define([
           var keys = ["place_name", "token_name"];
           for (var i in keys) {
             var key = keys[i];
-           // console.log("checking " + key + " for " + log);
+            // console.log("checking " + key + " for " + log);
             if (typeof args[key] == "string") {
               if (this.getTranslatable(key, args) == -1) {
                 var res = this.getTokenDiv(key, args);
@@ -588,7 +588,7 @@ define([
       this.clientStateArgs.card_id = card_id;
       switch (this.getStateName()) {
         case "client_selectCard":
-		  this.setClientState('client_selectCardLocation');
+          this.setClientState("client_selectCardLocation");
           break;
       }
     },
@@ -661,9 +661,9 @@ define([
         tostock.addToStockWithId(scard.type, scard.id, fromstock.container_div.id);
         fromstock.removeFromStockById(scard.id);
       }
-	  switch (this.getStateName()) {
+      switch (this.getStateName()) {
         case "client_selectCardLocation":
-		  this.ajaxClientStateAction();
+          this.ajaxClientStateAction();
           break;
       }
     },
