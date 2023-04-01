@@ -98,6 +98,7 @@ class APP_GameClass extends APP_DbObject {
 }
 
 class GameState {
+    public $table_globals;
     
     function GameState() {
     }
@@ -130,6 +131,9 @@ class GameState {
     function nextState($transition) {
     }
     
+    function jumpToState($stateNum) {
+    }
+
     function checkPossibleAction($action) {
     }
     
@@ -278,7 +282,7 @@ abstract class Table extends APP_GameClass {
     
     /**
      * Check if action is valid regarding current game state (exception if fails)
-     if "bThrowException" is set to "false", the function return false in case of failure instead of throwing and exception
+     * if "bThrowException" is set to "false", the function return false in case of failure instead of throwing and exception
      * @param string $actionName
      * @param boolean $bThrowException
      */
@@ -467,7 +471,12 @@ define( 'AT_namewithaccent', 31 );         // Like City name: 0-9a-zA-Z_ , space
 define( 'AT_json', 32 );         // JSON string
 define( 'AT_base64', 33 );         // Base64 string
 
+define( "FEX_bad_input_argument", 300 );
+
 class APP_GameAction extends  APP_Action {
+    protected $game;
+    protected $view;
+    protected $viewArgs;
     function getArg($name,$type,$mandatory=true,$default=null) {
         return '';
     }
