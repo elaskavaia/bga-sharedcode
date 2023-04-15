@@ -46,41 +46,42 @@
  * If file is not called material.csv, if called foo.csv use  // --- gen php begin foo ---
  * This way can generate multiple sections
 
-Special columns: 
-id - the id of object (string or number)
-variant - special field appended to string as as @xxx  - used to have versions of material file depending on game variants
--con - way to use php constant to alias an numeric id, defines are currently not injected but dumped on console
-name, tooltip, tooltip_action - default fields which are translatable
+ Special columns: 
+ id - the id of object (string or number)
+ variant - special field appended to string as as @xxx  - used to have versions of material file depending on game variants
+ -con - way to use php constant to alias an numeric id, defines are currently not injected but dumped on console
+ name, tooltip, tooltip_action - default fields which are translatable
 
-#set tr=color - using this directive make 'color' translatable field also
-#set sep=, - change separator
-#set sub=/ - use this character or string to replace default separator, i.e. a/b will be replaced to a|b
-#set noquotes=field - do not quotes for field when outputing
+ #set tr=color - using this directive make 'color' translatable field also
+ #set sep=, - change separator
+ #set sub=/ - use this character or string to replace default separator, i.e. a/b will be replaced to a|b
+ #set noquotes=field - do not quotes for field when outputing
  */
 $g_field_names = null;
+$g_field_extra = [ ];
 $g_index = 1;
 $g_trans = [ 'name','tooltip','tooltip_action' ];
 $g_separator = '|';
 $g_separator_sub = '';
-$g_noquotes = [];
+$g_noquotes = [ ];
 
 function handle_header($fields) {
     global $g_field_names;
+    global $g_field_extra;
     if ($fields [0] == 'element_id') {
         // old style header
         $g_field_names = [ 'id','type','name','tooltip','tooltip_action' ];
     } else {
         $g_field_names = $fields;
-        if (array_search('id', $g_field_names) === false) {
-            echo "Error: missing required id column in input file\n";
-            exit(2);
-        }
     }
     return true;
 }
 
-function get(&$var, $default = null) {
-    return isset($var) ? $var : $default;
+function get_field($key, $fields, $default = null) {
+    global $g_field_extra;
+    if ( !is_array($fields))
+        throw new Exception("fields should be an array");
+    return $fields [$key] ?? $g_field_extra [$key] ?? $default;
 }
 
 function isTranslatable($key) {
@@ -95,7 +96,8 @@ function genbody($incsv) {
     global $out;
     $ins = fopen($incsv, "r") or die("Unable to open file! $ins");
     $comment = "";
-    global $g_field_names, $g_index,  $g_separator, $g_separator_sub, $g_trans, $g_noquotes;
+    global $g_field_names, $g_index, $g_separator, $g_separator_sub, $g_trans, $g_noquotes;
+    global $g_field_extra;
     $limit = false;
     $matches = [ ];
     while ( ($line = fgets($ins)) !== false ) {
@@ -108,21 +110,29 @@ function genbody($incsv) {
                 $key = $matches ['name'];
                 $value = trim($matches ['value']);
                 switch ($key) {
-                    case 'sep':
-                        $g_separator = $value;
+                    case '_sep' :
+                        $g_separator = $value; #field separator
                         break;
-                    case 'sub':
+                    case '_sub' :
+                        // use another character insped of sepator if separttor is needed, 
+                        // i.e. if sepator is | and you need this in string, you can define / as replacement so / will be replace to | in the string 
                         $g_separator_sub = $value;
                         break;
-                    case 'tr':
+                    case '_tr' :
+                        // field with this name will be translated
                         $g_trans [] = $value;
                         break;
-                    case 'noquotes':
+                    case '_noquotes' :
+                        // field with this name will be generated without quotes (i.e. direct constant or php expresson)
                         $g_noquotes [] = $value;
                         break;
-                    default:
-                        echo "Error: unknown key $key for #set directive\n";
-                        exit(2);
+                    default :
+                        if (startsWith($key, "_")) {
+                            print("Error: unknown key $key for #set directive\n");
+                            exit(2);
+                        } else {
+                            $g_field_extra [$key] = $value;
+                        }
                 }
                 continue;
             }
@@ -145,8 +155,12 @@ function genbody($incsv) {
                 $fields [$key] = null;
             $f++;
         }
-        $id = $fields ['id'];
-        $ftype = get($fields ['type'], '');
+        $id = get_field('id', $fields);
+        if (!$id) {
+            echo "Error: missing required id column in input file\n";
+            exit(2);
+        }
+        $ftype = get_field('type', $fields, '');
         $ftype = varsub($ftype, $fields);
         $extra = '';
         // old way of getting extra fields
@@ -167,23 +181,28 @@ function genbody($incsv) {
         }
         $id = varsub($id, $fields);
         $fullid = $id;
-        if (isset($fields ['variant']))
+        $variant = get_field('variant', $fields);
+        if ($variant)
             $fullid = "${id}@" . $fields ['variant'];
-        $con = "";
+        $con = get_field('-con', $fields);
         $concomment = " //";
-        if (isset($fields ['-con'])) {
-            $con = $fields ['-con'];
-            if ($con) {
-                print("define(\"$con\", $id);\n");
-                $concomment = " // $con";
-            }
+        if ($con) {
+            print("define(\"$con\", $id);\n");
+            $concomment = " // $con";
         }
         if (is_numeric($fullid) || array_search('id', $g_noquotes) !== false)
             fwrite($out, " $fullid");
         else
             fwrite($out, " '$fullid'");
         fwrite($out, " => [ ${concomment}\n");
+        $map = array_merge($g_field_extra, $fields);
         foreach ( $fields as $key => $value ) {
+            if ($value === null && array_key_exists($key, $g_field_extra)) {
+                $map [$key] = $g_field_extra [$key];
+            }
+        }
+
+        foreach ( $map as $key => $value ) {
             if (startsWith($key, "-"))
                 continue;
             if ($key == 'id')
@@ -207,7 +226,7 @@ function genbody($incsv) {
                     $exp = "clienttranslate(\"$value\")";
                 else
                     continue;
-            } else if (is_numeric($value) ||  array_search($key, $g_noquotes)!==false ) {
+            } else if (is_numeric($value) || array_search($key, $g_noquotes) !== false) {
                 $exp = $value;
             } else {
                 $exp = "'$value'";
@@ -235,9 +254,11 @@ function varsub($line, $keymap) {
     if ($line === null)
         throw new Exception("varsub: line cannot be null");
     global $g_index;
+    global $g_field_extra;
     $line = preg_replace("/\{GINDEX\}/", $g_index, $line);
     if (strpos($line, "{") !== false) {
-        foreach ( $keymap as $key => $value ) {
+        $map = array_merge($g_field_extra, $keymap);
+        foreach ( $map as $key => $value ) {
             if (strpos($line, "{$key}") !== false) {
                 $line = preg_replace("/\{$key\}/", $value, $line);
             }
