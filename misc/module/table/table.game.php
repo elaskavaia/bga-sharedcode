@@ -208,7 +208,7 @@ abstract class Table extends APP_GameClass {
         $values = array ();
         $id = 1;
         foreach ( $default_colors as $color ) {
-            $values [$id] = array ('player_id' => $id,'player_color' => $color,'player_name' => "player$id" );
+            $values [$id] = array ('player_id' => $id,'player_color' => $color,'player_name' => "player$id", 'player_zombie' => 0 );
             $id++;
         }
         return $values;
