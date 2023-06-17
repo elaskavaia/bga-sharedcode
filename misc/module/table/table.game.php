@@ -101,14 +101,16 @@ class GameState {
     private $current_state = 2;
     private $active_player = null;
     private $states = [];
+    private $private_states = [];
 
-    function __construct($states=[]) {
+    function __construct($states = []) {
         $this->states = $states;
     }
 
     function state() {
         if (array_key_exists($this->current_state, $this->states)) {
             $state =  $this->states[$this->current_state];
+            $state['id'] = $this->current_state;
             return $state;
         }
         return [];
@@ -160,6 +162,13 @@ class GameState {
             return [];
     }
 
+    // Return true if specified player is active right now.
+    // This method take into account game state type, ie nobody is active if game state is "game" and several
+    // players can be active if game state is "multiplayer"
+    public function isPlayerActive($player_id) {
+        return false;
+    }
+
 
     function updateMultiactiveOrNextState($next_state_if_none) {
     }
@@ -182,7 +191,7 @@ class GameState {
 
 
     function getPrivateState($playerId) {
-        return 1;
+        return  $this->private_states[$playerId] ?? null;
     }
 
     function nextPrivateStateForPlayers($ids, $transition) {
@@ -192,9 +201,12 @@ class GameState {
     }
 
     function nextPrivateState($playerId, $transition) {
+        $privstate = $this->getStateNumberByTransition($transition);
+        $this->setPrivateState($playerId, $privstate);
     }
 
     function setPrivateState($playerId, $newStateId) {
+        $this->private_states[$playerId] = $newStateId;
     }
 
     function initializePrivateStateForAllActivePlayers() {
@@ -204,9 +216,13 @@ class GameState {
     }
 
     function initializePrivateState($playerId) {
+        $state = $this->state();
+        $privstate = $state['initialprivate'];
+        $this->setPrivateState($playerId, $privstate);
     }
 
     function unsetPrivateState($playerId) {
+        $this->private_states[$playerId] = null;
     }
 
     function unsetPrivateStateForPlayers($ids) {
@@ -245,6 +261,7 @@ abstract class Table extends APP_GameClass {
     var $players = array();
     public $gamename;
     public $gamestate = null;
+    public bool $not_a_move_notification = false;
 
     public function __construct() {
         parent::__construct();
@@ -317,7 +334,9 @@ abstract class Table extends APP_GameClass {
         $players = self::loadPlayersBasicInfos();
         return $players[$player_id]['player_color'];
     }
+    function eliminatePlayer($player_id) {
 
+    }
 
     /**
      * Setup correspondance "labels to id"
@@ -434,7 +453,8 @@ abstract class Table extends APP_GameClass {
     function reloadPlayersBasicInfos() {
     }
 
-    function getNew($deck_definition) {
+    function getNew($deck_definition): object {
+        return null;
     }
 
     // Give standard extra time to this player
@@ -442,7 +462,7 @@ abstract class Table extends APP_GameClass {
     function giveExtraTime($player_id, $specific_time = null) {
     }
 
-    function getStandardGameResultObject() {
+    function getStandardGameResultObject(): array {
         return array();
     }
 
@@ -507,9 +527,6 @@ class GUser {
     public function get_id() {
         return 1;
     }
-}
-
-class game_view {
 }
 
 
