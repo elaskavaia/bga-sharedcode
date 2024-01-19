@@ -5,16 +5,14 @@
 // @match        *://studio.boardgamearena.com/licensing
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=boardgamearena.com
 // @run-at document-idle
-// @version     0.2
+// @version     0.3
 // @grant       none
 
 // ==/UserScript==
 
-// call the tablesorter plugin
-
 (function () {
   'use strict';
-  console.error("BGA sorter is loaded");
+  console.log("BGA sorter is loaded");
 
   function sortByColumn(column) {
     function compareFuncComplexity(a, b) {
@@ -32,7 +30,7 @@
 
     var sortedChildren = children.sort(compareFuncComplexity);
 
-    sortedChildren.forEach(function (element) {
+    sortedChildren.forEach((element) => {
       container.appendChild(element);
     });
   }
