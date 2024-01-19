@@ -262,6 +262,7 @@ abstract class Table extends APP_GameClass {
     public $gamename;
     public $gamestate = null;
     public bool $not_a_move_notification = false;
+    var $player_preferences; // only available during setupNewGame
 
     public function __construct() {
         parent::__construct();
@@ -300,7 +301,7 @@ abstract class Table extends APP_GameClass {
         $values = array();
         $id = 1;
         foreach ($default_colors as $color) {
-            $values[$id] = array('player_id' => $id, 'player_color' => $color, 'player_name' => "player$id", 'player_zombie' => 0);
+            $values[$id] = array('player_id' => $id, 'player_color' => $color, 'player_name' => "player$id", 'player_zombie' => 0, 'player_no' => $id);
             $id++;
         }
         return $values;
@@ -345,10 +346,10 @@ abstract class Table extends APP_GameClass {
     function initGameStateLabels($labels) {
     }
 
-    function setGameStateInitialValue($value_label, $value_value) {
+    function setGameStateInitialValue(string $value_label, int $value_value) {
     }
 
-    function getGameStateValue($value_label) {
+    function getGameStateValue($value_label, int $def = null) {
         return 0;
     }
 

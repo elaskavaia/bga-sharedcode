@@ -2,32 +2,39 @@
 
 
 // MAIN CODE
-if (! isset($argv [1])) {
+$rest_index = null;
+$options = getopt("", ["all","old-name:","new-name:"], $rest_index);
+$args = array_slice($argv, $rest_index);
+if (! isset($args [0]) || ! isset($args[1])) {
     echo "Make a project copy by moving files into new project and renaming some known files and strings inside them\n";
     echo "The new project directory must be empty. The name of the new project is the name of the directory. It must be all lowercase.\n";
     echo "usage: bgaprojectrename.php <oldprojectfullpath> <newprojectfullpath> [--all]\n";
     exit(0);
 }
-$oldprojectpath = $argv [1];
-$newprojectpath = $argv [2];
-$oldprojectname = basename($argv [1]);
-$newprojectname = basename($argv [2]);
+
+$oldprojectpath = realpath($args [0]); 
+if ($oldprojectpath===false) die("Path does not exists: $args[0]\n");
+$newprojectpath = $args [1];
+if (!is_dir($newprojectpath)) {
+	mkdir($newprojectpath, 0777, true) || die ("Cannot create dir $newprojectpath\n");
+}
+$newprojectpath = realpath($newprojectpath);
+if ($newprojectpath===false) die("Path does not exists: $args[1]\n");
+
+$oldprojectname = $options['old-name'] ?? basename($oldprojectpath);
+$newprojectname = $options['new-name'] ?? basename($newprojectpath);
+$replace_content = array_key_exists('all',$options);
+echo "replace all: $replace_content\n";
 $res = preg_match( "/^[a-z]+$/", $newprojectname );
 if ($res !== 1) {
     echo "Error: new project name can only have [a-z] letters (was $newprojectname)\n";
     exit(1);
 }
-$option = isset($argv[3])? $argv [3] : '';
-$replace_content = false;
-if ($option=='--all') {
-    $replace_content = true;
-}
+echo "$oldprojectpath:$oldprojectname => $newprojectpath:$newprojectname\n";
 
 $subdirs = ["src","modules",".vscode"];
 
-echo "Copying $oldprojectpath => $newprojectpath\n";
 copyr($oldprojectpath, $newprojectpath);
-echo "$oldprojectname => $newprojectname\n";
 replacecontent($newprojectpath);
 
 
