@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BGA Bug report canned replies
 // @namespace    https://boardgamearena.com/
-// @version      0.1
+// @version      0.2
 // @description  select canned reply
 // @author       elaskavaia
 // @match        https://boardgamearena.com/bug?id=*
