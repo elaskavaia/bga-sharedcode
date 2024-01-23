@@ -4,6 +4,7 @@
 // @author       elaskavaia
 // @match        *://studio.boardgamearena.com/licensing
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=boardgamearena.com
+// @updateURL  https://raw.githubusercontent.com/elaskavaia/bga-sharedcode/master/userscripts/bgalicensesorter.user.js
 // @run-at document-idle
 // @version     0.3
 // @grant       none
