@@ -301,7 +301,7 @@ abstract class Table extends APP_GameClass {
         $values = array();
         $id = 1;
         foreach ($default_colors as $color) {
-            $values[$id] = array('player_id' => $id, 'player_color' => $color, 'player_name' => "player$id", 'player_zombie' => 0, 'player_no' => $id);
+            $values[$id] = array('player_id' => $id, 'player_color' => $color, 'player_name' => "player$id", 'player_zombie' => 0, 'player_no' => $id, 'player_eliminated' => 0);
             $id++;
         }
         return $values;
@@ -336,7 +336,6 @@ abstract class Table extends APP_GameClass {
         return $players[$player_id]['player_color'];
     }
     function eliminatePlayer($player_id) {
-
     }
 
     /**
@@ -381,28 +380,47 @@ abstract class Table extends APP_GameClass {
     function checkAction($actionName, $bThrowException = true) {
     }
 
+
     function getNextPlayerTable() {
-        return 0;
+        $players = $this->loadPlayersBasicInfos();
+        return $this->createNextPlayerTable(array_keys($players));
     }
+
 
     function getPrevPlayerTable() {
-        return 0;
+        $players = $this->loadPlayersBasicInfos();
+        return $this->createPrevPlayerTable(array_keys($players));
     }
+
 
     function getPlayerAfter($player_id) {
-        return 0;
+        $player_table = $this->getNextPlayerTable();
+        return $player_table[$player_id];
     }
-
     function getPlayerBefore($player_id) {
-        return 0;
+        $player_table = $this->getPrevPlayerTable();
+        return $player_table[$player_id];
     }
 
-    function createNextPlayerTable($players, $bLoop = true) {
-        return array();
+    protected function createNextPlayerTable($players, $bLoop = true) {
+        $player_table = [];
+
+        $prev = $first = array_shift($players);
+        while (count($players) > 0) {
+            $prev = $player_table[$prev] = array_shift($players);
+        }
+
+        $player_table[$prev] = $bLoop ? $first : null;
+        $player_table[0] = $first;
+
+        return $player_table;
     }
 
-    function createPrevPlayerTable($players, $bLoop = true) {
-        return array();
+    protected function createPrevPlayerTable($players, $bLoop = true) {
+        $result = self::createNextPlayerTable($players);
+        unset($result[0]);
+        $result = array_flip($result);
+        return $result;
     }
 
     function notifyAllPlayers($type, $message, $args) {
@@ -467,13 +485,6 @@ abstract class Table extends APP_GameClass {
         return array();
     }
 
-    function applyDbChangeToAllDB($sql) {
-    }
-
-    /**
-     *
-     * @deprecated
-     */
     function applyDbUpgradeToAllDB($sql) {
     }
 
