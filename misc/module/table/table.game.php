@@ -42,7 +42,7 @@ class APP_Object {
 class APP_DbObject extends APP_Object {
     public $query;
 
-    function DbQuery($str) {
+    function DbQuery(string $str) {
         $this->query = $str;
         echo "dbquery: $str\n";
     }
@@ -51,7 +51,7 @@ class APP_DbObject extends APP_Object {
         return 0;
     }
 
-    function getCollectionFromDB($query, $single = false) {
+    function getCollectionFromDB(string $query, bool $single = false) {
         echo "dbquery coll: $query\n";
         return array();
     }
@@ -138,7 +138,7 @@ class GameState {
     function setPlayersMultiactive($players, $next_state, $bExclusive = false) {
     }
 
-    function setPlayerNonMultiactive($player_id, $next_state) {
+    function setPlayerNonMultiactive(string $player_id, string $next_state) {
     }
 
     public function isMutiactiveState() {
@@ -173,7 +173,7 @@ class GameState {
     function updateMultiactiveOrNextState($next_state_if_none) {
     }
 
-    function nextState($transition) {
+    function nextState(string $transition) {
         $x = $this->getStateNumberByTransition($transition);
         $this->jumpToState($x);
     }
@@ -307,7 +307,7 @@ abstract class Table extends APP_GameClass {
         return $values;
     }
 
-    protected function getCurrentPlayerId() {
+    protected function getCurrentPlayerId(): string {
         return 1;
     }
 
@@ -342,13 +342,13 @@ abstract class Table extends APP_GameClass {
      * Setup correspondance "labels to id"
      * @param [] $labels - map string -> int (label of state variable -> numeric id in the database)
      */
-    function initGameStateLabels($labels) {
+    function initGameStateLabels(array $labels) {
     }
 
     function setGameStateInitialValue(string $value_label, int $value_value) {
     }
 
-    function getGameStateValue($value_label, int $def = null) {
+    function getGameStateValue(string $value_label, int $def = null): int {
         return 0;
     }
 
@@ -466,14 +466,14 @@ abstract class Table extends APP_GameClass {
         return 2;
     }
 
-    function reattributeColorsBasedOnPreferences($players, $colors) {
+    function reattributeColorsBasedOnPreferences(array $players, array $colors) {
     }
 
     function reloadPlayersBasicInfos() {
     }
 
-    function getNew($deck_definition): object {
-        return null;
+    protected function getNew(string $deck_definition): Deck {
+        return new Deck();
     }
 
     // Give standard extra time to this player
@@ -489,7 +489,7 @@ abstract class Table extends APP_GameClass {
     }
 
 
-    function getGameinfos() {
+    function getGameinfos(): array {
         unset($gameinfos);
         require('gameinfos.inc.php');
         if (isset($gameinfos)) {

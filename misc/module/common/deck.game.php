@@ -32,7 +32,7 @@ class Deck extends APP_GameClass {
     }
 
     // MUST be called before any other method if db table is not called 'card'
-    function init($table) {
+    function init(string $table) {
         $this->table = $table;
     }
 
@@ -46,7 +46,7 @@ class Deck extends APP_GameClass {
     //          "nbr" => <nbr>                  // Number of cards with this card type to create in game
     //
     // If location_arg is not specified, cards are placed at location extreme position
-    function createCards($cards, $location_global, $card_state_global = null) {
+    function createCards(array $cards, string $location_global, ?int $card_state_global = null) {
        return;
     }
 
@@ -56,7 +56,7 @@ class Deck extends APP_GameClass {
     }
 
     // Shuffle card of a specified location, result of the operation will changes state of the card to be a position after shuffling
-    function shuffle($location) {
+    function shuffle(string $location) {
 
     }
 
