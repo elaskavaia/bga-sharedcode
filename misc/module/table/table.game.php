@@ -263,7 +263,11 @@ abstract class Table extends APP_GameClass {
     public $gamestate = null;
     public bool $not_a_move_notification = false;
     var $player_preferences; // only available during setupNewGame
-    // when set in constructor, will force usage of playermultiactive table, but does not eliminate dead lock completely
+    
+    /**
+     *   when set in constructor, will force usage of playermultiactive table,
+     *   but does not eliminate dead lock completely
+     */
     public bool $bIndependantMultiactiveTable = false;
 
     public function __construct() {
