@@ -8,7 +8,11 @@ $args = array_slice($argv, $rest_index);
 if (! isset($args [0]) || ! isset($args[1])) {
     echo "Make a project copy by moving files into new project and renaming some known files and strings inside them\n";
     echo "The new project directory must be empty. The name of the new project is the name of the directory. It must be all lowercase.\n";
-    echo "usage: bgaprojectrename.php <oldprojectfullpath> <newprojectfullpath> [--all]\n";
+    echo "usage: bgaprojectrename.php <oldprojectfullpath> <newprojectfullpath> [options]\n";
+    echo "options:\n";
+    echo " --all - renamed in text files and strings also";
+    echo " --old-name <OldProjectName>\n";
+    echo " --new-name <NewProjectName>\n";
     exit(0);
 }
 
