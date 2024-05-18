@@ -1,6 +1,5 @@
 <?php
-
-if (!defined('APP_GAMEMODULE_PATH')) {
+if ( !defined('APP_GAMEMODULE_PATH')) {
     define('APP_GAMEMODULE_PATH', '');
 }
 
@@ -53,28 +52,28 @@ class APP_DbObject extends APP_Object {
 
     function getCollectionFromDB($query, $single = false) {
         echo "dbquery coll: $query\n";
-        return array();
+        return array ();
     }
 
     function getNonEmptyCollectionFromDB($sql) {
-        return array();
+        return array ();
     }
 
     function getObjectFromDB($sql) {
-        return array();
+        return array ();
     }
 
     function getNonEmptyObjectFromDB($sql) {
-        return array();
+        return array ();
     }
 
     function getObjectListFromDB($query, $single = false) {
         echo "dbquery list: $query\n";
-        return array();
+        return array ();
     }
 
     function getDoubleKeyCollectionFromDB($sql, $bSingleValue = false) {
-        return array();
+        return array ();
     }
 
     function DbGetLastId() {
@@ -100,36 +99,39 @@ class GameState {
     public $table_globals;
     private $current_state = 2;
     private $active_player = null;
-    private $states = [];
-    private $private_states = [];
+    var $states = [ ];
+    private $private_states = [ ];
 
-    function __construct($states = []) {
+    function __construct($states = [ ]) {
         $this->states = $states;
+    }
+
+    function state_id() {
+        return $this->current_state;
     }
 
     function state() {
         if (array_key_exists($this->current_state, $this->states)) {
-            $state =  $this->states[$this->current_state];
-            $state['id'] = $this->current_state;
+            $state = $this->states [$this->current_state];
+            $state ['id'] = $this->current_state;
             return $state;
         }
-        return [];
+        return [ ];
     }
 
     function getStateNumberByTransition($transition) {
         $state = $this->state();
-        foreach ($state['transitions'] as $pos => $next_state) {
+        foreach ( $state ['transitions'] as $pos => $next_state ) {
             if ($transition == $pos || !$transition) {
                 return $next_state;
             }
         }
-
         throw new feException("This transition ($transition) is impossible at this state ($this->current_state)");
     }
 
     function changeActivePlayer($player_id) {
         $this->active_player = $player_id;
-        $this->states[$this->current_state]['active_player'] = $player_id;
+        $this->states [$this->current_state] ['active_player'] = $player_id;
     }
 
     function setAllPlayersMultiactive() {
@@ -143,23 +145,22 @@ class GameState {
 
     public function isMutiactiveState() {
         $state = $this->state();
-        return ($state['type'] == 'multipleactiveplayer');
+        return ($state ['type'] == 'multipleactiveplayer');
     }
 
     public function getPlayerActiveThisTurn() {
         $state = $this->state();
-        return $state['active_player'] ?? $this->active_player;
+        return $state ['active_player'] ?? $this->active_player;
     }
 
     public function getActivePlayerList() {
         $state = $this->state();
-
-        if ($state['type'] == 'activeplayer') {
-            return [$this->getPlayerActiveThisTurn()];
-        } else if ($state['type'] == 'multipleactiveplayer') {
-            return $state['multiactive'] ?? [];
+        if ($state ['type'] == 'activeplayer') {
+            return [ $this->getPlayerActiveThisTurn() ];
+        } else if ($state ['type'] == 'multipleactiveplayer') {
+            return $state ['multiactive'] ?? [ ];
         } else
-            return [];
+            return [ ];
     }
 
     // Return true if specified player is active right now.
@@ -168,7 +169,6 @@ class GameState {
     public function isPlayerActive($player_id) {
         return false;
     }
-
 
     function updateMultiactiveOrNextState($next_state_if_none) {
     }
@@ -189,9 +189,8 @@ class GameState {
         return $this->state();
     }
 
-
     function getPrivateState($playerId) {
-        return  $this->private_states[$playerId] ?? null;
+        return $this->private_states [$playerId] ?? null;
     }
 
     function nextPrivateStateForPlayers($ids, $transition) {
@@ -206,7 +205,7 @@ class GameState {
     }
 
     function setPrivateState($playerId, $newStateId) {
-        $this->private_states[$playerId] = $newStateId;
+        $this->private_states [$playerId] = $newStateId;
     }
 
     function initializePrivateStateForAllActivePlayers() {
@@ -217,12 +216,12 @@ class GameState {
 
     function initializePrivateState($playerId) {
         $state = $this->state();
-        $privstate = $state['initialprivate'];
+        $privstate = $state ['initialprivate'];
         $this->setPrivateState($playerId, $privstate);
     }
 
     function unsetPrivateState($playerId) {
-        $this->private_states[$playerId] = null;
+        $this->private_states [$playerId] = null;
     }
 
     function unsetPrivateStateForPlayers($ids) {
@@ -233,51 +232,59 @@ class GameState {
 }
 
 class BgaUserException extends feException {
+
     public function __construct($message, $code = 100) {
         parent::__construct($message, true, true, $code);
     }
 }
 
 class BgaSystemException extends feException {
+
     public function __construct($message, $code = 100) {
         parent::__construct($message, false, false, $code);
     }
 }
 
-
 class BgaVisibleSystemException extends BgaSystemException {
+
     public function __construct($message, $code = 100) {
         parent::__construct($message, $code);
     }
 }
 
 class feException extends Exception {
+
     public function __construct($message, $expected = false, $visibility = true, $code = 100, $publicMsg = '') {
         parent::__construct($message, $code);
     }
 }
 
 abstract class Table extends APP_GameClass {
-    var $players = array();
+    var $players = array (); // cache
     public $gamename;
-    public $gamestate = null;
+    public ?GameState $gamestate = null;
     public bool $not_a_move_notification = false;
-    var $player_preferences; // only available during setupNewGame
+    /** when set to true there is another table to track multiactive players */
+    public $bIndependantMultiactiveTable = false;
+    
+    /** hold player prefrences table - only available during setupNewGame */
+    var $player_preferences;
+
 
     public function __construct() {
         parent::__construct();
         $this->gamestate = new GameState();
-        $this->players = array(
-            1 => array('player_name' => $this->getActivePlayerName(), 'player_color' => 'ff0000'),
-            2 => array('player_name' => 'player2', 'player_color' => '0000ff')
-        );
+        $this->players = array (1 => array ('player_name' => $this->getActivePlayerName(),'player_color' => 'ff0000' ),
+                2 => array ('player_name' => 'player2','player_color' => '0000ff' ) );
     }
 
-    /** Report gamename for translation function */
+    /**
+     * Report gamename for translation function
+     */
     abstract protected function getGameName();
 
     function getAllTableDatas() {
-        return [];
+        return [ ];
     }
 
     function getActivePlayerId() {
@@ -289,19 +296,54 @@ abstract class Table extends APP_GameClass {
     }
 
     function getTableOptions() {
-        return [];
+        return [ ];
     }
 
-    function getTablePreferences() {
-        return [];
+    /**  
+     * Send buffered notifications to players. This method is autmatically called at the end of each AJAX action, but can be called more often if long operations are beeing performed.
+     * It is not recommended to override or call this method manually.
+     */
+    function sendNotifications() {
+
+    }
+
+    /**
+     * Save data for undo. Not recommended to override or call manually, its automatically called at the end of sendNotifications if undoSavePoint() was called prior
+     */
+    function doUndoSavePoint() {
+
+    }
+
+    function getTablePreferences(): array {
+        // use json if possible
+        if (file_exists('./gamepreferences.json')) {
+            $raw = file_get_contents('./gamepreferences.json');
+            try {
+                return json_decode($raw, true);
+            } catch ( Exception $e ) {
+                return [ ];
+            }
+        }
+        // use old format
+        $game_preferences = [ ];
+        try {
+            if (file_exists('./gameoptions.inc.php')) {
+                require './gameoptions.inc.php';
+            }
+            return $game_preferences;
+        } catch ( Throwable $e ) {
+            die("bad gameoptions.inc.php");
+        }
+        return $game_preferences;
     }
 
     function loadPlayersBasicInfos() {
-        $default_colors = array("ff0000", "008000", "0000ff", "ffa500", "4c1b5b");
-        $values = array();
+        $default_colors = array ("ff0000","008000","0000ff","ffa500","4c1b5b" );
+        $values = array ();
         $id = 1;
-        foreach ($default_colors as $color) {
-            $values[$id] = array('player_id' => $id, 'player_color' => $color, 'player_name' => "player$id", 'player_zombie' => 0, 'player_no' => $id, 'player_eliminated' => 0);
+        foreach ( $default_colors as $color ) {
+            $values [$id] = array ('player_id' => $id,'player_color' => $color,'player_name' => "player$id",
+                    'player_zombie' => 0,'player_no' => $id,'player_eliminated' => 0 );
             $id++;
         }
         return $values;
@@ -325,22 +367,27 @@ abstract class Table extends APP_GameClass {
 
     public function getPlayerNameById($player_id) {
         $players = self::loadPlayersBasicInfos();
-        return $players[$player_id]['player_name'];
+        return $players [$player_id] ['player_name'];
     }
+
     public function getPlayerNoById($player_id) {
         $players = self::loadPlayersBasicInfos();
-        return $players[$player_id]['player_no'];
+        return $players [$player_id] ['player_no'];
     }
+
     public function getPlayerColorById($player_id) {
         $players = self::loadPlayersBasicInfos();
-        return $players[$player_id]['player_color'];
+        return $players [$player_id] ['player_color'];
     }
+
     function eliminatePlayer($player_id) {
     }
 
     /**
      * Setup correspondance "labels to id"
-     * @param [] $labels - map string -> int (label of state variable -> numeric id in the database)
+     *
+     * @param [] $labels
+     *            - map string -> int (label of state variable -> numeric id in the database)
      */
     function initGameStateLabels($labels) {
     }
@@ -360,74 +407,71 @@ abstract class Table extends APP_GameClass {
     }
 
     /**
-     *   Make the next player active (in natural order)
+     * Make the next player active (in natural order)
      */
     protected function activeNextPlayer() {
     }
 
     /**
-     *   Make the previous player active  (in natural order)
+     * Make the previous player active (in natural order)
      */
     protected function activePrevPlayer() {
     }
 
     /**
      * Check if action is valid regarding current game state (exception if fails)
-     * if "bThrowException" is set to "false", the function return false in case of failure instead of throwing and exception
+     * if "bThrowException" is set to "false", the function return false in case of failure instead of throwing and
+     * exception
+     *
      * @param string $actionName
      * @param boolean $bThrowException
      */
     function checkAction($actionName, $bThrowException = true) {
     }
 
-
     function getNextPlayerTable() {
         $players = $this->loadPlayersBasicInfos();
         return $this->createNextPlayerTable(array_keys($players));
     }
-
 
     function getPrevPlayerTable() {
         $players = $this->loadPlayersBasicInfos();
         return $this->createPrevPlayerTable(array_keys($players));
     }
 
-
     function getPlayerAfter($player_id) {
         $player_table = $this->getNextPlayerTable();
-        return $player_table[$player_id];
+        return $player_table [$player_id];
     }
+
     function getPlayerBefore($player_id) {
         $player_table = $this->getPrevPlayerTable();
-        return $player_table[$player_id];
+        return $player_table [$player_id];
     }
 
     protected function createNextPlayerTable($players, $bLoop = true) {
-        $player_table = [];
-
+        $player_table = [ ];
         $prev = $first = array_shift($players);
-        while (count($players) > 0) {
-            $prev = $player_table[$prev] = array_shift($players);
+        while ( count($players) > 0 ) {
+            $prev = $player_table [$prev] = array_shift($players);
         }
-
-        $player_table[$prev] = $bLoop ? $first : null;
-        $player_table[0] = $first;
-
+        $player_table [$prev] = $bLoop ? $first : null;
+        $player_table [0] = $first;
         return $player_table;
     }
 
     protected function createPrevPlayerTable($players, $bLoop = true) {
         $result = self::createNextPlayerTable($players);
-        unset($result[0]);
+        unset($result [0]);
         $result = array_flip($result);
         return $result;
     }
 
     function notifyAllPlayers($type, $message, $args) {
-        $args2 = array();
-        foreach ($args as $key => $val) {
+        $args2 = array ();
+        foreach ( $args as $key => $val ) {
             $key = '${' . $key . '}';
-            $args2[$key] = $val;
+            $args2 [$key] = $val;
         }
         echo "$type: $message\n";
         //. strtr($message,                $args2)
@@ -438,10 +482,7 @@ abstract class Table extends APP_GameClass {
     }
 
     function getStatTypes() {
-        return [
-            'player' => [],
-            'table' => [],
-        ];
+        return [ 'player' => [ ],'table' => [ ], ];
     }
 
     function initStat($table_or_player, $name, $value, $player_id = null) {
@@ -482,16 +523,15 @@ abstract class Table extends APP_GameClass {
     }
 
     function getStandardGameResultObject(): array {
-        return array();
+        return array ();
     }
 
     function applyDbUpgradeToAllDB($sql) {
     }
 
-
     function getGameinfos() {
         unset($gameinfos);
-        require('gameinfos.inc.php');
+        require ('gameinfos.inc.php');
         if (isset($gameinfos)) {
             return $gameinfos;
         }
@@ -499,7 +539,7 @@ abstract class Table extends APP_GameClass {
     }
 
     /* Method to override to set up each game */
-    abstract protected function setupNewGame($players, $options = array());
+    abstract protected function setupNewGame($players, $options = array ());
 
     public function stMakeEveryoneActive() {
         $this->gamestate->setAllPlayersMultiactive();
@@ -523,14 +563,14 @@ abstract class Table extends APP_GameClass {
 }
 
 class Page {
-    public $blocks = array();
+    public $blocks = array ();
 
     public function begin_block($template, $block) {
-        $this->blocks[$block] = array();
+        $this->blocks [$block] = array ();
     }
 
     public function insert_block($block, $args) {
-        $this->blocks[$block][] = $args;
+        $this->blocks [$block] [] = $args;
     }
 }
 
@@ -540,49 +580,50 @@ class GUser {
         return 1;
     }
 }
-
-
 // Arg types
-define('AT_int', 0);        //  an integer
-define('AT_posint', 1);     //  a positive integer 
-define('AT_float', 2);      //  a float
-define('AT_email', 3);      //  an email  
-define('AT_url', 4);        //  a URL
-define('AT_bool', 5);       //  1/0/true/false
-define('AT_enum', 6);       //  argTypeDetails list the possible values
-define('AT_alphanum', 7);   //  only 0-9a-zA-Z_ and space
-define('AT_username', 8);   //  TEL username policy: alphanum caracters + accents
-define('AT_login', 9);      //  AT_username | AT_email
-define('AT_numberlist', 13);   //  exemple: 1,4;2,3;-1,2
-define('AT_uuid', 17);         // an UUID under the forme 0123-4567-89ab-cdef
-define('AT_version', 18);         // A tournoi site version (ex: 100516-1243)
-define('AT_cityname', 20);         // City name: 0-9a-zA-Z_ , space, accents, ' and -
-define('AT_filename', 21);         // File name: 0-9a-zA-Z_ , and "."
-define('AT_groupname', 22);   //  4-50 alphanum caracters + accents + :
-define('AT_timezone', 23);   //  alphanum caracters + /
-define('AT_mediawikipage', 24);   // Mediawiki valid page name
-define('AT_html_id', 26);   // HTML identifier: 0-9a-zA-Z_-
-define('AT_alphanum_dash', 27);   //  only 0-9a-zA-Z_ and space + dash
-define('AT_date', 28);   //  0-9 + "/" + "-"
-define('AT_num', 29);   //  0-9
-define('AT_alpha_strict', 30);   //  only a-zA-Z
-define('AT_namewithaccent', 31);         // Like City name: 0-9a-zA-Z_ , space, accents, ' and -
-define('AT_json', 32);         // JSON string
-define('AT_base64', 33);         // Base64 string
-
+define('AT_int', 0); //  an integer
+define('AT_posint', 1); //  a positive integer 
+define('AT_float', 2); //  a float
+define('AT_email', 3); //  an email  
+define('AT_url', 4); //  a URL
+define('AT_bool', 5); //  1/0/true/false
+define('AT_enum', 6); //  argTypeDetails list the possible values
+define('AT_alphanum', 7); //  only 0-9a-zA-Z_ and space
+define('AT_username', 8); //  TEL username policy: alphanum caracters + accents
+define('AT_login', 9); //  AT_username | AT_email
+define('AT_numberlist', 13); //  exemple: 1,4;2,3;-1,2
+define('AT_uuid', 17); // an UUID under the forme 0123-4567-89ab-cdef
+define('AT_version', 18); // A tournoi site version (ex: 100516-1243)
+define('AT_cityname', 20); // City name: 0-9a-zA-Z_ , space, accents, ' and -
+define('AT_filename', 21); // File name: 0-9a-zA-Z_ , and "."
+define('AT_groupname', 22); //  4-50 alphanum caracters + accents + :
+define('AT_timezone', 23); //  alphanum caracters + /
+define('AT_mediawikipage', 24); // Mediawiki valid page name
+define('AT_html_id', 26); // HTML identifier: 0-9a-zA-Z_-
+define('AT_alphanum_dash', 27); //  only 0-9a-zA-Z_ and space + dash
+define('AT_date', 28); //  0-9 + "/" + "-"
+define('AT_num', 29); //  0-9
+define('AT_alpha_strict', 30); //  only a-zA-Z
+define('AT_namewithaccent', 31); // Like City name: 0-9a-zA-Z_ , space, accents, ' and -
+define('AT_json', 32); // JSON string
+define('AT_base64', 33); // Base64 string
 define("FEX_bad_input_argument", 300);
 
-class APP_GameAction extends  APP_Action {
+class APP_GameAction extends APP_Action {
     protected $game;
     protected $view;
     protected $viewArgs;
+
     function getArg($name, $type, $mandatory = true, $default = null) {
         return '';
     }
+
     protected function setAjaxMode($bCheckCsrf = true) {
     }
+
     protected function ajaxResponse($data = '') {
     }
+
     protected function isArg($argName) {
         return true;
     }
@@ -597,7 +638,7 @@ function clienttranslate($x) {
 }
 
 function mysql_fetch_assoc($res) {
-    return array();
+    return array ();
 }
 
 function bga_rand($min, $max) {
@@ -605,7 +646,7 @@ function bga_rand($min, $max) {
 }
 
 function getKeysWithMaximum($array, $bWithMaximum = true) {
-    return array();
+    return array ();
 }
 
 function getKeyWithMaximum($array) {
