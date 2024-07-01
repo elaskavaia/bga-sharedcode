@@ -46,12 +46,12 @@ class APP_DbObject extends APP_Object {
         echo "dbquery: $str\n";
     }
 
-    function getUniqueValueFromDB($sql) {
+    static protected function getUniqueValueFromDB( $sql, $low_priority_select=false ) {
         return 0;
     }
 
-    function getCollectionFromDB($query, $single = false) {
-        echo "dbquery coll: $query\n";
+    protected function getCollectionFromDB( $sql, $bSingleValue=false, $low_priority_select=false ) {
+        //echo "dbquery call: $sql\n";
         return array ();
     }
 
@@ -610,7 +610,7 @@ define('AT_base64', 33); // Base64 string
 define("FEX_bad_input_argument", 300);
 
 class APP_GameAction extends APP_Action {
-    protected $game;
+    protected Table $game;
     protected $view;
     protected $viewArgs;
 

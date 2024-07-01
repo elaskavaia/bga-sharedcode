@@ -206,7 +206,7 @@ class Deck extends APP_GameClass {
     }
     
     // Get cards of a specific type in a specific location
-    function getCardsOfTypeInLocation( $type, $type_arg=null, $location, $location_arg = null )
+    function getCardsOfTypeInLocation( $type, $type_arg=null, $location=null, $location_arg = null )
     {
         return [];
     }
@@ -243,7 +243,7 @@ class Deck extends APP_GameClass {
         $extra = "";
         if ($like)
             $extra = "%";
-        if (preg_match("/^[A-Za-z${extra}][A-Za-z_0-9${extra}-]*$/", $location) == 0) {
+        if (preg_match("/^[A-Za-z{$extra}][A-Za-z_0-9{$extra}-]*$/", $location) == 0) {
             throw new feException("location must be alphanum and underscore non empty string");
         }
     }
