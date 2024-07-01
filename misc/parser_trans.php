@@ -160,9 +160,9 @@ class PhpParser {
                         self::printError( "double quoted string contains unescaped $", $snippet, 'Warning'  );
                     }
                 } else if ($quot == '`') {
-                    self::printError( "avoid using template strings they not supported by many browsers", $snippet, 'Warning' );
+                    //self::printError( "avoid using template strings they not supported by many browsers", $snippet, 'Warning' );
                 } else if ($func == '_' &&  $isPhp) {
-                    //self::printError( "avoid using '_' function in php, use 'self::_' instead", $snippet, 'Warning'  );
+                    //self::printError( "avoid using '_' function in php, use '\$this->_' instead", $snippet, 'Warning'  );
                 }
                 self::addKey( stripcslashes( $val ), $bClient, $bServer );
                 $nbr ++;
