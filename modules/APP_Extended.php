@@ -70,7 +70,7 @@ abstract class APP_Extended extends Table
             $color = array_shift($default_colors);
             $values[] = "('" . $player_id . "','$color','" . $player['player_canal'] . "','" . addslashes($player['player_name']) . "','" . addslashes($player['player_avatar']) . "')";
         }
-        $sql .= implode($values, ',');
+        $sql .= implode(',', $values);
         self::DbQuery($sql);
         if ($gameinfos['favorite_colors_support'])
             self::reattributeColorsBasedOnPreferences($players, $gameinfos['player_colors']);
