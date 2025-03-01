@@ -87,7 +87,7 @@ class Deck extends APP_GameClass {
 
     // Pick the first "$nbr" cards on top of specified deck and place it in target location
     // Return cards infos or void array if no card in the specified location
-    function pickCardsForLocation($nbr, $from_location, $to_location, $state = 0, $no_deck_reform = false) {
+    function pickCardsForLocation($nbr, $from_location, $to_location, $location_arg = 0, $no_deck_reform = false) {
         self::checkLocation($from_location);
         return [];
     }

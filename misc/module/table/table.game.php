@@ -39,18 +39,18 @@ class APP_Object {
 }
 
 class APP_DbObject extends APP_Object {
-    public $query;
+    public static $query;
 
-    function DbQuery($str) {
-        $this->query = $str;
-        echo "dbquery: $str\n";
+    static public function DbQuery($sql, $specific_db = null, $bMulti = false) {
+        APP_DbObject::$query = $sql;
+        echo "dbquery: $sql\n";
     }
 
-    static protected function getUniqueValueFromDB( $sql, $low_priority_select=false ) {
+    static public function getUniqueValueFromDB($sql, $low_priority_select = false) {
         return 0;
     }
 
-    protected function getCollectionFromDB( $sql, $bSingleValue=false, $low_priority_select=false ) {
+    static public function getCollectionFromDB($sql, $bSingleValue = false, $low_priority_select = false) {
         //echo "dbquery call: $sql\n";
         return array ();
     }
@@ -264,12 +264,14 @@ abstract class Table extends APP_GameClass {
     public $gamename;
     public ?GameState $gamestate = null;
     public bool $not_a_move_notification = false;
-    /** when set to true there is another table to track multiactive players */
+    /**
+     * when set to true there is another table to track multiactive players
+     */
     public $bIndependantMultiactiveTable = false;
-    
-    /** hold player prefrences table - only available during setupNewGame */
+    /**
+     * hold player prefrences table - only available during setupNewGame
+     */
     var $player_preferences;
-
 
     public function __construct() {
         parent::__construct();
@@ -299,19 +301,21 @@ abstract class Table extends APP_GameClass {
         return [ ];
     }
 
-    /**  
-     * Send buffered notifications to players. This method is autmatically called at the end of each AJAX action, but can be called more often if long operations are beeing performed.
+    /**
+     * Send buffered notifications to players.
+     * This method is autmatically called at the end of each AJAX action, but can be called more often if long
+     * operations are beeing performed.
      * It is not recommended to override or call this method manually.
      */
     function sendNotifications() {
-
     }
 
     /**
-     * Save data for undo. Not recommended to override or call manually, its automatically called at the end of sendNotifications if undoSavePoint() was called prior
+     * Save data for undo.
+     * Not recommended to override or call manually, its automatically called at the end of sendNotifications if
+     * undoSavePoint() was called prior
      */
     function doUndoSavePoint() {
-
     }
 
     function getTablePreferences(): array {
@@ -337,8 +341,12 @@ abstract class Table extends APP_GameClass {
         return $game_preferences;
     }
 
+    function _getColors() {
+        return array ("ff0000","008000","0000ff","ffa500","4c1b5b" );
+    }
+
     function loadPlayersBasicInfos() {
-        $default_colors = array ("ff0000","008000","0000ff","ffa500","4c1b5b" );
+        $default_colors =  $this->_getColors();
         $values = array ();
         $id = 1;
         foreach ( $default_colors as $color ) {
@@ -504,7 +512,7 @@ abstract class Table extends APP_GameClass {
     }
 
     function getPlayersNumber() {
-        return 2;
+        return count($this->loadPlayersBasicInfos());
     }
 
     function reattributeColorsBasedOnPreferences($players, $colors) {
