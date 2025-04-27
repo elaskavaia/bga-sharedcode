@@ -259,10 +259,121 @@ class feException extends Exception {
     }
 }
 
+class Globals {
+    /**
+     * Define the value of a global variable. For example:
+     * 
+     * ```php
+     * const FIRST_PLAYER_ID = "firstPlayerId";
+     * $this->globals->set(FIRST_PLAYER_ID, array_keys($players)[0]);
+     * ```
+
+     * @see https://en.doc.boardgamearena.com/Main_game_logic:_Game.php#Use_globals
+     * 
+     * @param string $name String key for the global variable. Must be < 50 characters.
+     * @param mixed $value Value to set. Can be of any type (number, string, array, object) and will be 
+     * stored as a JSON (so functions cannot be stored, and circular references on objects will trigger an Exception when storing).
+     */
+    public function set(string $name, mixed $value): void {
+    }
+
+    /**
+     * Get the value of a global variable.
+     * For example:
+     * ```php
+     * $currentFirstPlayerId = $this->globals->get(FIRST_PLAYER_ID);
+     * // ...
+     * $selectedCardsIds = $this->globals->get(SELECTED_CARDS_IDS, []);
+     * ```
+     * 
+     * @see https://en.doc.boardgamearena.com/Main_game_logic:_Game.php#Use_globals
+     * 
+     * @param string $name String key for the global variable. Must be < 50 characters.
+     * @param mixed $defaultValue Value to return if the variable is not set.
+     * 
+     * @return mixed Value of the global variable.
+     */
+    public function get(string $name, mixed $defaultValue = null): mixed {
+        return $defaultValue;
+    }
+
+    /**
+     * Get the value of all global variables, as a key=>value array. You can set a list of names to only get matching variables. In 
+     * that case, non-existent keys will not be set in the returned array, so if you have a key with null value, it means the key 
+     * has been set to null previously. For example:
+     * 
+     * ```php
+     * $variables = $this->globals->getAll();
+     * // ...
+     * $diceVariables = $this->globals->getAll(DIE1, DIE2);
+     * ```
+     * 
+     * @see https://en.doc.boardgamearena.com/Main_game_logic:_Game.php#Use_globals
+     * 
+     * @param string ...$names Optional list of names of specific variables to get.
+     * @return array<string, mixed> Associative array of global variables.
+     */
+    public function getAll(string ...$names): array {
+        return [];
+    }
+
+    /**
+     * Delete a global variable. For example:
+     * 
+     * ```php
+     * $this->globals->delete(SELECTED_CARDS_IDS);
+     * // ...
+     * $this->globals->delete(SELECTED_CARDS_IDS, UNDO, AFTER_DISCARD_RETURN_STATE);
+     * ```
+     * 
+     * @see https://en.doc.boardgamearena.com/Main_game_logic:_Game.php#Use_globals
+     * 
+     * @param string ...$names Names of the variables to delete.
+     */
+    public function delete(string ...$names): void {
+    }
+
+    /**
+     * Indicates if a global variable is stored in database. For example:
+     * 
+     * ```php
+     * $cardSelectionIsStarted = $this->globals->has(SELECTED_CARDS_IDS);
+     * ```
+     * 
+     * @see https://en.doc.boardgamearena.com/Main_game_logic:_Game.php#Use_globals
+     * 
+     * @param string $name Name of the variable to check.
+     * @return bool True if the variable exists, false otherwise.
+     */
+    public function has(string $name): bool {
+        return false;
+    }
+
+    /**
+     * Increments the value of a global variable, and return the incremented value. Will trigger an exception if the variable is not a numeric value. For example:
+     * 
+     * ```php
+     * $this->globals->inc(PLAYED_ACTIONS_IN_CURRENT_TURN, 1);
+     * // ...
+     * $totalSpent = $this->globals->inc(SPENT_COINS_IN_CURRENT_TURN, $cardCost);
+     * ```
+     * 
+     * @see https://en.doc.boardgamearena.com/Main_game_logic:_Game.php#Use_globals
+     * 
+     * @param string $name Name of the variable to increment.
+     * @param int $inc Amount to increment the variable by.
+     * @return int The incremented value of the variable.
+     */
+    public function inc(string $name, int $inc): int {
+        return 0;
+    }
+}
+
 abstract class Table extends APP_GameClass {
-    var $players = array (); // cache
+    var $players = []; // cache
     public $gamename;
-    public ?GameState $gamestate = null;
+    public GameState $gamestate;
+    public Globals $globals;
     public bool $not_a_move_notification = false;
     /**
      * when set to true there is another table to track multiactive players
@@ -276,8 +387,11 @@ abstract class Table extends APP_GameClass {
     public function __construct() {
         parent::__construct();
         $this->gamestate = new GameState();
-        $this->players = array (1 => array ('player_name' => $this->getActivePlayerName(),'player_color' => 'ff0000' ),
-                2 => array ('player_name' => 'player2','player_color' => '0000ff' ) );
+        $this->globals = new Globals();
+        $this->players = [ 
+            1 => [ 'player_name' => $this->getActivePlayerName(), 'player_color' => 'ff0000' ],
+            2 => [ 'player_name' => 'player2', 'player_color' => '0000ff' ] 
+        ];
     }
 
     /**
