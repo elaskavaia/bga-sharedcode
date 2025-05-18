@@ -43,7 +43,6 @@ class APP_DbObject extends APP_Object {
 
     static public function DbQuery($sql, $specific_db = null, $bMulti = false) {
         APP_DbObject::$query = $sql;
-        echo "dbquery: $sql\n";
     }
 
     static public function getUniqueValueFromDB($sql, $low_priority_select = false) {
@@ -68,7 +67,6 @@ class APP_DbObject extends APP_Object {
     }
 
     function getObjectListFromDB($query, $single = false) {
-        echo "dbquery list: $query\n";
         return array ();
     }
 
@@ -273,6 +271,8 @@ abstract class Table extends APP_GameClass {
      */
     var $player_preferences;
 
+    public $debugLastNotif = null;
+
     public function __construct() {
         parent::__construct();
         $this->gamestate = new GameState();
@@ -476,17 +476,22 @@ abstract class Table extends APP_GameClass {
     }
 
     function notifyAllPlayers($type, $message, $args) {
-        $args2 = array ();
-        foreach ( $args as $key => $val ) {
-            $key = '${' . $key . '}';
-            $args2 [$key] = $val;
-        }
-        echo "$type: $message\n";
-        //. strtr($message,                $args2)
-        echo "\n";
+        $this->debugLastNotif = [
+            'type' => $type,
+            'log' => $message,
+            'args' => $args,
+            'player_id' => 0
+        ];
+        //echo "notifyAllPlayers: $type: $message\n";
     }
 
-    function notifyPlayer($player_id, $notification_type, $notification_log, $notification_args) {
+    function notifyPlayer($player_id, $type, $message, $args) {
+        $this->debugLastNotif = [
+            'type' => $type,
+            'log' => $message,
+            'args' => $args,
+            'player_id' => $player_id
+        ];
     }
 
     function getStatTypes() {
