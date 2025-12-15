@@ -1,4 +1,79 @@
 <?php
+
+namespace Bga\GameFramework\Components {
+    
+    class Deck extends \Deck
+    {
+       
+    }
+    
+    final class DeckFactory {
+        /**
+         * Create a Deck component and set the DB table name.
+         *
+         * @param string $tableName name of the DB table
+         * @return Deck a new Deck object
+         */
+        public function createDeck(string $tableName='deck'): Deck {
+            $res = new Deck();
+            $res->init($tableName);
+        }
+    }
+    
+}
+
+namespace Bga\GameFramework {
+    
+    abstract class Table extends \Table
+    {
+       
+    }
+    class NotificationMessage {
+        public function __construct(
+                public string $message = '',
+                public array $args = [],
+                ) {}
+    }
+    class Notify {
+        
+        /**
+         * Add a decorator function, to be applied on args when a notif function is called.
+         *
+         * @param callable $fn The decorator function. Expected signature: `function(string $message, array $args): array`
+         * @return void
+         */
+        public function addDecorator(callable $fn) {
+            //
+        }
+        
+        /**
+         * Send a notification to a single player of the game.
+         *
+         * @param int $playerId the player ID to send the notification to.
+         * @param string $notifName a comprehensive string code that explain what is the notification for.
+         * @param string $message some text that can be displayed on player's log window (should be surrounded by clienttranslate if not empty).
+         * @param array $args notification arguments.
+         */
+        public function player(int $playerId, string $notifName, string | NotificationMessage $message = '', array $args = []): void {
+            
+        }
+        
+        /**
+         * Send a notification to all players of the game and spectators (public).
+         *
+         * @param string $notifName a comprehensive string code that explain what is the notification for.
+         * @param string $message some text that can be displayed on player's log window (should be surrounded by clienttranslate if not empty).
+         * @param array $args notification arguments.
+         */
+        public function all(string $notifName, string | NotificationMessage $message = '', array $args = []): void {
+            
+        }
+    }
+    
+    
+}
+namespace {
+
 if ( !defined('APP_GAMEMODULE_PATH')) {
     define('APP_GAMEMODULE_PATH', '');
 }
@@ -114,7 +189,7 @@ class GameState {
             $state ['id'] = $this->current_state;
             return $state;
         }
-        return [ ];
+        return [ 'type' => 'activeplayer'];
     }
 
     function getStateNumberByTransition($transition) {
@@ -145,6 +220,11 @@ class GameState {
         $state = $this->state();
         return ($state ['type'] == 'multipleactiveplayer');
     }
+    public function isMultiactiveState() {
+        $state = $this->state();
+        return ($state ['type'] == 'multipleactiveplayer');
+    }
+
 
     public function getPlayerActiveThisTurn() {
         $state = $this->state();
@@ -229,9 +309,9 @@ class GameState {
     }
 }
 
-class BgaUserException extends feException {
+class BgaUseDrException extends feException {
 
-    public function __construct($message, $code = 100) {
+    public function __construct($message, $code=100, ?array $args = null) {
         parent::__construct($message, true, true, $code);
     }
 }
@@ -257,11 +337,18 @@ class feException extends Exception {
     }
 }
 
+
+
+    
+
 abstract class Table extends APP_GameClass {
     var $players = array (); // cache
     public $gamename;
     public ?GameState $gamestate = null;
     public bool $not_a_move_notification = false;
+    public Bga\GameFramework\Notify $notify;
+    public Bga\GameFramework\Components\DeckFactory $deckFactory;
+    public $globals;
     /**
      * when set to true there is another table to track multiactive players
      */
@@ -276,14 +363,12 @@ abstract class Table extends APP_GameClass {
     public function __construct() {
         parent::__construct();
         $this->gamestate = new GameState();
+        $this->deckFactory = new \Bga\GameFramework\Components\DeckFactory();
         $this->players = array (1 => array ('player_name' => $this->getActivePlayerName(),'player_color' => 'ff0000' ),
                 2 => array ('player_name' => 'player2','player_color' => '0000ff' ) );
+        $this->notify = new Bga\GameFramework\Notify();
     }
 
-    /**
-     * Report gamename for translation function
-     */
-    abstract protected function getGameName();
 
     function getAllTableDatas() {
         return [ ];
@@ -664,4 +749,5 @@ function getKeysWithMaximum($array, $bWithMaximum = true) {
 
 function getKeyWithMaximum($array) {
     return '';
+}
 }

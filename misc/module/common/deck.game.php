@@ -32,62 +32,77 @@ class Deck extends APP_GameClass {
     }
 
     // MUST be called before any other method if db table is not called 'card'
-    function init($table) {
+    function init(string $table): void {
         $this->table = $table;
     }
 
-    // This is the way cards are created and should not be called during the game.
-    // Cards are added to the deck (not shuffled)
-    // Cards is an array of "card types" with at least the followin fields:
-    // array(
-    //      array(                              // This is my first card type
-    //          "type" => "name of this type"   // Note: <10 caracters
-    //          "type_arg" => <type arg>        // Argument that should be applied to all card of this card type
-    //          "nbr" => <nbr>                  // Number of cards with this card type to create in game
-    //
-    // If location_arg is not specified, cards are placed at location extreme position
-    function createCards($cards, $location_global, $card_state_global = null) {
-       return;
-    }
+    /**
+     * This is the way cards are created and should not be called during the game.
+     * Cards are added to the deck (not shuffled)
+     * Cards is an array of "card types" with at least the followin fields:
+     * array(
+     *      array(                              // This is my first card type
+     *          "type" => "name of this type"   // Note: <10 caracters
+     *          "type_arg" => <type arg>        // Argument that should be applied to all card of this card type
+     *          "nbr" => <nbr>                  // Number of cards with this card type to create in game
+     *
+     * If location_arg is not specified, cards are placed at location extreme position
+     */
+    function createCards(array $cards, string $location = 'deck', ?int $location_arg = null) {}
 
-    // Get max on min state on the specific location
-    function getExtremePosition($getMax, $location, $card_key = null) {
-            return 0;
+    /**
+     * Get position of extreme cards (top or back) on the specific location.
+     */
+    function getExtremePosition(bool $getMax , string $location): int
+    {
+        return 0;
     }
+    
 
-    // Shuffle card of a specified location, result of the operation will changes state of the card to be a position after shuffling
-    function shuffle($location) {
-
+    /**
+     * Shuffle cards of a specified location.
+     */
+    function shuffle(string $location)
+    {
     }
+    
 
     function deleteAll() {
         self::DbQuery("DELETE FROM " . $this->table);
     }
     
-    // Pick the first card on top of specified deck and give it to specified player
-    // Return card infos or null if no card in the specified location
-    function pickCard( $location, $player_id )
+    /**
+     * Pick the first card on top of specified deck and give it to specified player.
+     * Return card infos or null if no card in the specified location.
+     */
+    function pickCard(string $location, int $player_id): ?array
     {
         return self::pickCardForLocation( $location, "hand", $player_id );
     }
     
-    // Pick the "nbr" first cards on top of specified deck and give it to specified player
-    // Return card infos (array) or null if no card in the specified location
-    function pickCards( $nbr, $location, $player_id )
+    /**
+     * Pick the "nbr" first cards on top of specified deck and give it to specified player.
+     * Return card infos (array) or null if no card in the specified location.
+     */
+    function pickCards(int $nbr, string $location, int $player_id): ?array
     {
         return self::pickCardsForLocation( $nbr, $location, "hand", $player_id );
     }
     
-    // Pick the first card on top of specified deck and place it in target location
-    // Return card infos or null if no card in the specified location
-    function pickCardForLocation( $from_location, $to_location, $location_arg=0 )
+    /**
+     * Pick the first card on top of specified deck and place it in target location.
+     * Return card infos or null if no card in the specified location.
+     */
+    function pickCardForLocation(string $from_location, string $to_location, int $location_arg=0 ): ?array
     {
         return null;
     }
 
-    // Pick the first "$nbr" cards on top of specified deck and place it in target location
-    // Return cards infos or void array if no card in the specified location
-    function pickCardsForLocation($nbr, $from_location, $to_location, $location_arg = 0, $no_deck_reform = false) {
+    /**
+     * Pick the first "$nbr" cards on top of specified deck and place it in target location.
+     * Return cards infos or void array if no card in the specified location.
+     */
+    function pickCardsForLocation(int $nbr, string $from_location, string $to_location, int $location_arg=0, bool $no_deck_reform=false ): ?array {
         self::checkLocation($from_location);
         return [];
     }
@@ -95,17 +110,17 @@ class Deck extends APP_GameClass {
     
 
     /**
-     * Return card on top of this location, top defined as item with higher state value
+     * Return card on top of this location.
      */
-    function getCardOnTop($location) {
+    function getCardOnTop(string $location): ?array {
         self::checkLocation($location);
         return null;
     }
 
     /**
-     * Return "$nbr" cards on top of this location, top defined as item with higher state value
+     * Return "$nbr" cards on top of this location.
      */
-    function getCardsOnTop($nbr, $location) {
+    function getCardsOnTop(int $nbr, string $location): ?array{
         self::checkLocation($location);
         return [];
     }
@@ -115,29 +130,40 @@ class Deck extends APP_GameClass {
     }
 
 
-    // Move a card to specific location
-    function moveCard( $card_id, $location, $location_arg=0 )
+    /**
+     * Move a card to specific location.
+     */
+    function moveCard(int $card_id, string $location, int $location_arg=0): void
+    {
+        self::checkLocation($location);
+        self::checkLocationArg($location_arg);
+    }
+    
+    /**
+    * Move cards to specific location.
+    */
+    function moveCards(array $cards, string $location, int $location_arg=0): void
     {
         self::checkLocation($location);
         self::checkLocationArg($location_arg);
     }
 
-    // Move cards to specific location
-    function moveCards( $cards, $location, $location_arg=0 )
+    /**
+     * Move a card to a specific location where card are ordered. If location_arg place is already taken, increment
+     * all cards after location_arg in order to insert new card at this precise location.
+     */
+    function insertCard(int $card_id, string $location, int $location_arg ): void
     {
         self::checkLocation($location);
         self::checkLocationArg($location_arg);
-    }
-
-    // Move a card to a specific location where card are ordered. If location_arg place is already taken, increment
-    // all cards after location_arg in order to insert new card at this precise location
-    function insertCard( $card_id, $location, $location_arg ) {
-        self::checkLocation($location);
-        self::checkLocationArg($location_arg);
 
     }
 
-    function insertCardOnExtremePosition($card_key, $location, $bOnTop) {
+    /**
+     * Move a card on top or at bottom of given "pile" type location. (Lower numbers: bottom of the deck. Higher numbers: top of the deck.)
+     */
+    function insertCardOnExtremePosition(int $card_id, string $location, bool $bOnTop): void
+    {
         $extreme_pos = self::getExtremePosition($bOnTop, $location);
         if ($bOnTop)
             self::insertCard($card_key, $location, $extreme_pos + 1);
@@ -145,39 +171,54 @@ class Deck extends APP_GameClass {
             self::insertCard($card_key, $location, $extreme_pos - 1);
     }
 
-        // Move all cards from a location to another
-        // !!! state is reset to 0 or specified value !!!
-        // if "from_location" and "from_state" are null: move ALL cards to specific location
-    function moveAllCardsInLocation($from_location, $to_location, $from_location_arg = null, $to_location_arg = 0) {
+    
+    /**
+     * Move all cards from a location to another.
+     * !!! location arg is reseted to 0 or specified value !!!
+     * if "from_location" and "from_location_arg" are null: move ALL cards to specific location
+     */
+    function moveAllCardsInLocation(?string $from_location, ?string $to_location, ?int $from_location_arg=null, int $to_location_arg=0 ): void
+    {
         if ($from_location != null)
             self::checkLocation($from_location);
         self::checkLocation($to_location);
     }
 
     /**
-     * Move all cards from a location to another location arg stays with the same value
+     * Move all cards from a location to another.
+     * location arg stays with the same value
      */
-    function moveAllCardsInLocationKeepOrder($from_location, $to_location) {
+    function moveAllCardsInLocationKeepOrder(string $from_location, string $to_location): void {
         self::checkLocation($from_location);
         self::checkLocation($to_location);
 
     }
 
-    // Return all cards in specific location
-    // note: if "order by" is used, result object is NOT indexed by card ids
-    function getCardsInLocation( $location, $location_arg = null, $order_by = null )
+    
+    /**
+     * Return all cards in specific location.
+     * note: if "order by" is used, result object is NOT indexed by card ids
+     */
+    function getCardsInLocation(string|array $location, ?int $location_arg = null, ?string $order_by = null ): array
     {
         return [];
     }
-
-    function getPlayerHand( $player_id )
+    
+    /**
+     * Get all cards in given player hand.
+     * Note: This is an alias for: getCardsInLocation( "hand", $player_id )
+     */
+    function getPlayerHand(int $player_id): array
     {
-        return self::getCardsInLocation( "hand", $player_id );
+        return [];
     }
+    
 
-
-    // Get specific card infos
-    function getCard( $card_id )
+    
+    /**
+     * Get specific card infos
+     */
+    function getCard(int $card_id ): ?array
     {
         $sql = "SELECT card_id id, card_type type, card_type_arg type_arg, card_location location, card_location_arg location_arg ";
         $sql .= "FROM ".$this->table;
@@ -186,58 +227,80 @@ class Deck extends APP_GameClass {
         return mysql_fetch_assoc( $dbres );
     }
 
-    // Get specific cards infos
-    function getCards( $cards_array )
+    /**
+     * Get specific cards infos
+     */
+    function getCards(array $cards_array ): array
     {
         return [];
     }
 
     
-    // Get cards from their IDs (same as getCards), but with a location specified. Raises an exception if the cards are not in the specified location.
-    function getCardsFromLocation( $cards_array, $location, $location_arg = null )
+    /**
+     * Get cards from their IDs (same as getCards), but with a location specified. Raises an exception if the cards are not in the specified location.
+     */
+    function getCardsFromLocation(array $cards_array, string $location, ?int $location_arg = null ): array
     {
         return [];
     }
 
-    // Get card of a specific type
-    function getCardsOfType( $type, $type_arg=null )
+    /**
+     * Get card of a specific type.
+     */
+    function getCardsOfType(mixed $type, ?int $type_arg=null ): array
     {
       return [];
     }
     
-    // Get cards of a specific type in a specific location
-    function getCardsOfTypeInLocation( $type, $type_arg=null, $location=null, $location_arg = null )
+    /**
+     * Get cards of a specific type in a specific location.
+     */
+    function getCardsOfTypeInLocation(mixed $type, ?int $type_arg=null, string $location, ?int $location_arg = null ): array
     {
         return [];
     }
     
-    // Move a card to discard pile
-    function playCard( $card_id )
+    /**
+     * Move a card to discard pile.
+     */
+    function playCard(int $card_id): void
     {
-
     }
     
     
-    // Return count of cards in location with optional arg
-    function countCardsInLocation( $location, $location_arg=null )
+    /**
+     * Return the number of cards in specified location.
+     */
+    function countCardInLocation(string $location, ?int $location_arg=null): int|string
     {
-        return 0;
+        return '0';
     }
     
-    // Return an array "location" => number of cards
-    function countCardsInLocations( )
+    /**
+     * Return the number of cards in specified location.
+     */
+    function countCardsInLocation(string $location, ?int $location_arg=null): int|string
     {
-
+        return '0';
+    }
+    
+    /**
+     * Return an array "location" => number of cards.
+     */
+    function countCardsInLocations(): array
+    {
         return [];
     }
-    // Return an array "location_arg" => number of cards (for this location)
-    function countCardsByLocationArgs( $location )
+    
+    /**
+     * Return an array "location_arg" => number of cards (for this location).
+     */
+    function countCardsByLocationArgs(string $location): array
     {
         return [];
-        
     }
 
-    final function checkLocation($location, $like = false) {
+    final function checkLocation(string $location, bool $like = false) {
         if ($location == null)
             throw new feException("location cannot be null");
         $extra = "";
