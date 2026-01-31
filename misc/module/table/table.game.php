@@ -309,7 +309,7 @@ class GameState {
     }
 }
 
-class BgaUseDrException extends feException {
+class BgaUserException extends feException {
 
     public function __construct($message, $code=100, ?array $args = null) {
         parent::__construct($message, true, true, $code);
