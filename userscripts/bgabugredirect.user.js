@@ -10,16 +10,23 @@
 // @grant        none
 // ==/UserScript==
 
-function updateBugs() {
+function updateBugs(retries = 0) {
   console.log("BGA bug report view");
-  // Your code here...
-  const targetNode = document.querySelector("#buglist_inner");
+  const targetNode = document.querySelector("div.bga-bugs-table tbody");
 
-  // Callback function to execute when mutations are observed
+  if (!targetNode) {
+    if (retries < 20) {
+      setTimeout(() => updateBugs(retries + 1), 500);
+    } else {
+      console.log("BGA bug report view: giving up, bga-bugs-table not found");
+    }
+    return;
+  }
+
+  // Callback function to execute when mutations are observed (pagination changes)
   const callback = (mutationList, _observer) => {
     for (const mutation of mutationList) {
       if (mutation.type === "childList") {
-        console.log("A child node has been added or removed.", mutation);
         blanket(mutation.target);
       }
     }
@@ -32,9 +39,6 @@ function updateBugs() {
   observer.observe(targetNode, { childList: true });
 
   blanket(document);
-
-  // Later, you can stop observing
-  //observer.disconnect();
 }
 
 function blanket(parent) {
@@ -53,5 +57,5 @@ function blanket(parent) {
 (function () {
   "use strict";
 
-  setTimeout(updateBugs, 500);
+  setTimeout(() => updateBugs(0), 500);
 })();
