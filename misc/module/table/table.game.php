@@ -75,8 +75,11 @@ namespace Bga\GameFramework {
                 public array $args = [],
                 ) {}
     }
+
     class Notify {
-        
+        public array $log = [];
+        private array $decorators = [];
+
         /**
          * Add a decorator function, to be applied on args when a notif function is called.
          *
@@ -84,9 +87,45 @@ namespace Bga\GameFramework {
          * @return void
          */
         public function addDecorator(callable $fn) {
-            //
+            $this->decorators[] = $fn;
         }
-        
+
+        private function applyDecorators(string $message, array $args): array {
+            foreach ($this->decorators as $fn) {
+                $args = $fn($message, $args);
+            }
+            return $args;
+        }
+
+        /**
+         * Expand a NotificationMessage into a message string and merged args.
+         * If the NotificationMessage args contain nested NotificationMessage values,
+         * they are recursively expanded into ["log" => ..., "args" => ...] sub-arrays.
+         */
+        private function expandMessage(string | NotificationMessage $message, array $args): array {
+            if ($message instanceof NotificationMessage) {
+                $expandedArgs = array_merge($this->expandArgs($message->args), $args);
+                return [$message->message, $expandedArgs];
+            }
+            return [$message, $this->expandArgs($args)];
+        }
+
+        /**
+         * Recursively expand any NotificationMessage values within an args array
+         * into ["log" => ..., "args" => ...] sub-arrays.
+         */
+        private function expandArgs(array $args): array {
+            foreach ($args as $key => $value) {
+                if ($value instanceof NotificationMessage) {
+                    $args[$key] = [
+                        "log" => $value->message,
+                        "args" => $this->expandArgs($value->args),
+                    ];
+                }
+            }
+            return $args;
+        }
+
         /**
          * Send a notification to a single player of the game.
          *
@@ -96,9 +135,11 @@ namespace Bga\GameFramework {
          * @param array $args notification arguments.
          */
         public function player(int $playerId, string $notifName, string | NotificationMessage $message = '', array $args = []): void {
-            
+            [$msg, $args] = $this->expandMessage($message, $args);
+            $args = $this->applyDecorators($msg, $args);
+            $this->log[] = ["type" => $notifName, "log" => $msg, "args" => $args, "channel" => "player", "player_id" => $playerId];
         }
-        
+
         /**
          * Send a notification to all players of the game and spectators (public).
          *
@@ -107,11 +148,12 @@ namespace Bga\GameFramework {
          * @param array $args notification arguments.
          */
         public function all(string $notifName, string | NotificationMessage $message = '', array $args = []): void {
-            
+            [$msg, $args] = $this->expandMessage($message, $args);
+            $args = $this->applyDecorators($msg, $args);
+            $this->log[] = ["type" => $notifName, "log" => $msg, "args" => $args, "channel" => "broadcast"];
         }
     }
-    
-    
+
 }
 namespace {
 
