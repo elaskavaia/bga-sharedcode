@@ -155,6 +155,72 @@ namespace Bga\GameFramework {
     }
 
 }
+
+namespace Bga\GameFramework {
+    enum StateType { case GAME; case ACTIVE_PLAYER; case MULTIPLE_ACTIVE_PLAYER; case PRIVATE; }
+}
+
+namespace Bga\GameFramework\States {
+    #[\Attribute]
+    class PossibleAction {}
+    
+
+    abstract class GameState
+    {        
+        public \Bga\GameFramework\Bga $bga;
+        public \Bga\GameFramework\Db\Globals $globals;
+        public \Bga\GameFramework\Notify $notify;
+        public \Bga\GameFramework\Legacy $legacy;
+        public \Bga\GameFramework\TableOptions $tableOptions;
+        public \Bga\GameFramework\UserPreferences $userPreferences;
+        public \Bga\GameFramework\TableStats $tableStats;
+        public \Bga\GameFramework\PlayerStats $playerStats;
+        public \Bga\GameFramework\Components\DeckFactory $deckFactory;
+        public \Bga\GameFramework\Components\Counters\CounterFactory $counterFactory;
+        public \Bga\GameFramework\Components\Counters\PlayerCounter $playerScore;
+        public \Bga\GameFramework\Components\Counters\PlayerCounter $playerScoreAux;
+
+        public ?\Bga\GameFramework\GameStateMachine $gamestate = null;
+
+        public function __construct(
+            /*protected \Bga\GameFramework\Table*/ $game, 
+            public int $id, 
+            public \Bga\GameFramework\StateType $type,
+
+            public ?string $name = null,
+            public string $description = '',
+            public string $descriptionMyTurn = '',
+            public array $transitions = [],
+            public bool $updateGameProgression = false,
+            public ?int $initialPrivate = null,
+        ) {
+            if ($name==null) $this->name = substr(strrchr(get_class($this), '\\') ?: get_class($this), 1);
+        }
+
+        /**
+         * Returns a random choice from an array of possible choices, for Zombie Mode level 1.
+         * 
+         * @param array $choices an of $choiceKey
+         * @return mixed a random $choiceKey
+         */
+        public function getRandomZombieChoice(array $choices): mixed {
+            return null;
+        }
+
+        /**
+         * Returns a random top choice from an array of possible choices, for Zombie Mode level 2
+         * 
+         * @param array $choices an associative array of $choiceKey => $associatedPoints.
+         * @param bool $reversed if the least points would be the best answer, instead of the top points
+         * @return mixed the best $choiceKey
+         */
+        public function getBestZombieChoice(array $choices, bool $reversed = false): mixed {
+            return null;
+        }
+
+    }
+}
+
 namespace {
 
 if ( !defined('APP_GAMEMODULE_PATH')) {
@@ -355,7 +421,7 @@ class GameState {
     }
 
 
-    public function getPlayerActiveThisTurn() {
+    public function getActivePlayerId() {
         $state = $this->state();
         return $state ['active_player'] ?? $this->active_player;
     }
@@ -363,7 +429,7 @@ class GameState {
     public function getActivePlayerList() {
         $state = $this->state();
         if ($state ['type'] == 'activeplayer') {
-            return [ $this->getPlayerActiveThisTurn() ];
+            return [ $this->getActivePlayerId() ];
         } else if ($state ['type'] == 'multipleactiveplayer') {
             return $state ['multiactive'] ?? [ ];
         } else
@@ -512,7 +578,7 @@ abstract class Table extends APP_GameClass {
      * @return string the active player id typed as string
      */
     function getActivePlayerId() {
-        return 1;
+        return $this->gamestate->getActivePlayerId();
     }
 
     /**
@@ -605,7 +671,7 @@ abstract class Table extends APP_GameClass {
      *
      * @return string the current player id, typed as string
      */
-    protected function getCurrentPlayerId() {
+    final public function getCurrentPlayerId(bool $bReturnNullIfNotLogged = false): string {
         return $this->_getCurrentPlayerId();
     }
 
