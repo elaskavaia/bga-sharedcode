@@ -1,5 +1,9 @@
 <?php
 
+/** @noinspection PhpDocRedundantThrowsInspection */
+/** @noinspection PhpInconsistentReturnPointsInspection */
+/** @noinspection PhpUnreachableStatementInspection */
+
 namespace Bga\GameFramework\Components {
 
     class Deck extends \Deck {
@@ -633,6 +637,492 @@ namespace Bga\GameFramework {
         public function runStateClassZombie(GameState $state, int $playerId): void {
         }
     }
+
+    /**
+     * A builder for game states.
+     * To be called with `[game state id] => GameStateBuilder::create()->...[set all necessary properties]->build()`
+     * in the states.inc.php file.
+     */
+    final class GameStateBuilder
+    {
+        /**
+         * Create a new GameStateBuilder.
+         */
+        public static function create(): self
+        {
+            return new self();
+        }
+
+        /**
+         * Return the game setup state (should have id 1).
+         * To be called with `[game state id] => GameStateBuilder::gameSetup(10)->build()` if your first game state is 10.
+         * If not set in the $machinestates array, it will be automatically created with a transition to state 2.
+         *
+         * @param $nextStateId the first real game state, just after the setup (default 2).
+         */
+        public static function gameSetup(int|string $nextStateId = 2): self
+        {
+            return self::create();
+        }
+
+        /**
+         * Return the game end score state (usually, id 98).
+         * This is a common state used for end game scores & stats computation.
+         * If the game dev uses it, they must define the function `stEndScore` with a call to `$this->gamestate->nextState();` at the end.
+         */
+        public static function endScore(): self
+        {
+            return self::create();
+        }
+
+        /**
+         * Return the game end state (should have id 99).
+         * If not set in the $machinestates array, it will be automatically created.
+         */
+        public static function gameEnd(): self
+        {
+            return self::create();
+        }
+
+        /**
+         * The name of the state.
+         */
+        public function name(string $name): self
+        {
+            return $this;
+        }
+
+        /**
+         * The type of the state. MANAGER should not be used, except for setup and end game states.
+         */
+        public function type(StateType $type): self
+        {
+            return $this;
+        }
+
+        /**
+         * The description for inactive players. Should be `clienttranslate('...')` if not empty.
+         */
+        public function description(string $description): self
+        {
+            return $this;
+        }
+
+        /**
+         * The description for active players. Should be `clienttranslate('...')` if not empty.
+         */
+        public function descriptionMyTurn(string $descriptionMyTurn): self
+        {
+            return $this;
+        }
+
+        /**
+         * The PHP function to call when entering the state.
+         * Usually prefixed by `st`.
+         */
+        public function action(string $action): self
+        {
+            return $this;
+        }
+
+        /**
+         * The PHP function returning the arguments to send to the front when entering the state.
+         * Usually prefixed by `arg`.
+         */
+        public function args(string $args): self
+        {
+            return $this;
+        }
+
+        /**
+         * The list of possible actions in the state.
+         * Usually prefixed by `act`.
+         */
+        public function possibleActions(array $possibleActions): self
+        {
+            return $this;
+        }
+
+        /**
+         * The list of transitions to other states. The key is the transition name and the value is the state to transition to.
+         * Example: `['endTurn' => ST_END_TURN]`.
+         */
+        public function transitions(array $transitions): self
+        {
+            return $this;
+        }
+
+        /**
+         * Set to true if the game progression has changed (to be recalculated with `getGameProgression`)
+         */
+        public function updateGameProgression(bool $update): self
+        {
+            return $this;
+        }
+
+        /**
+         * For multi active states with inner private states, the initial state to go to.
+         */
+        public function initialPrivate(int $initial): self
+        {
+            return $this;
+        }
+
+        /**
+         * Export the built GameState.
+         */
+        public function build(): GameState
+        {
+            return new GameState();
+        }
+    }
+
+    /**
+     * Object to regroup all framework subobjects.
+     */
+    abstract class Bga {
+        public Db\Globals $globals;
+        public Notify $notify;
+        public Logs $logs;
+        public Legacy $legacy;
+        public Tournament $tournament;
+        public TableOptions $tableOptions;
+        public UserPreferences $userPreferences;
+        public TableStats $tableStats;
+        public PlayerStats $playerStats;
+        public Components\DeckFactory $deckFactory;
+        public Components\Counters\CounterFactory $counterFactory;
+        public Debug $debug;
+
+        public Components\Counters\PlayerCounter $playerScore;
+        public Components\Counters\PlayerCounter $playerScoreAux;
+    }
+
+    abstract class Logs {
+        /**
+         * Returns the current move id, when doing an action, that should be stored along informations to undo.
+         *
+         * @return int the current move id
+         */
+        function getCurrentMoveId(): int {
+            return 0;
+        }
+
+        /**
+         * Remove all logs from a move id that was stored during an action using `getCurrentMoveId()`.
+         * The game should be in the exact same point as it was before the stored action.
+         */
+        function remove(int $startMoveId): void {
+        }
+    }
+
+    abstract class Legacy {
+        /**
+         * Get data associated with $key for the current game.
+         *
+         * This data is common to ALL tables from the same game for this player, and persist from one table to another.
+         *
+         * Note: calling this function has an important cost => please call it few times (possibly: only ONCE) for each player for 1 game if possible
+         *
+         * @param string $key the key of the legacy data to get
+         * @param int $playerId the player id (or 0 for data shared on all tables)
+         * @param mixed $defaultValue the value to return if the key doesn't exist in the legacy data for this player
+         */
+        public function get(string $key, int $playerId, mixed $defaultValue = null): mixed {
+            return null;
+        }
+
+        /**
+         * Store some data associated with $key for the given user / current game
+         * In the opposite of all other game data, this data will PERSIST after the end of this table, and can be re-used in a future table with the same game.
+         *
+         * @param string $key the key of the legacy data to save
+         * @param int $playerId the player id (or 0 for data shared on all tables)
+         * @param mixed $value the value to save as the legacy data for this player
+         * @param int $ttl time-to-live: the maximum, and default, is 365 days.
+         */
+        public function set(string $key, int $playerId, mixed $value, int $ttl = 365): void {
+        }
+
+        /**
+         * Remove some legacy data with the given key
+         *
+         * @param string $key the key of the legacy data to remove
+         * @param int $playerId the player id (or 0 for data shared on all tables)
+         */
+        public function delete(string $key, int $playerId): void {
+        }
+
+        /**
+         * Get data associated with the team for the current game.
+         *
+         * This data is common to ALL tables from the same game for this team, and persist from one table to another.
+         *
+         * Note: calling this function has an important cost => please call it few times (possibly: only ONCE) for 1 game if possible
+         *
+         * @param mixed $defaultValue the value to return if the legacy data doesn't exist or is null for this team
+         */
+        public function getTeam(mixed $defaultValue = null): mixed {
+            return null;
+        }
+
+        /**
+         * Store some data associated to the team of the current table (all players at the table) / current game
+         * In the opposite of all other game data, this data will PERSIST after the end of this table, and can be re-used in a future table with the same game.
+         *
+         * @param mixed $value the value to save as the legacy data for this team
+         * @param int $ttl time-to-live: the maximum, and default, is 365 days.
+         */
+        public function setTeam(mixed $value, int $ttl = 365): void {
+        }
+
+        /**
+         * Remove the legacy data for a team
+         */
+        public function deleteTeam(): void {
+        }
+    }
+
+    abstract class Tournament
+    {
+        /**
+         * Returns true if this table is a tournament encounter.
+         */
+        public function isTournament(): bool
+        {
+            return false;
+        }
+
+        /**
+         * Retrieve tournament seeds for deterministic randomness.
+         *
+         * Returns an empty array when the table is not part of a tournament.
+         *
+         * Note: `parent_tournament` refer to the main tournament of Groups Stage tournaments (tournaments of either of the two stages, will reference the same "parent")
+         *
+         * @return array{
+         *   tournament_seed?: int,
+         *   step_seed?: int,
+         *   parent_tournament_seed?: int
+         * }
+         */
+        public function getSeedInfo(): array
+        {
+            return [];
+        }
+
+        /**
+         * Store player game data associated with the given key for a tournament (of which the table must be a part of).
+         *
+         * The cumulative size of the data you can store for a given player for a tournament is 64 KiB.
+         *
+         * Note: As with every game framework API that interacts with the BGA mainsite, please use it thoughtfully.
+         *
+         * @param int $playerId
+         * @param string $key
+         * @param mixed $data
+         */
+        public function storePlayerGameData(int $playerId, string $key, mixed $data): void
+        {
+            //
+        }
+
+        /**
+         * Get player game data associated with the given key for a tournament.
+         *
+         * You can use '%' in the key to retrieve multiple values at once matching a pattern.
+         *
+         * If '%' is used the return value will be an array of key-value pairs (or [], if no match is found).
+         * Otherwise, a single value is returned (or null, if no match is found).
+         *
+         * Returned values are decoded from JSON.
+         *
+         * @param int $playerId
+         * @param string $key
+         *
+         * @return null|string|array<string,string>
+         */
+        public function retrievePlayerGameData(int $playerId, string $key): null|string|array
+        {
+            return null;
+        }
+
+        /**
+         * Remove player game data associated with the given key for a tournament.
+         *
+         * In any case, all data related to a tournament is removed when the tournament is finished.
+         *
+         * @param int $playerId
+         * @param string $key
+         */
+        public function removePlayerGameData(int $playerId, string $key): void
+        {
+            //
+        }
+    }
+
+    abstract class TableOptions {
+        /**
+         * Get the value of a table option.
+         *
+         * @param int $optionId the option id as in the gameoptions.json file
+         * @return int|null the option value, or null if the option doesn't exist (for example on a table created before a new option was added).
+         */
+        public function get(int $optionId): ?int {
+            return 0;
+        }
+
+        /**
+         * Indicates if the table is Turn-based.
+         *
+         * @return bool if the table is Turn-based.
+         */
+        function isTurnBased(): bool {
+            return false;
+        }
+
+        /**
+         * Indicates if the table is Real-time.
+         *
+         * @return bool if the table is Real-time.
+         */
+        function isRealTime(): bool {
+            return false;
+        }
+    }
+
+    abstract class UserPreferences {
+        /**
+         * Gets the value of a user preference for a player (cached in game DB).
+         *
+         * @param int $playerId the player id
+         * @param int $prefId the preference id, as described in the gamepreferences.json file
+         * @return int|null the user preference value, or null if unset
+         */
+        function get(int $playerId, int $prefId): ?int
+        {
+            return null;
+        }
+    }
+
+    abstract class TableStats {
+        /**
+         * Create a statistic entry with a default value.
+         *
+         * @param string|array $nameOrNames Statistic identifier(s) defined in `stats.json`.
+         * @param int|float|bool $value Default value to register.
+         */
+        public function init(string|array $nameOrNames, int|float|bool $value): void {
+        }
+
+        /**
+         * Update a table statistic to the provided value.
+         *
+         * @param string $name Statistic identifier defined in `stats.json`.
+         * @param int|float|bool $value Value to persist.
+         */
+        public function set(string $name, int|float|bool $value): void {
+        }
+
+        /**
+         * Increment a table statistic by the given delta.
+         *
+         * @param string $name Statistic identifier defined in `stats.json`.
+         * @param int|float $delta Signed difference to apply.
+         */
+        public function inc(string $name, int|float $delta): void {
+        }
+
+        /**
+         * Fetch a table statistic.
+         *
+         * @param string $name Statistic identifier defined in `stats.json`.
+         *
+         * @return int|float|bool The statistic value.
+         */
+        public function get(string $name): int|float|bool {
+            return 0;
+        }
+    }
+
+    abstract class PlayerStats {
+        /**
+         * Create a statistic entry with a default value.
+         *
+         * @param string|array $nameOrNames Statistic identifier(s) defined in `stats.json`.
+         * @param int|float|bool $value Default value to register.
+         * @param bool $updateTableStat if there is a table stat of the same name to init at the same time (for example, for a turnNumber counter that would store the turns played by each player but also the total of turns for the table)
+         */
+        public function init(string|array $nameOrNames, int|float|bool $value, bool $updateTableStat = false): void {
+        }
+
+        /**
+         * Update a player statistic to the provided value.
+         *
+         * @param string $name Statistic identifier defined in `stats.json`.
+         * @param int|float|bool $value Value to persist.
+         * @param int $player_id Target player id.
+         */
+        public function set(string $name, int|float|bool $value, int $player_id): void {
+        }
+
+        /**
+         * Apply the same value to a player statistic for every player.
+         *
+         * @param string $name Statistic identifier defined in `stats.json`.
+         * @param int|float|bool $value Value to persist for all players.
+         */
+        public function setAll(string $name, int|float|bool $value): void {
+        }
+
+        /**
+         * Increment a player statistic by the given delta.
+         *
+         * @param string $name Statistic identifier defined in `stats.json`.
+         * @param int|float $delta Signed difference to apply.
+         * @param int $player_id Target player id.
+         * @param bool $updateTableStat if there is a table stat of the same name to update at the same time (for example, for a turnNumber counter that would store the turns played by each player but also the total of turns for the table)
+         */
+        public function inc(string $name, int|float $delta, int $player_id, bool $updateTableStat = false): void {
+        }
+
+        /**
+         * Increment a statistic for every player.
+         *
+         * @param string $name Statistic identifier defined in `stats.json`.
+         * @param int|float $delta Signed difference to apply.
+         */
+        public function incAll(string $name, int|float $delta): void {
+        }
+
+        /**
+         * Fetch a player statistic.
+         *
+         * @param string $name Statistic identifier defined in `stats.json`.
+         * @param int $player_id Target player id.
+         *
+         * @return int|float|bool The statistic value.
+         */
+        public function get(string $name, int $player_id): int|float|bool {
+            return 0;
+        }
+
+        /**
+         * Retrieve the statistic for all players, keyed by player id.
+         *
+         * @param string $name Statistic identifier defined in `stats.json`.
+         *
+         * @return array<int, int|float|bool> Player id keyed map of the statistic values.
+         */
+        public function getAll(string $name): array {
+            return [];
+        }
+    }
+
+    abstract class Debug {
+        public function playUntil(callable $fn): void {
+        }
+    }
 }
 
 namespace Bga\GameFramework\States {
@@ -691,6 +1181,410 @@ namespace Bga\GameFramework\States {
          */
         public function getBestZombieChoice(array $choices, bool $reversed = false): mixed {
             return null;
+        }
+    }
+}
+
+namespace Bga\GameFramework\Actions {
+    #[\Attribute]
+    class CheckAction {
+        public function __construct(
+            public bool $enabled = true,
+        ) {}
+    }
+
+    #[\Attribute]
+    class Debug {
+        public function __construct(
+            public bool $reload = false,
+        ) {}
+    }
+}
+
+namespace Bga\GameFramework\Actions\Types {
+    #[\Attribute]
+    class IntParam {
+        public function __construct(
+            ?string $name = null,
+            public ?int $min = null,
+            public ?int $max = null,
+        ) {}
+
+        public function getValue(string $paramName): int { return 0; }
+    }
+
+    #[\Attribute]
+    class BoolParam {
+        public function __construct(
+            ?string $name = null,
+        ) {}
+
+        public function getValue(string $paramName): bool { return false; }
+    }
+
+    #[\Attribute]
+    class FloatParam {
+        public function __construct(
+            ?string $name = null,
+            public ?float $min = null,
+            public ?float $max = null,
+        ) {}
+
+        public function getValue(string $paramName): float { return 0; }
+    }
+
+    #[\Attribute]
+    class IntArrayParam {
+        public function __construct(
+            ?string $name = null,
+            public ?int $min = null,
+            public ?int $max = null,
+        ) {}
+
+        public function getValue(string $paramName): array { return []; }
+    }
+
+    #[\Attribute]
+    class StringParam {
+        public function __construct(
+            ?string $name = null,
+            public ?bool $alphanum = false,
+            public ?bool $alphanum_dash = false,
+            public ?bool $base64 = false,
+            public ?array $enum = null,
+        ) {}
+
+        public function getValue(string $paramName): string { return ''; }
+    }
+
+    #[\Attribute]
+    class JsonParam {
+        public function __construct(
+            ?string $name = null,
+            public ?bool $associative = true,
+            public ?bool $alphanum = true,
+        ) {}
+
+        public function getValue(string $paramName): mixed { return []; }
+    }
+}
+
+namespace Bga\GameFramework\Db {
+    abstract class Globals
+    {
+        /**
+         * Delete global variables.
+         */
+        public function delete(string ...$names): void
+        {
+            //
+        }
+
+        /**
+         * Returns the value of `$name` if it exists. Otherwise, fallback on `$defaultValue`.
+         *
+         * @template T of object
+         * @param string $name the variable name
+         * @param mixed $defaultValue the value to return if the variable doesn't exist in database
+         * @param class-string<T>|string $class the class of the expected object, to returned a typed object. For example `Undo::class`.
+         * @return ($class is class-string<T> ? T : mixed)
+         */
+        public function get(string $name, mixed $defaultValue = null, ?string $class = null): mixed
+        {
+            return null;
+        }
+
+        /**
+         * Retrieve all variables stored in DB (or a selected subset, if the function is called with parameters).
+         */
+        public function getAll(string ...$names): array
+        {
+            return [];
+        }
+
+        /**
+         * Returns true if globals has a key `$name`.
+         */
+        public function has(string $name): bool
+        {
+            return false;
+        }
+
+        /**
+         * Increment the global `$name` by `$step`.
+         *
+         * @throws BgaSystemException if the global `$name` is not a numeric value.
+         */
+        public function inc(string $name, int $step): int
+        {
+            return 0;
+        }
+
+        /**
+         * Set `$name` with the value `$value`.
+         */
+        public function set(string $name, mixed $value): void
+        {
+            //
+        }
+    }
+}
+
+namespace Bga\GameFramework\Components\Counters {
+    /**
+     * Factory to create counters.
+     */
+    final class CounterFactory {
+        /**
+         * Create a PlayerCounter component.
+         *
+         * @param string $name the name of the counter, used to link it to the JS counter
+         * @param ?int $min the minimum value of the counter (null = no minimum)
+         * @param ?int $max the maximum value of the counter (null = no maximum)
+         * @return PlayerCounter a new PlayerCounter object
+         */
+        public function createPlayerCounter(string $name, ?int $min = 0, ?int $max = null): PlayerCounter {
+            return new class extends PlayerCounter {}();
+        }
+
+        /**
+         * Create a TableCounter component.
+         *
+         * @param string $name the name of the counter, used to link it to the JS counter
+         * @param ?int $min the minimum value of the counter (null = no minimum)
+         * @param ?int $max the maximum value of the counter (null = no maximum)
+         * @return TableCounter a new TableCounter object
+         */
+        public function createTableCounter(string $name, ?int $min = 0, ?int $max = null): TableCounter {
+            return new class extends TableCounter{}();
+        }
+    }
+
+    /**
+     * Represents a player counter that is stored in DB, one value for each player. For example, the money the player have.
+     */
+    abstract class PlayerCounter {
+        /**
+         * Initialize the DB elements. Must be called during game `setupNewGame`.
+         *
+         * @param int $initialValue, if different than 0
+         */
+        public function initDb(array $playerIds, int $initialValue = 0) {
+        }
+
+        /**
+         * Returns the current value of the counter.
+         *
+         * @param int $playerId the player id
+         * @return int the value
+         * @throws UnknownPlayerException if $playerId is not in the player ids initialized by initDb
+         */
+        public function get(int $playerId): int {
+            return 0;
+        }
+
+        /**
+         * Set the value of the counter, and send a notif to update the value on the front side.
+         *
+         * @param int $playerId the player id
+         * @param int $value the new value
+         * @param ?NotificationMessage $message the notif to send to the front, with a message and optional args. Empty message for no log, null for no notif at all (the front will not be updated).
+         * @return int the new value
+         * @throws OutOfRangeCounterException if the value is outside the min/max
+         * @throws UnknownPlayerException if $playerId is not in the player ids initialized by initDb
+         */
+        public function set(int $playerId, int $value, ?\Bga\GameFramework\NotificationMessage $message = new \Bga\GameFramework\NotificationMessage()): int {
+            return 0;
+        }
+
+        /**
+         * Increment the value of the counter, and send a notif to update the value on the front side.
+         *
+         * Note: if the inc is 0, no notif will be sent.
+         *
+         * @param int $playerId the player id
+         * @param int $inc the value to add to the current value
+         * @param ?NotificationMessage $message the notif to send to the front, with a message and optional args. Empty message for no log, null for no notif at all (the front will not be updated).
+         * @return int the new value
+         * @throws OutOfRangeCounterException if the value is outside the min/max
+         * @throws UnknownPlayerException if $playerId is not in the player ids initialized by initDb
+         */
+        public function inc(int $playerId, int $inc, ?\Bga\GameFramework\NotificationMessage $message = new \Bga\GameFramework\NotificationMessage()): int {
+            return 0;
+        }
+
+        /**
+         * Return the lowest value.
+         *
+         * @return int the lowest value
+         */
+        public function getMin(): int {
+            return 0;
+        }
+
+        /**
+         * Return the highest value.
+         *
+         * @return int the highest value
+         */
+        public function getMax(): int {
+            return 0;
+        }
+
+        /**
+         * Return the values for each player, as an associative array $playerId => $value.
+         *
+         * @return array<int, int> the values
+         */
+        public function getAll(): array {
+            return [];
+        }
+
+        /**
+         * Set the value of the counter for all the players, and send a notif to update the value on the front side.
+         *
+         * @param int $value the new value
+         * @param ?NotificationMessage $message the notif to send to the front, with a message and optional args. Empty message for no log, null for no notif at all (the front will not be updated).
+         * @return int the new value
+         * @throws OutOfRangeCounterException if the value is outside the min/max
+         */
+        public function setAll(int $value, ?\Bga\GameFramework\NotificationMessage $message = new \Bga\GameFramework\NotificationMessage()): int {
+            return 0;
+        }
+
+        /**
+         * Updates the result object, to be used in the `getAllDatas` function.
+         * Will set the value on each $result["players"] sub-array.
+         *
+         * @param array $result the object to update.
+         * @param ?string $fieldName the field name to set in $result["players"], if different than the counter name.
+         */
+        public function fillResult(array &$result, ?string $fieldName = null) {
+        }
+    }
+
+    /**
+     * Represents a game counter that is stored in DB. For example, the number of rounds.
+     */
+    abstract class TableCounter {
+        /**
+         * Initialize the DB elements. Must be called during game `setupNewGame`.
+         *
+         * @param int $initialValue, if different than 0
+         */
+        public function initDb(int $initialValue = 0) {}
+
+        /**
+         * Returns the current value of the counter.
+         *
+         * @return int the value
+         */
+        public function get(): int {
+            return 0;
+        }
+
+        /**
+         * Set the value of the counter, and send a notif to update the value on the front side.
+         *
+         * @param int $value the new value
+         * @param ?NotificationMessage $message the notif to send to the front, with a message and optional args. Empty message for no log, null for no notif at all (the front will not be updated).
+         * @return int the new value
+         * @throws OutOfRangeCounterException if the value is outside the min/max
+         */
+        public function set(int $value, ?\Bga\GameFramework\NotificationMessage $message = new \Bga\GameFramework\NotificationMessage()): int {
+            return 0;
+        }
+
+        /**
+         * Increment the value of the counter, and send a notif to update the value on the front side.
+         *
+         * Note: if the inc is 0, no notif will be sent.
+         *
+         * @param int $inc the value to add to the current value
+         * @param ?NotificationMessage $message the notif to send to the front, with a message and optional args. Empty message for no log, null for no notif at all (the front will not be updated).
+         * @return int the new value
+         * @throws OutOfRangeCounterException if the value is outside the min/max
+         */
+        public function inc(int $inc, ?\Bga\GameFramework\NotificationMessage $message = new \Bga\GameFramework\NotificationMessage()): int {
+            return 0;
+        }
+
+        /**
+         * Updates the result object, to be used in the `getAllDatas` function.
+         *
+         * @param array $result the object to update.
+         * @param ?string $fieldName the field name to set in $result, if different than the counter name.
+         */
+        public function fillResult(array &$result, ?string $fieldName = null) {
+        }
+    }
+}
+
+namespace Bga\GameFramework\Helpers {
+    final class Json {
+
+        /**
+         * Decode an object stored in JSON. Will return associative arrays as such.
+         *
+         * @param $class the class to map the object into
+         */
+        public static function decode(string $json_obj, ?string $class = null): mixed {
+            return null;
+        }
+
+        /**
+         * Encode an object to JSON. Will add a flag to mark associative arrays so `decode` can return them as expected.
+         */
+        public static function encode(mixed $obj): string {
+            return '';
+        }
+    }
+}
+
+namespace Bga\GameFramework\GameResult {
+    class Player
+    {
+        public function __construct(
+            public int $id,
+            public string $name,
+            public string $color = '000000',
+            public ?int $score = null,
+            public ?int $scoreAux = null,
+        ) {}
+
+        /**
+         * @return Player
+         */
+        public static function fromPlayerDb(array $playerDb): self {
+            return new self(0, '');
+        }
+
+        /**
+         * @return Player[]
+         */
+        public static function fromPlayersDb(array $playersDb): array {
+            return [];
+        }
+    }
+
+    class GameResult
+    {
+
+        /**
+         * Score all players separately (no-team game).
+         *
+         * @param Player[] $players The players at this table. Currently, real players only.
+         * @param bool $reverseScore Whether negative scores should be rewarded
+         * @param bool $reverseScoreAux Whether auxiliary score ordering is reversed
+         *
+         * @return self
+         */
+        public static function individualRanking(
+            array $players,
+            bool $reverseScore = false,
+            bool $reverseScoreAux = false,
+        ) {
+            return new self();
         }
     }
 }
@@ -1601,5 +2495,15 @@ namespace {
 
     function getKeyWithMaximum($array) {
         return '';
+    }
+}
+
+namespace Bga\GameFramework\Components\Counters {
+    abstract class OutOfRangeCounterException extends \BgaSystemException
+    {
+    }
+
+    abstract class UnknownPlayerException extends \BgaSystemException
+    {
     }
 }
