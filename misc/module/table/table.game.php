@@ -817,6 +817,9 @@ namespace Bga\GameFramework {
     }
 
     abstract class Legacy {
+        // stub - memory storage
+        private array $data = [];
+
         /**
          * Get data associated with $key for the current game.
          *
@@ -829,7 +832,7 @@ namespace Bga\GameFramework {
          * @param mixed $defaultValue the value to return if the key doesn't exist in the legacy data for this player
          */
         public function get(string $key, int $playerId, mixed $defaultValue = null): mixed {
-            return null;
+            return $this->data["{$key}_{$playerId}"] ?? $defaultValue;
         }
 
         /**
@@ -842,6 +845,7 @@ namespace Bga\GameFramework {
          * @param int $ttl time-to-live: the maximum, and default, is 365 days.
          */
         public function set(string $key, int $playerId, mixed $value, int $ttl = 365): void {
+            $this->data["{$key}_{$playerId}"] = $value;
         }
 
         /**
@@ -851,6 +855,7 @@ namespace Bga\GameFramework {
          * @param int $playerId the player id (or 0 for data shared on all tables)
          */
         public function delete(string $key, int $playerId): void {
+            unset($this->data["{$key}_{$playerId}"]);
         }
 
         /**
@@ -882,6 +887,8 @@ namespace Bga\GameFramework {
         public function deleteTeam(): void {
         }
     }
+
+    class StubLegacy extends Legacy {}
 
     abstract class Tournament
     {
@@ -1364,12 +1371,17 @@ namespace Bga\GameFramework\Components\Counters {
      * Represents a player counter that is stored in DB, one value for each player. For example, the money the player have.
      */
     abstract class PlayerCounter {
+        private array $values = [];
+
         /**
          * Initialize the DB elements. Must be called during game `setupNewGame`.
          *
          * @param int $initialValue, if different than 0
          */
         public function initDb(array $playerIds, int $initialValue = 0) {
+            foreach ($playerIds as $id) {
+                $this->values[$id] = $initialValue;
+            }
         }
 
         /**
@@ -1380,7 +1392,7 @@ namespace Bga\GameFramework\Components\Counters {
          * @throws UnknownPlayerException if $playerId is not in the player ids initialized by initDb
          */
         public function get(int $playerId): int {
-            return 0;
+            return $this->values[$playerId] ?? 0;
         }
 
         /**
@@ -1394,7 +1406,8 @@ namespace Bga\GameFramework\Components\Counters {
          * @throws UnknownPlayerException if $playerId is not in the player ids initialized by initDb
          */
         public function set(int $playerId, int $value, ?\Bga\GameFramework\NotificationMessage $message = new \Bga\GameFramework\NotificationMessage()): int {
-            return 0;
+            $this->values[$playerId] = $value;
+            return $value;
         }
 
         /**
@@ -1462,6 +1475,8 @@ namespace Bga\GameFramework\Components\Counters {
         public function fillResult(array &$result, ?string $fieldName = null) {
         }
     }
+
+    class StubPlayerCounter extends PlayerCounter {}
 
     /**
      * Represents a game counter that is stored in DB. For example, the number of rounds.
@@ -1905,6 +1920,7 @@ namespace {
         var $_colors = [];
         var $players = []; // cache
         public $gamename;
+        private array $_gameStateValues = [];
 
         /**
          * Access the underlying game state machine object.
@@ -1925,6 +1941,9 @@ namespace {
         var $player_preferences;
 
         public $debugLastNotif = null;
+        public \Bga\GameFramework\Legacy $legacy;
+        public \Bga\GameFramework\Components\Counters\PlayerCounter $playerScore;
+        public \Bga\GameFramework\Components\Counters\PlayerCounter $playerScoreAux;
 
         public function __construct() {
             parent::__construct();
@@ -1935,6 +1954,17 @@ namespace {
                 2 => ['player_name' => 'player2', 'player_color' => '0000ff']
             ];
             $this->notify = new Bga\GameFramework\Notify();
+            $this->legacy = $this->_createLegacyStub();
+            $this->playerScore = $this->_createPlayerCounterStub();
+            $this->playerScoreAux = $this->_createPlayerCounterStub();
+        }
+
+        protected function _createLegacyStub(): \Bga\GameFramework\Legacy {
+            return new \Bga\GameFramework\StubLegacy();
+        }
+
+        protected function _createPlayerCounterStub(): \Bga\GameFramework\Components\Counters\PlayerCounter {
+            return new \Bga\GameFramework\Components\Counters\StubPlayerCounter();
         }
 
         function getAllTableDatas() {
@@ -2116,6 +2146,7 @@ namespace {
          * @param int $value_value the initial value
          */
         function setGameStateInitialValue(string $value_label, int $value_value) {
+            $this->_gameStateValues[$value_label] = $value_value;
         }
 
         /**
@@ -2126,7 +2157,7 @@ namespace {
          * @return int|string the value
          */
         function getGameStateValue($value_label, ?int $def = null) {
-            return 0;
+            return $this->_gameStateValues[$value_label] ?? $def ?? 0;
         }
 
         /**
@@ -2136,6 +2167,7 @@ namespace {
          * @param int $value_value the value to set
          */
         function setGameStateValue($value_label, $value_value) {
+            $this->_gameStateValues[$value_label] = $value_value;
         }
 
         /**
