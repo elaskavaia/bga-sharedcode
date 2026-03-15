@@ -1282,35 +1282,152 @@ namespace Bga\GameFramework {
     // ---- Table (concrete, with in-memory implementations) ----
 
     class Table {
-        var $_colors = [];
+        /**
+         * The object regrouping all framework subobjects.
+         */
+        readonly public \Bga\GameFramework\Bga $bga;
+
+        /**
+         * Access the underlying game state machine object.
+         */
+        readonly public \Bga\GameFramework\GamestateMachine $gamestate;
+
+        /**
+         * Access the underlying global values.
+         */
+        readonly public \Bga\GameFramework\Db\Globals $globals;
+
+        /**
+         * Access the underlying Notify object.
+         */
+        readonly public \Bga\GameFramework\Notify $notify;
+
+        /**
+         * Access the underlying Legacy object.
+         */
+        readonly public \Bga\GameFramework\Legacy $legacy;
+
+        /**
+         * Access the underlying TableOptions object.
+         */
+        readonly public \Bga\GameFramework\TableOptions $tableOptions;
+
+        /**
+         * Access the underlying UserPreferences object.
+         */
+        readonly public \Bga\GameFramework\UserPreferences $userPreferences;
+
+        /**
+         * Access the underlying TableStats object.
+         */
+            public \Bga\GameFramework\TableStats $tableStats;
+
+        /**
+         * Access the underlying PlayerStats object.
+         */
+            public \Bga\GameFramework\PlayerStats $playerStats;
+
+        /**
+         * Access the underlying DeckFactory object.
+         */
+        readonly public \Bga\GameFramework\Components\DeckFactory $deckFactory;
+
+        /**
+         * Access the underlying CounterFactory object.
+         */
+        readonly public \Bga\GameFramework\Components\Counters\CounterFactory $counterFactory;
+
+        /**
+         * Access the underlying PlayerCounter object for player_score.
+         */
+        readonly public \Bga\GameFramework\Components\Counters\PlayerCounter $playerScore;
+
+        /**
+         * Access the underlying PlayerCounter object for player_score_aux.
+         */
+        readonly public \Bga\GameFramework\Components\Counters\PlayerCounter $playerScoreAux;
+
+        /**
+         * Access the underlying Debug object.
+         */
+        readonly public \Bga\GameFramework\Debug $debug;
+
+
+        // stubs
         var $players = [];
         public $gamename;
         private array $_gameStateValues = [];
-
-        public \Bga\GameFramework\GamestateMachine $gamestate;
         public bool $not_a_move_notification = false;
-        public Notify $notify;
-        public Components\DeckFactory $deckFactory;
-        public $globals;
         public $bIndependantMultiactiveTable = false;
         var $player_preferences;
         public $debugLastNotif = null;
-        public Legacy $legacy;
-        public Components\Counters\PlayerCounter $playerScore;
-        public Components\Counters\PlayerCounter $playerScoreAux;
+
 
         public function __construct() {
             $this->gamestate = new GamestateMachine();
             $this->deckFactory = new Components\DeckFactory();
             $this->players = [
-                1 => ['player_name' => $this->getActivePlayerName(), 'player_color' => 'ff0000'],
-                2 => ['player_name' => 'player2', 'player_color' => '0000ff']
+                10 => ['player_name' => $this->getActivePlayerName(), 'player_color' => 'ff0000'],
+                12 => ['player_name' => 'player2', 'player_color' => '0000ff']
             ];
             $this->notify = new Notify();
             $this->legacy = $this->_createLegacyStub();
             $this->playerScore = $this->_createPlayerCounterStub();
             $this->playerScoreAux = $this->_createPlayerCounterStub();
         }
+
+        /**
+         * Set player basic info for testing. Each entry must have at least 'player_name' and 'player_color'.
+         * Missing fields are filled with sensible defaults.
+         *
+         * @param array<int, array{player_name?: string, player_color?: string, player_no?: int, player_zombie?: int, player_eliminated?: int}> $players keyed by player_id
+         */
+         function _setPlayerBasicInfo(array $players): void {
+            $defaultColors = $this->_getAvailColors();
+            $no = 1;
+            $this->players = [];
+            foreach ($players as $id => $player) {
+                if (!is_array($player)) {
+                    throw new \InvalidArgumentException("Player info for id $id must be an array, got " . gettype($player));
+                }
+                $this->players[$id] = [
+                    'player_name' => $player['player_name'] ?? "player$no",
+                    'player_color' => $player['player_color'] ?? ($defaultColors[$no - 1] ?? 'ffffff'),
+                    'player_no' => $player['player_no'] ?? $no,
+                    'player_zombie' => $player['player_zombie'] ?? 0,
+                    'player_eliminated' => $player['player_eliminated'] ?? 0,
+                ];
+                $no++;
+            }
+        }
+
+        /**
+         * Set player basic info from an array of colors. Player ids start at 10, incrementing by 2.
+         *
+         * @param array<string> $colors list of player colors (e.g. ['ff0000', '0000ff'])
+         */
+         function _setPlayerBasicInfoFromColors(array $colors): void {
+            $players = [];
+            $id = 10;
+
+            foreach ($colors as $color) {
+                $players[$id] = [
+   
+                    'player_color' => $color,
+                ];
+                $id += 2;
+            }
+            $this->_setPlayerBasicInfo($players);
+        }
+
+        function _getAvailColors() {
+        // $gameinfos = self::getGameinfos();
+        // $default_colors = $gameinfos["player_colors"];
+            $defaultColors = ['ff0000', '0000ff', '00ff00', 'ffff00', 'ff00ff', '00ffff'];
+            return $defaultColors;
+        }
+
+
 
         protected function _createLegacyStub(): Legacy {
             return new StubLegacy();
@@ -1523,10 +1640,7 @@ namespace Bga\GameFramework {
         }
 
         function _getColors() {
-            if (!empty($this->_colors)) {
-                return $this->_colors;
-            }
-            return ["ff0000", "008000", "0000ff", "ffa500", "4c1b5b"];
+            return array_column($this->players, 'player_color');
         }
 
         /**
@@ -1548,20 +1662,17 @@ namespace Bga\GameFramework {
          * }>
          */
         function loadPlayersBasicInfos() {
-            $default_colors = $this->_getColors();
             $values = [];
-            $id = 10;
             $no = 1;
-            foreach ($default_colors as $color) {
+            foreach ($this->players as $id => $player) {
                 $values[$id] = [
                     'player_id' => $id,
-                    'player_color' => $color,
-                    'player_name' => "player$id",
-                    'player_zombie' => 0,
-                    'player_no' => $no,
-                    'player_eliminated' => 0
+                    'player_color' => $player['player_color'] ?? 'ff0000',
+                    'player_name' => $player['player_name'] ?? "player$id",
+                    'player_zombie' => $player['player_zombie'] ?? 0,
+                    'player_no' => $player['player_no'] ?? $no,
+                    'player_eliminated' => $player['player_eliminated'] ?? 0
                 ];
-                $id++;
                 $no++;
             }
             return $values;
