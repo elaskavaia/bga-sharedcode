@@ -127,8 +127,7 @@ namespace Bga\GameFramework\States {
         public ?\Bga\GameFramework\GameStateMachine $gamestate = null;
 
         public function __construct(
-            /*protected \Bga\GameFramework\Table*/
-            $game,
+            protected \Bga\GameFramework\Table $game,
             public int $id,
             public \Bga\GameFramework\StateType $type,
 
@@ -738,6 +737,9 @@ namespace Bga\GameFramework {
     // ---- PlayerStats ----
 
     class PlayerStats {
+        /** @var array<string, array<int, int|float|bool>> */
+        private array $data = [];
+
         /**
          * Create a statistic entry with a default value.
          *
@@ -746,6 +748,12 @@ namespace Bga\GameFramework {
          * @param bool $updateTableStat if there is a table stat of the same name to init at the same time (for example, for a turnNumber counter that would store the turns played by each player but also the total of turns for the table)
          */
         public function init(string|array $nameOrNames, int|float|bool $value, bool $updateTableStat = false): void {
+            $names = is_array($nameOrNames) ? $nameOrNames : [$nameOrNames];
+            foreach ($names as $name) {
+                if (!isset($this->data[$name])) {
+                    $this->data[$name] = [];
+                }
+            }
         }
 
         /**
@@ -756,6 +764,7 @@ namespace Bga\GameFramework {
          * @param int $player_id Target player id.
          */
         public function set(string $name, int|float|bool $value, int $player_id): void {
+            $this->data[$name][$player_id] = $value;
         }
 
         /**
@@ -765,6 +774,11 @@ namespace Bga\GameFramework {
          * @param int|float|bool $value Value to persist for all players.
          */
         public function setAll(string $name, int|float|bool $value): void {
+            if (isset($this->data[$name])) {
+                foreach ($this->data[$name] as $pid => $_) {
+                    $this->data[$name][$pid] = $value;
+                }
+            }
         }
 
         /**
@@ -776,6 +790,10 @@ namespace Bga\GameFramework {
          * @param bool $updateTableStat if there is a table stat of the same name to update at the same time (for example, for a turnNumber counter that would store the turns played by each player but also the total of turns for the table)
          */
         public function inc(string $name, int|float $delta, int $player_id, bool $updateTableStat = false): void {
+            if (!isset($this->data[$name][$player_id])) {
+                $this->data[$name][$player_id] = 0;
+            }
+            $this->data[$name][$player_id] += $delta;
         }
 
         /**
@@ -785,6 +803,11 @@ namespace Bga\GameFramework {
          * @param int|float $delta Signed difference to apply.
          */
         public function incAll(string $name, int|float $delta): void {
+            if (isset($this->data[$name])) {
+                foreach ($this->data[$name] as $pid => $_) {
+                    $this->data[$name][$pid] += $delta;
+                }
+            }
         }
 
         /**
@@ -796,7 +819,7 @@ namespace Bga\GameFramework {
          * @return int|float|bool The statistic value.
          */
         public function get(string $name, int $player_id): int|float|bool {
-            return 0;
+            return $this->data[$name][$player_id] ?? 0;
         }
 
         /**
@@ -807,7 +830,7 @@ namespace Bga\GameFramework {
          * @return array<int, int|float|bool> Player id keyed map of the statistic values.
          */
         public function getAll(string $name): array {
-            return [];
+            return $this->data[$name] ?? [];
         }
     }
 
@@ -1374,6 +1397,7 @@ namespace Bga\GameFramework {
             $this->legacy = $this->_createLegacyStub();
             $this->playerScore = $this->_createPlayerCounterStub();
             $this->playerScoreAux = $this->_createPlayerCounterStub();
+            $this->playerStats = new PlayerStats();
         }
 
         /**
@@ -1671,7 +1695,9 @@ namespace Bga\GameFramework {
                     'player_name' => $player['player_name'] ?? "player$id",
                     'player_zombie' => $player['player_zombie'] ?? 0,
                     'player_no' => $player['player_no'] ?? $no,
-                    'player_eliminated' => $player['player_eliminated'] ?? 0
+                    'player_eliminated' => $player['player_eliminated'] ?? 0,
+                    'player_avatar' => $player['player_avatar'] ?? '000000',
+                    'player_beginner' => $player['player_beginner'] ?? null
                 ];
                 $no++;
             }
