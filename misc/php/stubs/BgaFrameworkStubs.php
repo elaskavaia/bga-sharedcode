@@ -127,7 +127,8 @@ namespace Bga\GameFramework\States {
         public ?\Bga\GameFramework\GameStateMachine $gamestate = null;
 
         public function __construct(
-            protected \Bga\GameFramework\Table $game,
+            /*protected \Bga\GameFramework\Table*/
+            $game,
             public int $id,
             public \Bga\GameFramework\StateType $type,
 
