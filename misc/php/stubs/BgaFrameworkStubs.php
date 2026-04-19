@@ -464,6 +464,10 @@ namespace Bga\GameFramework {
             $this->notifications[] = ["type" => $notifName, "log" => $msg, "args" => $args, "channel" => "broadcast"];
         }
 
+        public function alwaysMergePrivate() {
+
+        }
+
         public function _getNotifications() {
             return $this->notifications;
         }
@@ -3023,6 +3027,9 @@ namespace {
         var $autoreshuffle_trigger = null;
         var $autoreshuffle_custom = [];
 
+        private array $cards = [];
+        private int $nextId = 1;
+
         function __construct() {
             $this->table = 'card';
         }
@@ -3048,23 +3055,69 @@ namespace {
          * If location_arg is not specified, cards are placed at location extreme position
          */
         function createCards(array $cards, string $location = 'deck', ?int $location_arg = null) {
+            $this->checkLocation($location);
+            $autoArg = $location_arg === null;
+            $pos = $autoArg ? $this->getExtremePosition(true, $location) + 1 : $location_arg;
+            foreach ($cards as $row) {
+                $type = $row['type'] ?? '';
+                $type_arg = (int) ($row['type_arg'] ?? 0);
+                $nbr = (int) ($row['nbr'] ?? 1);
+                for ($i = 0; $i < $nbr; $i++) {
+                    $id = $this->nextId++;
+                    $this->cards[$id] = [
+                        'id' => $id,
+                        'type' => $type,
+                        'type_arg' => $type_arg,
+                        'location' => $location,
+                        'location_arg' => (int) $pos,
+                    ];
+                    if ($autoArg) {
+                        $pos++;
+                    }
+                }
+            }
         }
 
         /**
          * Get position of extreme cards (top or back) on the specific location.
          */
         function getExtremePosition(bool $getMax, string $location): int {
-            return 0;
+            $this->checkLocation($location);
+            $positions = [];
+            foreach ($this->cards as $c) {
+                if ($c['location'] === $location) {
+                    $positions[] = (int) $c['location_arg'];
+                }
+            }
+            if (empty($positions)) {
+                return 0;
+            }
+            return $getMax ? max($positions) : min($positions);
         }
 
         /**
          * Shuffle cards of a specified location.
          */
         function shuffle(string $location) {
+            $this->checkLocation($location);
+            $ids = [];
+            foreach ($this->cards as $id => $c) {
+                if ($c['location'] === $location) {
+                    $ids[] = $id;
+                }
+            }
+            $order = range(0, count($ids) - 1);
+            if (count($order) > 0) {
+                \shuffle($order);
+            }
+            foreach ($ids as $i => $id) {
+                $this->cards[$id]['location_arg'] = $order[$i];
+            }
         }
 
         function deleteAll() {
-            self::DbQuery("DELETE FROM " . $this->table);
+            $this->cards = [];
+            $this->nextId = 1;
         }
 
         /**
@@ -3072,7 +3125,7 @@ namespace {
          * Return card infos or null if no card in the specified location.
          */
         function pickCard(string $location, int $player_id): ?array {
-            return self::pickCardForLocation($location, "hand", $player_id);
+            return $this->pickCardForLocation($location, "hand", $player_id);
         }
 
         /**
@@ -3080,7 +3133,7 @@ namespace {
          * Return card infos (array) or null if no card in the specified location.
          */
         function pickCards(int $nbr, string $location, int $player_id): ?array {
-            return self::pickCardsForLocation($nbr, $location, "hand", $player_id);
+            return $this->pickCardsForLocation($nbr, $location, "hand", $player_id);
         }
 
         /**
@@ -3088,7 +3141,11 @@ namespace {
          * Return card infos or null if no card in the specified location.
          */
         function pickCardForLocation(string $from_location, string $to_location, int $location_arg = 0): ?array {
-            return null;
+            $picked = $this->pickCardsForLocation(1, $from_location, $to_location, $location_arg);
+            if (empty($picked)) {
+                return null;
+            }
+            return reset($picked);
         }
 
         /**
@@ -3096,44 +3153,93 @@ namespace {
          * Return cards infos or void array if no card in the specified location.
          */
         function pickCardsForLocation(int $nbr, string $from_location, string $to_location, int $location_arg = 0, bool $no_deck_reform = false): ?array {
-            self::checkLocation($from_location);
-            return [];
+            $this->checkLocation($from_location);
+            $this->checkLocation($to_location);
+            $picked = [];
+            $remaining = $nbr;
+            $top = $this->getCardsOnTop($remaining, $from_location);
+            foreach ($top as $card) {
+                $this->moveCard((int) $card['id'], $to_location, $location_arg);
+                $picked[(int) $card['id']] = $this->cards[(int) $card['id']];
+                $remaining--;
+            }
+            if ($remaining > 0 && $this->autoreshuffle && !$no_deck_reform && isset($this->autoreshuffle_custom[$from_location])) {
+                $this->reformDeckFromDiscard($from_location);
+                if (is_array($this->autoreshuffle_trigger) && isset($this->autoreshuffle_trigger['obj'], $this->autoreshuffle_trigger['method'])) {
+                    $obj = $this->autoreshuffle_trigger['obj'];
+                    $method = $this->autoreshuffle_trigger['method'];
+                    $obj->$method();
+                }
+                $more = $this->getCardsOnTop($remaining, $from_location);
+                foreach ($more as $card) {
+                    $this->moveCard((int) $card['id'], $to_location, $location_arg);
+                    $picked[(int) $card['id']] = $this->cards[(int) $card['id']];
+                }
+            }
+            return $picked;
         }
 
         /**
          * Return card on top of this location.
          */
         function getCardOnTop(string $location): ?array {
-            self::checkLocation($location);
-            return null;
+            $this->checkLocation($location);
+            $top = $this->getCardsOnTop(1, $location);
+            if (empty($top)) {
+                return null;
+            }
+            return reset($top);
         }
 
         /**
          * Return "$nbr" cards on top of this location.
          */
         function getCardsOnTop(int $nbr, string $location): ?array {
-            self::checkLocation($location);
-            return [];
+            $this->checkLocation($location);
+            $rows = [];
+            foreach ($this->cards as $c) {
+                if ($c['location'] === $location) {
+                    $rows[] = $c;
+                }
+            }
+            usort($rows, fn($a, $b) => $b['location_arg'] <=> $a['location_arg']);
+            $rows = array_slice($rows, 0, $nbr);
+            $result = [];
+            foreach ($rows as $c) {
+                $result[(int) $c['id']] = $c;
+            }
+            return $result;
         }
 
         function reformDeckFromDiscard($from_location = 'deck') {
-            self::checkLocation($from_location);
+            $this->checkLocation($from_location);
+            $discard = $this->autoreshuffle_custom[$from_location] ?? 'discard';
+            $this->moveAllCardsInLocation($discard, $from_location);
+            $this->shuffle($from_location);
         }
 
         /**
          * Move a card to specific location.
          */
         function moveCard(int $card_id, string $location, int $location_arg = 0): void {
-            self::checkLocation($location);
-            self::checkLocationArg($location_arg);
+            $this->checkLocation($location);
+            $this->checkLocationArg($location_arg);
+            if (!isset($this->cards[$card_id])) {
+                return;
+            }
+            $this->cards[$card_id]['location'] = $location;
+            $this->cards[$card_id]['location_arg'] = $location_arg;
         }
 
         /**
          * Move cards to specific location.
          */
         function moveCards(array $cards, string $location, int $location_arg = 0): void {
-            self::checkLocation($location);
-            self::checkLocationArg($location_arg);
+            $this->checkLocation($location);
+            $this->checkLocationArg($location_arg);
+            foreach ($cards as $id) {
+                $this->moveCard((int) $id, $location, $location_arg);
+            }
         }
 
         /**
@@ -3141,19 +3247,28 @@ namespace {
          * all cards after location_arg in order to insert new card at this precise location.
          */
         function insertCard(int $card_id, string $location, int $location_arg): void {
-            self::checkLocation($location);
-            self::checkLocationArg($location_arg);
+            $this->checkLocation($location);
+            $this->checkLocationArg($location_arg);
+            foreach ($this->cards as $id => $c) {
+                if ($id === $card_id) {
+                    continue;
+                }
+                if ($c['location'] === $location && (int) $c['location_arg'] >= $location_arg) {
+                    $this->cards[$id]['location_arg'] = (int) $c['location_arg'] + 1;
+                }
+            }
+            $this->moveCard($card_id, $location, $location_arg);
         }
 
         /**
          * Move a card on top or at bottom of given "pile" type location. (Lower numbers: bottom of the deck. Higher numbers: top of the deck.)
          */
         function insertCardOnExtremePosition(int $card_id, string $location, bool $bOnTop): void {
-            $extreme_pos = self::getExtremePosition($bOnTop, $location);
+            $extreme_pos = $this->getExtremePosition($bOnTop, $location);
             if ($bOnTop)
-                self::insertCard($card_id, $location, $extreme_pos + 1);
+                $this->insertCard($card_id, $location, $extreme_pos + 1);
             else
-                self::insertCard($card_id, $location, $extreme_pos - 1);
+                $this->insertCard($card_id, $location, $extreme_pos - 1);
         }
 
         /**
@@ -3163,8 +3278,18 @@ namespace {
          */
         function moveAllCardsInLocation(?string $from_location, ?string $to_location, ?int $from_location_arg = null, int $to_location_arg = 0): void {
             if ($from_location != null)
-                self::checkLocation($from_location);
-            self::checkLocation($to_location);
+                $this->checkLocation($from_location);
+            $this->checkLocation($to_location);
+            foreach ($this->cards as $id => $c) {
+                if ($from_location !== null && $c['location'] !== $from_location) {
+                    continue;
+                }
+                if ($from_location_arg !== null && (int) $c['location_arg'] !== $from_location_arg) {
+                    continue;
+                }
+                $this->cards[$id]['location'] = $to_location;
+                $this->cards[$id]['location_arg'] = $to_location_arg;
+            }
         }
 
         /**
@@ -3172,8 +3297,13 @@ namespace {
          * location arg stays with the same value
          */
         function moveAllCardsInLocationKeepOrder(string $from_location, string $to_location): void {
-            self::checkLocation($from_location);
-            self::checkLocation($to_location);
+            $this->checkLocation($from_location);
+            $this->checkLocation($to_location);
+            foreach ($this->cards as $id => $c) {
+                if ($c['location'] === $from_location) {
+                    $this->cards[$id]['location'] = $to_location;
+                }
+            }
         }
 
         /**
@@ -3181,7 +3311,45 @@ namespace {
          * note: if "order by" is used, result object is NOT indexed by card ids
          */
         function getCardsInLocation(string|array $location, ?int $location_arg = null, ?string $order_by = null): array {
-            return [];
+            $locations = is_array($location) ? $location : [$location];
+            foreach ($locations as $loc) {
+                $this->checkLocation($loc);
+            }
+            $matches = [];
+            foreach ($this->cards as $id => $c) {
+                if (!in_array($c['location'], $locations, true)) {
+                    continue;
+                }
+                if ($location_arg !== null && (int) $c['location_arg'] !== $location_arg) {
+                    continue;
+                }
+                $matches[$id] = $c;
+            }
+            if ($order_by === null) {
+                return $matches;
+            }
+            $field = $this->resolveOrderByField($order_by);
+            $ordered = array_values($matches);
+            usort($ordered, fn($a, $b) => $a[$field] <=> $b[$field]);
+            return $ordered;
+        }
+
+        private function resolveOrderByField(string $order_by): string {
+            $map = [
+                'location_arg' => 'location_arg',
+                'card_location_arg' => 'location_arg',
+                'card_type' => 'type',
+                'type' => 'type',
+                'card_type_arg' => 'type_arg',
+                'type_arg' => 'type_arg',
+                'card_id' => 'id',
+                'id' => 'id',
+            ];
+            $key = strtolower(trim($order_by));
+            if (!isset($map[$key])) {
+                throw new feException("unsupported order_by: $order_by");
+            }
+            return $map[$key];
         }
 
         /**
@@ -3189,80 +3357,152 @@ namespace {
          * Note: This is an alias for: getCardsInLocation( "hand", $player_id )
          */
         function getPlayerHand(int $player_id): array {
-            return [];
+            return $this->getCardsInLocation('hand', $player_id);
         }
 
         /**
          * Get specific card infos
          */
         function getCard(int $card_id): ?array {
-            $sql = "SELECT card_id id, card_type type, card_type_arg type_arg, card_location location, card_location_arg location_arg ";
-            $sql .= "FROM " . $this->table;
-            $sql .= " WHERE card_id='$card_id' ";
-            $dbres = self::DbQuery($sql);
-            return mysql_fetch_assoc($dbres);
+            return $this->cards[$card_id] ?? null;
         }
 
         /**
          * Get specific cards infos
          */
         function getCards(array $cards_array): array {
-            return [];
+            $result = [];
+            foreach ($cards_array as $id) {
+                $id = (int) $id;
+                if (isset($this->cards[$id])) {
+                    $result[$id] = $this->cards[$id];
+                }
+            }
+            return $result;
         }
 
         /**
          * Get cards from their IDs (same as getCards), but with a location specified. Raises an exception if the cards are not in the specified location.
          */
         function getCardsFromLocation(array $cards_array, string $location, ?int $location_arg = null): array {
-            return [];
+            $this->checkLocation($location);
+            $result = [];
+            foreach ($cards_array as $id) {
+                $id = (int) $id;
+                if (!isset($this->cards[$id])) {
+                    throw new feException("card $id not found");
+                }
+                $c = $this->cards[$id];
+                if ($c['location'] !== $location) {
+                    throw new feException("card $id not in location $location");
+                }
+                if ($location_arg !== null && (int) $c['location_arg'] !== $location_arg) {
+                    throw new feException("card $id not at location_arg $location_arg");
+                }
+                $result[$id] = $c;
+            }
+            return $result;
         }
 
         /**
          * Get card of a specific type.
          */
         function getCardsOfType(mixed $type, ?int $type_arg = null): array {
-            return [];
+            $result = [];
+            foreach ($this->cards as $id => $c) {
+                if ((string) $c['type'] !== (string) $type) {
+                    continue;
+                }
+                if ($type_arg !== null && (int) $c['type_arg'] !== $type_arg) {
+                    continue;
+                }
+                $result[$id] = $c;
+            }
+            return $result;
         }
 
         /**
          * Get cards of a specific type in a specific location.
          */
         function getCardsOfTypeInLocation(mixed $type, ?int $type_arg, string $location, ?int $location_arg = null): array {
-            return [];
+            $this->checkLocation($location);
+            $result = [];
+            foreach ($this->cards as $id => $c) {
+                if ((string) $c['type'] !== (string) $type) {
+                    continue;
+                }
+                if ($type_arg !== null && (int) $c['type_arg'] !== $type_arg) {
+                    continue;
+                }
+                if ($c['location'] !== $location) {
+                    continue;
+                }
+                if ($location_arg !== null && (int) $c['location_arg'] !== $location_arg) {
+                    continue;
+                }
+                $result[$id] = $c;
+            }
+            return $result;
         }
 
         /**
          * Move a card to discard pile.
          */
         function playCard(int $card_id): void {
+            $this->insertCardOnExtremePosition($card_id, 'discard', true);
         }
 
         /**
          * Return the number of cards in specified location.
          */
         function countCardInLocation(string $location, ?int $location_arg = null): int|string {
-            return '0';
+            return $this->countCardsInLocation($location, $location_arg);
         }
 
         /**
          * Return the number of cards in specified location.
          */
         function countCardsInLocation(string $location, ?int $location_arg = null): int|string {
-            return '0';
+            $this->checkLocation($location);
+            $n = 0;
+            foreach ($this->cards as $c) {
+                if ($c['location'] !== $location) {
+                    continue;
+                }
+                if ($location_arg !== null && (int) $c['location_arg'] !== $location_arg) {
+                    continue;
+                }
+                $n++;
+            }
+            return $n;
         }
 
         /**
          * Return an array "location" => number of cards.
          */
         function countCardsInLocations(): array {
-            return [];
+            $result = [];
+            foreach ($this->cards as $c) {
+                $loc = $c['location'];
+                $result[$loc] = ($result[$loc] ?? 0) + 1;
+            }
+            return $result;
         }
 
         /**
          * Return an array "location_arg" => number of cards (for this location).
          */
         function countCardsByLocationArgs(string $location): array {
-            return [];
+            $this->checkLocation($location);
+            $result = [];
+            foreach ($this->cards as $c) {
+                if ($c['location'] !== $location) {
+                    continue;
+                }
+                $arg = (int) $c['location_arg'];
+                $result[$arg] = ($result[$arg] ?? 0) + 1;
+            }
+            return $result;
         }
 
         final function checkLocation(string $location, bool $like = false) {
