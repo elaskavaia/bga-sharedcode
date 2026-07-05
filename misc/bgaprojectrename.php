@@ -8,7 +8,8 @@ $args = array_slice($argv, $rest_index);
 if (! isset($args [0]) || ! isset($args[1])) {
     echo "Make a project copy by moving files into new project and renaming some known files and strings inside them\n";
     echo "The new project directory must be empty. The name of the new project is the name of the directory. It must be all lowercase.\n";
-    echo "usage: bgaprojectrename.php <oldprojectfullpath> <newprojectfullpath> [options]\n";
+    echo "usage: bgaprojectrename.php [options] <oldprojectfullpath> <newprojectfullpath>\n";
+    echo "  note: options must come BEFORE the paths (getopt stops at the first path)\n";
     echo "options:\n";
     echo " --all - renamed in text files and strings also";
     echo " --old-name <OldProjectName>\n";
@@ -36,8 +37,6 @@ if ($res !== 1) {
 }
 echo "$oldprojectpath:$oldprojectname => $newprojectpath:$newprojectname\n";
 
-$subdirs = ["src","modules",".vscode"];
-
 copyr($oldprojectpath, $newprojectpath);
 replacecontent($newprojectpath);
 
@@ -49,21 +48,22 @@ function replacecontent($newprojectpath) {
     global $oldprojectname;
     global $newprojectname;
     global $replace_content;
-    global $subdirs;
+    // case-preserving forms (namespace/class use the capitalized name)
+    $oldcap = ucfirst($oldprojectname);
+    $newcap = ucfirst($newprojectname);
     $dir_handle = opendir($newprojectpath);
     while ( $file = readdir($dir_handle) ) {
         if ($file != "." && $file != "..") {
             $path = "$newprojectpath/$file";
             
             if (is_dir($path)) {
-                // only some subdirs
-                if (array_search($file, $subdirs)!==false) {
-                    replacecontent($path);
-                }
+                // recurse everywhere - copyr already excluded .git/.svn/node_modules from the copy
+                replacecontent($path);
             } else {
                 // file
                 $corrfile = $file;
                 $corrfile = preg_replace( "/\\b${oldprojectname}\\b/", "${newprojectname}", $corrfile);
+                $corrfile = preg_replace( "/\\b${oldcap}\\b/", "${newcap}", $corrfile);
                 $corrfile = preg_replace( "/\\b${oldprojectname}_${oldprojectname}\\b/", "${newprojectname}_${newprojectname}", $corrfile);
                 if ($corrfile != $file) {
                     echo "Renaming $file => $corrfile\n";
@@ -97,9 +97,13 @@ function replacecontent($newprojectpath) {
                 $content= preg_replace("/\/${oldprojectname}\//", "/${newprojectname}/", $content);
                 $content= preg_replace("/return \"${oldprojectname}\"/", "return \"${newprojectname}\"", $content);
                 
+                // PHP namespace segment is code-critical - always rename (handles both Bga\Games\Name and escaped Bga\\Games\\Name)
+                $content = preg_replace('/(Bga\\\\+Games\\\\+)' . preg_quote($oldcap, '/') . '\\b/', '${1}' . $newcap, $content);
+
                 if ($replace_content) {
-                    $content= preg_replace( "/\"${oldprojectname}\"/", "\"${newprojectname}\"", $content);
-                    $content= preg_replace( "/\'${oldprojectname}\'/", "\'${newprojectname}\'", $content);
+                    // case-preserving whole-word catch-all (quoted ids, display name, titles, prose)
+                    $content= preg_replace( "/\\b${oldprojectname}\\b/", "${newprojectname}", $content);
+                    $content= preg_replace( "/\\b${oldcap}\\b/", "${newcap}", $content);
                 }
                 
                 file_put_contents($path,$content);
@@ -120,7 +124,7 @@ function copyr($source, $dest) {
     if (is_dir($source)) {
         $dir_handle = opendir($source);
         while ( $file = readdir($dir_handle) ) {
-            if ($file != "." && $file != ".." && $file != ".svn" && $file != ".git"  && $file != "node_modules") {
+            if ($file != "." && $file != ".." && $file != ".svn" && $file != ".git"  && $file != "node_modules" && $file != "newgame.php") {
                 if (is_dir($source . "/" . $file)) {
                     if (! is_dir($dest . "/" . $file)) {
                         mkdir($dest . "/" . $file);
