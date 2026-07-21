@@ -1403,6 +1403,7 @@ namespace Bga\GameFramework {
             $this->playerScore = $this->_createPlayerCounterStub();
             $this->playerScoreAux = $this->_createPlayerCounterStub();
             $this->playerStats = new PlayerStats();
+            $this->tableStats = new TableStats();
         }
 
         /**
@@ -2003,7 +2004,9 @@ namespace Bga\GameFramework {
          * @return int the new active player id
          */
         public function activeNextPlayer(): int|string {
-            return 0;
+            $next = $this->getPlayerAfter((int) $this->getActivePlayerId());
+            $this->gamestate->changeActivePlayer($next);
+            return $next;
         }
 
         /**
@@ -2822,14 +2825,20 @@ namespace Bga\GameFramework\GameResult {
          * @return Player
          */
         public static function fromPlayerDb(array $playerDb): self {
-            return new self(0, '');
+            return new self(
+                (int) ($playerDb['player_id'] ?? 0),
+                (string) ($playerDb['player_name'] ?? ''),
+                (string) ($playerDb['player_color'] ?? '000000'),
+                isset($playerDb['player_score']) ? (int) $playerDb['player_score'] : null,
+                isset($playerDb['player_score_aux']) ? (int) $playerDb['player_score_aux'] : null,
+            );
         }
 
         /**
-         * @return Player[]
+         * @return Player[] Reindexed 0..n (the db rows are keyed by player_id).
          */
         public static function fromPlayersDb(array $playersDb): array {
-            return [];
+            return array_map(static fn(array $row) => self::fromPlayerDb($row), array_values($playersDb));
         }
     }
 
@@ -2847,6 +2856,23 @@ namespace Bga\GameFramework\GameResult {
             array $players,
             bool $reverseScore = false,
             bool $reverseScoreAux = false,
+        ) {
+            return new self();
+        }
+
+        /**
+         * Score a single-player (solo) game as a win or loss.
+         *
+         * @param Player $player The solo player.
+         * @param int|null $score The player's final score.
+         * @param bool $victory Whether the player won.
+         *
+         * @return self
+         */
+        public static function solo(
+            Player $player,
+            ?int $score = null,
+            bool $victory = false,
         ) {
             return new self();
         }

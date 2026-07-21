@@ -3,7 +3,7 @@
 
 // MAIN CODE
 $rest_index = null;
-$options = getopt("", ["all","old-name:","new-name:"], $rest_index);
+$options = getopt("", ["all","old-name:","new-name:","exclude:"], $rest_index);
 $args = array_slice($argv, $rest_index);
 if (! isset($args [0]) || ! isset($args[1])) {
     echo "Make a project copy by moving files into new project and renaming some known files and strings inside them\n";
@@ -14,6 +14,7 @@ if (! isset($args [0]) || ! isset($args[1])) {
     echo " --all - renamed in text files and strings also";
     echo " --old-name <OldProjectName>\n";
     echo " --new-name <NewProjectName>\n";
+    echo " --exclude <name,name,...> - extra file/dir names to skip during copy (added to the built-in .git/.svn/node_modules)\n";
     exit(0);
 }
 
@@ -29,6 +30,7 @@ if ($newprojectpath===false) die("Path does not exists: $args[1]\n");
 $oldprojectname = $options['old-name'] ?? basename($oldprojectpath);
 $newprojectname = $options['new-name'] ?? basename($newprojectpath);
 $replace_content = array_key_exists('all',$options);
+$exclude_list = array_merge(['.svn', '.git', 'node_modules'], array_filter(explode(',', $options['exclude'] ?? '')));
 echo "replace all: $replace_content\n";
 $res = preg_match( "/^[a-z]+$/", $newprojectname );
 if ($res !== 1) {
@@ -57,8 +59,15 @@ function replacecontent($newprojectpath) {
             $path = "$newprojectpath/$file";
             
             if (is_dir($path)) {
-                // recurse everywhere - copyr already excluded .git/.svn/node_modules from the copy
+                // recurse everywhere - copyr already skipped the excluded names during the copy
                 replacecontent($path);
+                // rename the directory itself too (e.g. .claude/skills/create-euro-game)
+                $corrdir = preg_replace( "/\\b${oldprojectname}\\b/", "${newprojectname}", $file);
+                $corrdir = preg_replace( "/\\b${oldcap}\\b/", "${newcap}", $corrdir);
+                if ($corrdir != $file) {
+                    echo "Renaming dir $file => $corrdir\n";
+                    rename($path, "$newprojectpath/$corrdir");
+                }
             } else {
                 // file
                 $corrfile = $file;
@@ -93,7 +102,7 @@ function replacecontent($newprojectpath) {
                 $content= preg_replace("/${oldprojectname}\.game.php/", "${newprojectname}.game.php", $content);
                 $content= preg_replace("/${oldprojectname}\.action.php/", "${newprojectname}.action.php", $content);
                 $content= preg_replace("/${oldprojectname} game/i", "${newprojectname} game", $content);
-                $content= preg_replace("/bga.${oldprojectname}/", "bga.${newprojectname}", $content);
+                $content= preg_replace("/bga\\.${oldprojectname}/", "bga.${newprojectname}", $content);
                 $content= preg_replace("/\/${oldprojectname}\//", "/${newprojectname}/", $content);
                 $content= preg_replace("/return \"${oldprojectname}\"/", "return \"${newprojectname}\"", $content);
                 
@@ -120,11 +129,12 @@ function startsWith($haystack, $needle) {
 
 function copyr($source, $dest) {
     global $oldprojectname;
+    global $exclude_list;
     if (!is_dir($dest)) mkdir($dest);
     if (is_dir($source)) {
         $dir_handle = opendir($source);
         while ( $file = readdir($dir_handle) ) {
-            if ($file != "." && $file != ".." && $file != ".svn" && $file != ".git"  && $file != "node_modules" && $file != "newgame.php") {
+            if ($file != "." && $file != ".." && !in_array($file, $exclude_list)) {
                 if (is_dir($source . "/" . $file)) {
                     if (! is_dir($dest . "/" . $file)) {
                         mkdir($dest . "/" . $file);
