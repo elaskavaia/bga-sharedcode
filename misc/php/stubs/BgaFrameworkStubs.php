@@ -912,9 +912,10 @@ namespace Bga\GameFramework {
          */
         final public function getActivePlayerList(): array {
             $state = $this->state();
-            if ($state['type'] == 'activeplayer') {
+            $type = $state['type'] ?? 'activeplayer';
+            if ($type == 'activeplayer') {
                 return [$this->getActivePlayerId()];
-            } else if ($state['type'] == 'multipleactiveplayer') {
+            } else if ($type == 'multipleactiveplayer') {
                 return $state['multiactive'] ?? [];
             } else
                 return [];
