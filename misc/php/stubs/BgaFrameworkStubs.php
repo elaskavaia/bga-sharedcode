@@ -1009,7 +1009,7 @@ namespace Bga\GameFramework {
          * @return bool if this player is active.
          */
         final public function isPlayerActive(int $player_id): bool {
-            return false;
+            return in_array($player_id, $this->getActivePlayerList());
         }
 
         /**
@@ -3628,7 +3628,7 @@ namespace {
         }
 
         public function isPlayerActive($player_id) {
-            return false;
+            return in_array($player_id, $this->getActivePlayerList());
         }
 
         function updateMultiactiveOrNextState($next_state_if_none) {
