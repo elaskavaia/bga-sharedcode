@@ -700,6 +700,9 @@ namespace Bga\GameFramework {
     // ---- TableStats ----
 
     class TableStats {
+        /** @var array<string, int|float|bool> */
+        private array $data = [];
+
         /**
          * Create a statistic entry with a default value.
          *
@@ -707,6 +710,9 @@ namespace Bga\GameFramework {
          * @param int|float|bool $value Default value to register.
          */
         public function init(string|array $nameOrNames, int|float|bool $value): void {
+            foreach (is_array($nameOrNames) ? $nameOrNames : [$nameOrNames] as $name) {
+                $this->data[$name] = $value;
+            }
         }
 
         /**
@@ -716,6 +722,7 @@ namespace Bga\GameFramework {
          * @param int|float|bool $value Value to persist.
          */
         public function set(string $name, int|float|bool $value): void {
+            $this->data[$name] = $value;
         }
 
         /**
@@ -725,6 +732,7 @@ namespace Bga\GameFramework {
          * @param int|float $delta Signed difference to apply.
          */
         public function inc(string $name, int|float $delta): void {
+            $this->data[$name] = ($this->data[$name] ?? 0) + $delta;
         }
 
         /**
@@ -735,7 +743,7 @@ namespace Bga\GameFramework {
          * @return int|float|bool The statistic value.
          */
         public function get(string $name): int|float|bool {
-            return 0;
+            return $this->data[$name] ?? 0;
         }
     }
 
@@ -2836,10 +2844,10 @@ namespace Bga\GameFramework\GameResult {
         }
 
         /**
-         * @return Player[] Reindexed 0..n (the db rows are keyed by player_id).
+         * @return Player[] Keyed by player_id, like the db rows it is built from (NOT reindexed 0..n).
          */
         public static function fromPlayersDb(array $playersDb): array {
-            return array_map(static fn(array $row) => self::fromPlayerDb($row), array_values($playersDb));
+            return array_map(static fn(array $row) => self::fromPlayerDb($row), $playersDb);
         }
     }
 
