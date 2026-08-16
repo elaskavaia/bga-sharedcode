@@ -685,6 +685,9 @@ namespace Bga\GameFramework {
     // ---- UserPreferences ----
 
     class UserPreferences {
+        /** @var array<int, array<int, int>> */
+        private array $data = [];
+
         /**
          * Gets the value of a user preference for a player (cached in game DB).
          *
@@ -693,7 +696,14 @@ namespace Bga\GameFramework {
          * @return int|null the user preference value, or null if unset
          */
         function get(int $playerId, int $prefId): ?int {
-            return null;
+            return $this->data[$playerId][$prefId] ?? null;
+        }
+
+        /**
+         * Test-only: seed a preference the real framework would read from the player's profile.
+         */
+        public function _set(int $playerId, int $prefId, int $value): void {
+            $this->data[$playerId][$prefId] = $value;
         }
     }
 
@@ -1408,6 +1418,7 @@ namespace Bga\GameFramework {
                 12 => ['player_name' => 'player2', 'player_color' => '0000ff']
             ];
             $this->notify = new Notify();
+            $this->userPreferences = new UserPreferences();
             $this->legacy = $this->_createLegacyStub();
             $this->playerScore = $this->_createPlayerCounterStub();
             $this->playerScoreAux = $this->_createPlayerCounterStub();
