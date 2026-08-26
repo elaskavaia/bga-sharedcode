@@ -872,6 +872,12 @@ namespace Bga\GameFramework {
         private $active_player = null;
         var $states = [];
         private $private_states = [];
+        /**
+         * Test-only: set to the game object to model the production loadStateArgs() behavior -
+         * state() without $bSkipStateArgs then invokes the current state's 'args' method, exactly
+         * like the real framework does. Left null, state() stays inert as before.
+         */
+        public $game = null;
 
         function __construct() {
         }
@@ -880,8 +886,17 @@ namespace Bga\GameFramework {
             $this->states = $states;
         }
 
+        private function stateRow(): array {
+            if (array_key_exists($this->current_state, $this->states)) {
+                $state = $this->states[$this->current_state];
+                $state['id'] = $this->current_state;
+                return $state;
+            }
+            return ['type' => 'activeplayer'];
+        }
+
         function getStateNumberByTransition($transition) {
-            $state = $this->state();
+            $state = $this->stateRow();
             foreach ($state['transitions'] as $pos => $next_state) {
                 if ($transition == $pos || !$transition) {
                     return $next_state;
@@ -913,7 +928,7 @@ namespace Bga\GameFramework {
         }
 
         public function getActivePlayerId() {
-            $state = $this->state();
+            $state = $this->stateRow();
             return $state['active_player'] ?? $this->active_player;
         }
 
@@ -929,7 +944,7 @@ namespace Bga\GameFramework {
          * @return string[] The list of active players (ids typed as strings).
          */
         final public function getActivePlayerList(): array {
-            $state = $this->state();
+            $state = $this->stateRow();
             $type = $state['type'] ?? 'activeplayer';
             if ($type == 'activeplayer') {
                 return [$this->getActivePlayerId()];
@@ -967,7 +982,7 @@ namespace Bga\GameFramework {
          * @param int $playerId
          */
         final public function initializePrivateState(int $playerId): void {
-            $state = $this->state();
+            $state = $this->stateRow();
             $privstate = $state['initialprivate'];
             $this->setPrivateState($playerId, $privstate);
         }
@@ -1003,7 +1018,7 @@ namespace Bga\GameFramework {
          * @deprecated use isMultiactiveState
          */
         final public function isMutiactiveState(): bool {
-            $state = $this->state();
+            $state = $this->stateRow();
             return ($state['type'] == 'multipleactiveplayer');
         }
 
@@ -1013,7 +1028,7 @@ namespace Bga\GameFramework {
          * @return bool if the main state is MULTIPLE_ACTIVE_PLAYER.
          */
         public function isMultiactiveState(): bool {
-            $state = $this->state();
+            $state = $this->stateRow();
             return (($state['type'] ?? 'activeplayer') == 'multipleactiveplayer');
         }
 
@@ -1194,12 +1209,12 @@ namespace Bga\GameFramework {
          * @return array the current state information
          */
         final public function state(bool $bSkipStateArgs = false, bool $bOnlyVariableContent = false, bool $bSkipReflexionTimeLoad = false): array {
-            if (array_key_exists($this->current_state, $this->states)) {
-                $state = $this->states[$this->current_state];
-                $state['id'] = $this->current_state;
-                return $state;
+            $state = $this->stateRow();
+            // production loadStateArgs(): state() re-runs the current state's args method (BGA bug tapestry#202072)
+            if (!$bSkipStateArgs && $this->game !== null && isset($state['args'])) {
+                $state['args'] = $this->game->{$state['args']}();
             }
-            return ['type' => 'activeplayer'];
+            return $state;
         }
 
         /**
