@@ -447,8 +447,7 @@ namespace Bga\GameFramework {
          */
         public function player(int $playerId, string $notifName, string | NotificationMessage $message = '', array $args = []): void {
             [$msg, $args] = $this->expandMessage($message, $args);
-            $args = $this->applyDecorators($msg, $args);
-            $this->notifications[] = ["type" => $notifName, "log" => $msg, "args" => $args, "channel" => "player", "player_id" => $playerId];
+            $this->_saveNotification($notifName, $msg, $this->applyDecorators($msg, $args), $playerId);
         }
 
         /**
@@ -460,8 +459,14 @@ namespace Bga\GameFramework {
          */
         public function all(string $notifName, string | NotificationMessage $message = '', array $args = []): void {
             [$msg, $args] = $this->expandMessage($message, $args);
-            $args = $this->applyDecorators($msg, $args);
-            $this->notifications[] = ["type" => $notifName, "log" => $msg, "args" => $args, "channel" => "broadcast"];
+            $this->_saveNotification($notifName, $msg, $this->applyDecorators($msg, $args));
+        }
+
+        /** Store a notification as sent; legacy Table::notify* calls land here undecorated, like production. */
+        public function _saveNotification(string $notifName, string $msg, array $args, ?int $playerId = null): void {
+            $this->notifications[] = $playerId === null
+                ? ["type" => $notifName, "log" => $msg, "args" => $args, "channel" => "broadcast"]
+                : ["type" => $notifName, "log" => $msg, "args" => $args, "channel" => "player", "player_id" => $playerId];
         }
 
         public function alwaysMergePrivate() {
@@ -470,6 +475,10 @@ namespace Bga\GameFramework {
 
         public function _getNotifications() {
             return $this->notifications;
+        }
+
+        public function _getLastNotification(): ?array {
+            return $this->notifications ? $this->notifications[array_key_last($this->notifications)] : null;
         }
     }
 
@@ -660,7 +669,7 @@ namespace Bga\GameFramework {
          * @return int|null the option value, or null if the option doesn't exist (for example on a table created before a new option was added).
          */
         public function get(int $optionId): ?int {
-            return 0;
+            return null;
         }
 
         /**
@@ -1422,7 +1431,6 @@ namespace Bga\GameFramework {
         public bool $not_a_move_notification = false;
         public $bIndependantMultiactiveTable = false;
         var $player_preferences;
-        public $debugLastNotif = null;
 
 
         public function __construct() {
@@ -1434,6 +1442,7 @@ namespace Bga\GameFramework {
             ];
             $this->notify = new Notify();
             $this->userPreferences = new UserPreferences();
+            $this->tableOptions = new TableOptions();
             $this->legacy = $this->_createLegacyStub();
             $this->playerScore = $this->_createPlayerCounterStub();
             $this->playerScoreAux = $this->_createPlayerCounterStub();
@@ -2000,12 +2009,7 @@ namespace Bga\GameFramework {
          * @deprecated use $this->bga->notify->all
          */
         function notifyAllPlayers(string $notificationType, string $notificationLog, array $notificationArgs): void {
-            $this->debugLastNotif = [
-                'type' => $notificationType,
-                'log' => $notificationLog,
-                'args' => $notificationArgs,
-                'player_id' => 0
-            ];
+            $this->notify->_saveNotification($notificationType, $notificationLog, $notificationArgs);
         }
 
         /**
@@ -2014,12 +2018,7 @@ namespace Bga\GameFramework {
          * @deprecated use $this->bga->notify->player
          */
         function notifyPlayer(int $playerId, string $notificationType, string $notificationLog, array $notificationArgs): void {
-            $this->debugLastNotif = [
-                'type' => $notificationType,
-                'log' => $notificationLog,
-                'args' => $notificationArgs,
-                'player_id' => $playerId
-            ];
+            $this->notify->_saveNotification($notificationType, $notificationLog, $notificationArgs, $playerId);
         }
 
         function sendNotifications() {
@@ -2157,13 +2156,20 @@ namespace Bga\GameFramework {
             return [];
         }
 
+        /** Game option definitions (metadata only) parsed from gameoptions.json(c). */
+        function getGameOptions(): array {
+            foreach (['gameoptions.jsonc', 'gameoptions.json'] as $file) {
+                if (file_exists($file)) {
+                    return self::parseJsoncFile($file);
+                }
+            }
+            return [];
+        }
+
         function getTablePreferences(): array {
-            if (file_exists('./gamepreferences.json')) {
-                $raw = file_get_contents('./gamepreferences.json');
-                try {
-                    return json_decode($raw, true);
-                } catch (\Exception $e) {
-                    return [];
+            foreach (['gamepreferences.jsonc', 'gamepreferences.json'] as $file) {
+                if (file_exists($file)) {
+                    return self::parseJsoncFile($file);
                 }
             }
             $game_preferences = [];
@@ -2263,12 +2269,62 @@ namespace Bga\GameFramework {
          * @see gameinfos.inc.php
          */
         function getGameinfos(): array {
+            if (file_exists('gameinfos.jsonc')) {
+                return self::parseJsoncFile('gameinfos.jsonc');
+            }
             unset($gameinfos);
             require('gameinfos.inc.php');
             if (isset($gameinfos)) {
                 return $gameinfos;
             }
             throw new \feException("gameinfos.inp.php suppose to define \$gameinfos variable");
+        }
+
+        /** Parse a JSONC file (JSON with // and /* *\/ comments and trailing commas); php has no native parser. */
+        static function parseJsoncFile(string $path): array {
+            $raw = file_get_contents($path);
+            $out = "";
+            $len = strlen($raw);
+            $inString = false;
+            for ($i = 0; $i < $len; $i++) {
+                $c = $raw[$i];
+                $next = $i + 1 < $len ? $raw[$i + 1] : "";
+                if ($inString) {
+                    $out .= $c;
+                    if ($c === "\\") {
+                        $out .= $next;
+                        $i++;
+                    } elseif ($c === '"') {
+                        $inString = false;
+                    }
+                    continue;
+                }
+                if ($c === '"') {
+                    $inString = true;
+                    $out .= $c;
+                } elseif ($c === "/" && $next === "/") {
+                    while ($i < $len && $raw[$i] !== "\n") {
+                        $i++;
+                    }
+                    $out .= "\n";
+                } elseif ($c === "/" && $next === "*") {
+                    $i += 2;
+                    while ($i + 1 < $len && !($raw[$i] === "*" && $raw[$i + 1] === "/")) {
+                        $i++;
+                    }
+                    $i++;
+                } elseif ($c === "}" || $c === "]") {
+                    $trimmed = rtrim($out);
+                    $out = (str_ends_with($trimmed, ",") ? substr($trimmed, 0, -1) : $out) . $c;
+                } else {
+                    $out .= $c;
+                }
+            }
+            $data = json_decode($out, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \feException("Failed to parse $path: " . json_last_error_msg());
+            }
+            return $data;
         }
 
         /**
