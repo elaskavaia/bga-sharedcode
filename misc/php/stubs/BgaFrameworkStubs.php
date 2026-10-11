@@ -772,6 +772,8 @@ namespace Bga\GameFramework {
         /** @var array<string, array<int, int|float|bool>> */
         private array $data = [];
 
+        public function __construct(private ?TableStats $tableStats = null) {}
+
         /**
          * Create a statistic entry with a default value.
          *
@@ -785,6 +787,9 @@ namespace Bga\GameFramework {
                 if (!isset($this->data[$name])) {
                     $this->data[$name] = [];
                 }
+            }
+            if ($updateTableStat) {
+                $this->tableStats?->init($nameOrNames, $value);
             }
         }
 
@@ -826,6 +831,9 @@ namespace Bga\GameFramework {
                 $this->data[$name][$player_id] = 0;
             }
             $this->data[$name][$player_id] += $delta;
+            if ($updateTableStat) {
+                $this->tableStats?->inc($name, $delta);
+            }
         }
 
         /**
@@ -1446,8 +1454,8 @@ namespace Bga\GameFramework {
             $this->legacy = $this->_createLegacyStub();
             $this->playerScore = $this->_createPlayerCounterStub();
             $this->playerScoreAux = $this->_createPlayerCounterStub();
-            $this->playerStats = new PlayerStats();
             $this->tableStats = new TableStats();
+            $this->playerStats = new PlayerStats($this->tableStats);
         }
 
         /**
