@@ -59,6 +59,9 @@ function replacecontent($newprojectpath) {
             $path = "$newprojectpath/$file";
             
             if (is_dir($path)) {
+                if ($file == "img") {
+                    continue; // assets keep their names so css/js references stay valid
+                }
                 // recurse everywhere - copyr already skipped the excluded names during the copy
                 replacecontent($path);
                 // rename the directory itself too (e.g. .claude/skills/create-euro-game)
@@ -70,6 +73,9 @@ function replacecontent($newprojectpath) {
                 }
             } else {
                 // file
+                if (isBinary($path)) {
+                    continue; // images, fonts, audio: never renamed nor rewritten, so references to them stay valid
+                }
                 $corrfile = $file;
                 $corrfile = preg_replace( "/\\b${oldprojectname}\\b/", "${newprojectname}", $corrfile);
                 $corrfile = preg_replace( "/\\b${oldcap}\\b/", "${newcap}", $corrfile);
@@ -82,7 +88,8 @@ function replacecontent($newprojectpath) {
                 echo "Replacing string in $corrfile\n";
                 
                 
-                $content = file_get_contents( $path );
+                $original = file_get_contents( $path );
+                $content = $original;
                 if ($corrfile != $file) {
                     $content = preg_replace( "/\\b${file}\\b/", "${corrfile}", $content);
                 }
@@ -93,6 +100,7 @@ function replacecontent($newprojectpath) {
                 $content= preg_replace( "/action_${oldprojectname}\\b/", "action_${newprojectname}", $content);
                 $content= preg_replace( "/\\/${oldprojectname}\\/${oldprojectname}\\//", "/${newprojectname}/${newprojectname}/", $content);
                 $content= preg_replace( "/class ${oldprojectname} extends/i", "class $newprojectname extends", $content);
+                $content= preg_replace( "/extends\s+${oldcap}\b/", "extends ${newcap}", $content);
                 //function __construct(
                 $content= preg_replace( "/function\\s+${oldprojectname}\\(/i", "function __construct\\(", $content);
                 $content= preg_replace("/game_version_${oldprojectname}/", "game_version_${newprojectname}", $content);
@@ -104,7 +112,10 @@ function replacecontent($newprojectpath) {
                 $content= preg_replace("/${oldprojectname} game/i", "${newprojectname} game", $content);
                 $content= preg_replace("/bga\\.${oldprojectname}/", "bga.${newprojectname}", $content);
                 $content= preg_replace("/\/${oldprojectname}\//", "/${newprojectname}/", $content);
-                $content= preg_replace("/return \"${oldprojectname}\"/", "return \"${newprojectname}\"", $content);
+                // getGameName() lives in the .game.php file; elsewhere "name" is a domain word
+                if (endsWith($corrfile, '.game.php')) {
+                    $content= preg_replace("/return \"${oldprojectname}\"/", "return \"${newprojectname}\"", $content);
+                }
                 
                 // PHP namespace segment is code-critical - always rename (handles both Bga\Games\Name and escaped Bga\\Games\\Name)
                 $content = preg_replace('/(Bga\\\\+Games\\\\+)' . preg_quote($oldcap, '/') . '\\b/', '${1}' . $newcap, $content);
@@ -115,7 +126,9 @@ function replacecontent($newprojectpath) {
                     $content= preg_replace( "/\\b${oldcap}\\b/", "${newcap}", $content);
                 }
                 
-                file_put_contents($path,$content);
+                if ($content !== null && $content !== $original) {
+                    file_put_contents($path,$content);
+                }
             }
         }
     }
@@ -146,6 +159,7 @@ function copyr($source, $dest) {
                         echo "Using $oldprojectname as old project name\n";
                     }
                     copy($source . "/" . $file, $dest . "/" . $file);
+                    touch($dest . "/" . $file, filemtime($source . "/" . $file));
                 }
             }
         }
@@ -153,6 +167,11 @@ function copyr($source, $dest) {
     } else {
         copy($source, $dest);
     }
+}
+
+function isBinary($path) {
+    $head = file_get_contents($path, false, null, 0, 8192);
+    return $head !== false && strpos($head, "\0") !== false;
 }
 
 function endsWith($haystack, $needle) {
