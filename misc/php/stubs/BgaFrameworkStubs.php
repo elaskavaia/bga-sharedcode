@@ -1139,7 +1139,18 @@ namespace Bga\GameFramework {
          * @param int|class-string<Bga\GameFramework\States\GameState> $next_state the state id, or class name if using Class states
          */
         final public function jumpToState(int|string $next_state): void {
-            $this->current_state = $next_state;
+            $this->current_state = $this->toStateId($next_state, "jumpToState");
+        }
+
+        /** Production accepts a state id, a numeric string or a state class name, and rejects anything else. */
+        private function toStateId(int|string $state, string $caller): int {
+            if (is_numeric($state)) {
+                return (int) $state;
+            }
+            if ($this->game && is_subclass_of($state, States\GameState::class)) {
+                return (new $state($this->game))->id;
+            }
+            throw new \feException("$caller must be called with a state id or a state class, called with '$state'");
         }
 
         /**
@@ -1280,14 +1291,7 @@ namespace Bga\GameFramework {
          * @param int|class-string<Bga\GameFramework\States\GameState> $newStateId the new state id, or class name if using Class states
          */
         final public function setPrivateState(int $playerId, string|int $newStateId): void {
-            if (is_numeric($newStateId)) {
-                $newStateId = (int) $newStateId;
-            } elseif ($this->game && is_subclass_of($newStateId, States\GameState::class)) {
-                $newStateId = (new $newStateId($this->game))->id;
-            } else {
-                throw new \feException("setPrivateState must be called with a state id or a state class, called with '$newStateId'");
-            }
-            $this->private_states[$playerId] = $newStateId;
+            $this->private_states[$playerId] = $this->toStateId($newStateId, "setPrivateState");
         }
 
         /**
