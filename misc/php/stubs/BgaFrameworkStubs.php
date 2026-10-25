@@ -96,6 +96,7 @@ namespace Bga\GameFramework\Actions\Types {
             ?string $name = null,
             public ?bool $associative = true,
             public ?bool $alphanum = true,
+            public ?string $class = null,
         ) {}
 
         public function getValue(string $paramName): mixed { return []; }
@@ -137,7 +138,7 @@ namespace Bga\GameFramework\States {
             public string $descriptionMyTurn = '',
             public array $transitions = [],
             public bool $updateGameProgression = false,
-            public ?int $initialPrivate = null,
+            public string|int|null $initialPrivate = null,
         ) {
             if ($name == null) $this->name = substr(strrchr(get_class($this), '\\') ?: get_class($this), 1);
         }
@@ -400,8 +401,14 @@ namespace Bga\GameFramework {
          *
          * @param callable $fn The decorator function. Expected signature: `function(string $message, array $args): array`
          */
-        public function addDecorator(callable $fn) {
+        public function addDecorator(callable $fn): void {
             $this->decorators[] = $fn;
+        }
+
+        /**
+         * Tell if notification targets will be player no (true) or player id (false).
+         */
+        public function setUseNo(bool $useNo): void {
         }
 
         private function applyDecorators(string $message, array $args): array {
@@ -440,14 +447,14 @@ namespace Bga\GameFramework {
         /**
          * Send a notification to a single player of the game.
          *
-         * @param int $playerId the player ID to send the notification to.
+         * @param int $playerIdOrNo the player ID (or no if useNo: true) to send the notification to.
          * @param string $notifName a comprehensive string code that explain what is the notification for.
          * @param (string | NotificationMessage) $message some text that can be displayed on player's log window (should be surrounded by clienttranslate if not empty).
          * @param array $args notification arguments.
          */
-        public function player(int $playerId, string $notifName, string | NotificationMessage $message = '', array $args = []): void {
+        public function player(int $playerIdOrNo, string $notifName, string | NotificationMessage $message = '', array $args = []): void {
             [$msg, $args] = $this->expandMessage($message, $args);
-            $this->_saveNotification($notifName, $msg, $this->applyDecorators($msg, $args), $playerId);
+            $this->_saveNotification($notifName, $msg, $this->applyDecorators($msg, $args), $playerIdOrNo);
         }
 
         /**
@@ -469,7 +476,7 @@ namespace Bga\GameFramework {
                 : ["type" => $notifName, "log" => $msg, "args" => $args, "channel" => "player", "player_id" => $playerId];
         }
 
-        public function alwaysMergePrivate() {
+        public function alwaysMergePrivate(): void {
 
         }
 
@@ -598,6 +605,25 @@ namespace Bga\GameFramework {
         }
 
         /**
+         * Retrieve tournament information.
+         *
+         * Returns an empty array when the table is not part of a tournament.
+         *
+         * @return array{
+         *   id?: int,
+         *   name?: string,
+         *   championship_name?: string,
+         *   oot_options?: string,
+         *   tournament_group?: int,
+         *   tournament_parent_id?: int|null,
+         *   avatar?: string
+         * }
+         */
+        public function getInfo(): array {
+            return [];
+        }
+
+        /**
          * Retrieve tournament seeds for deterministic randomness.
          *
          * Returns an empty array when the table is not part of a tournament.
@@ -662,6 +688,9 @@ namespace Bga\GameFramework {
     // ---- TableOptions ----
 
     class TableOptions {
+        // production reads gamestate->table_globals, so tests seeding table_globals keep working
+        public function __construct(private Table $game) {}
+
         /**
          * Get the value of a table option.
          *
@@ -669,7 +698,20 @@ namespace Bga\GameFramework {
          * @return int|null the option value, or null if the option doesn't exist (for example on a table created before a new option was added).
          */
         public function get(int $optionId): ?int {
-            return null;
+            $value = $this->game->gamestate->table_globals[$optionId] ?? null;
+            return $value === null ? null : (int) $value;
+        }
+
+        /**
+         * Set the value of a table option.
+         *
+         * Call this only for Random options, to update the table with the selected value.
+         *
+         * @param int $optionId the option id as in the gameoptions.json file
+         * @param int $value the value to set the option to
+         */
+        public function set(int $optionId, int $value): void {
+            $this->game->gamestate->table_globals[$optionId] = $value;
         }
 
         /**
@@ -688,6 +730,24 @@ namespace Bga\GameFramework {
          */
         function isRealTime(): bool {
             return false;
+        }
+
+        /**
+         * Returns the current game version.
+         *
+         * @return int the game version
+         */
+        public function getGameVersion(): int {
+            return 0;
+        }
+
+        /**
+         * Get the selected language index as defined in the gameinfos file.
+         *
+         * @return int|null the selected language index, or null if the game has no game languages.
+         */
+        public function getGameLanguage(): ?int {
+            return null;
         }
     }
 
@@ -775,6 +835,12 @@ namespace Bga\GameFramework {
         public function __construct(private ?TableStats $tableStats = null) {}
 
         /**
+         * Set whether player arguments use player numbers (true) or player IDs (false).
+         */
+        public function setUseNo(bool $useNo): void {
+        }
+
+        /**
          * Create a statistic entry with a default value.
          *
          * @param string|array $nameOrNames Statistic identifier(s) defined in `stats.json`.
@@ -798,10 +864,10 @@ namespace Bga\GameFramework {
          *
          * @param string $name Statistic identifier defined in `stats.json`.
          * @param int|float|bool $value Value to persist.
-         * @param int $player_id Target player id.
+         * @param int $playerIdOrNo Target player ID, or player number when useNo is true.
          */
-        public function set(string $name, int|float|bool $value, int $player_id): void {
-            $this->data[$name][$player_id] = $value;
+        public function set(string $name, int|float|bool $value, int $playerIdOrNo): void {
+            $this->data[$name][$playerIdOrNo] = $value;
         }
 
         /**
@@ -823,14 +889,14 @@ namespace Bga\GameFramework {
          *
          * @param string $name Statistic identifier defined in `stats.json`.
          * @param int|float $delta Signed difference to apply.
-         * @param int $player_id Target player id.
+         * @param int $playerIdOrNo Target player ID, or player number when useNo is true.
          * @param bool $updateTableStat if there is a table stat of the same name to update at the same time (for example, for a turnNumber counter that would store the turns played by each player but also the total of turns for the table)
          */
-        public function inc(string $name, int|float $delta, int $player_id, bool $updateTableStat = false): void {
-            if (!isset($this->data[$name][$player_id])) {
-                $this->data[$name][$player_id] = 0;
+        public function inc(string $name, int|float $delta, int $playerIdOrNo, bool $updateTableStat = false): void {
+            if (!isset($this->data[$name][$playerIdOrNo])) {
+                $this->data[$name][$playerIdOrNo] = 0;
             }
-            $this->data[$name][$player_id] += $delta;
+            $this->data[$name][$playerIdOrNo] += $delta;
             if ($updateTableStat) {
                 $this->tableStats?->inc($name, $delta);
             }
@@ -854,12 +920,12 @@ namespace Bga\GameFramework {
          * Fetch a player statistic.
          *
          * @param string $name Statistic identifier defined in `stats.json`.
-         * @param int $player_id Target player id.
+         * @param int $playerIdOrNo Target player ID, or player number when useNo is true.
          *
          * @return int|float|bool The statistic value.
          */
-        public function get(string $name, int $player_id): int|float|bool {
-            return $this->data[$name][$player_id] ?? 0;
+        public function get(string $name, int $playerIdOrNo): int|float|bool {
+            return $this->data[$name][$playerIdOrNo] ?? 0;
         }
 
         /**
@@ -980,7 +1046,8 @@ namespace Bga\GameFramework {
          * @return array the current private state for the player as an array
          */
         final public function getPrivateState(int $playerId): ?array {
-            return $this->private_states[$playerId] ?? null;
+            $id = $this->private_states[$playerId] ?? null;
+            return $id === null ? null : ($this->states[$id] ?? []) + ['id' => $id];
         }
 
         /**
@@ -1176,7 +1243,7 @@ namespace Bga\GameFramework {
          * @param string|int|class-string<Bga\GameFramework\States\GameState> $next_state the transition name, or state id, or class name if using Class states
          * @return bool if the call moved to the next state
          */
-        final public function setPlayerNonMultiactive(int $player, string $nextState): bool {
+        final public function setPlayerNonMultiactive(int $player, callable|string|int $nextState): bool {
             return false;
         }
 
@@ -1195,7 +1262,7 @@ namespace Bga\GameFramework {
          * @param bool $bInactivePlayersNotOnTheList if the players not in the list should be made inactive
          * @return bool if the call moved to the next state
          */
-        final public function setPlayersMultiactive(array $players, string $nextState, bool $bInactivePlayersNotOnTheList = false): bool {
+        final public function setPlayersMultiactive(array $players, callable|string|int $nextState, bool $bInactivePlayersNotOnTheList = false): bool {
             return false;
         }
 
@@ -1210,9 +1277,16 @@ namespace Bga\GameFramework {
          * - Note: this method can run action or args methods of the target state for specified player
          *
          * @param int $playerId the player id
-         * @param int $newStateId the new state id
+         * @param int|class-string<Bga\GameFramework\States\GameState> $newStateId the new state id, or class name if using Class states
          */
-        final public function setPrivateState(int $playerId, int $newStateId): void {
+        final public function setPrivateState(int $playerId, string|int $newStateId): void {
+            if (is_numeric($newStateId)) {
+                $newStateId = (int) $newStateId;
+            } elseif ($this->game && is_subclass_of($newStateId, States\GameState::class)) {
+                $newStateId = (new $newStateId($this->game))->id;
+            } else {
+                throw new \feException("setPrivateState must be called with a state id or a state class, called with '$newStateId'");
+            }
             $this->private_states[$playerId] = $newStateId;
         }
 
@@ -1298,7 +1372,7 @@ namespace Bga\GameFramework {
          * @param string|int|class-string<Bga\GameFramework\States\GameState> $next_state the transition name, or state id, or class name if using Class states
          * @return bool if the call moved to the next state
          */
-        final public function updateMultiactiveOrNextState(string $nextStateIfNone): void {
+        final public function updateMultiactiveOrNextState(callable|string|int $nextStateIfNone): void {
         }
 
         /**
@@ -1323,6 +1397,16 @@ namespace Bga\GameFramework {
         }
 
         /**
+         * Returns the current state class instance for a player. If the player is in private parallel state, it means the current private state for this player.
+         *
+         * @param int $playerId the current player id
+         * @return ?States\GameState the game state class instance the player is in
+         */
+        public function getCurrentStateClass(?int $playerId): ?States\GameState {
+            return null;
+        }
+
+        /**
          * Returns the current state id for a player. If the player is in private parallel state, it means the current private state for this player.
          *
          * @param int $playerId the current player id
@@ -1338,6 +1422,15 @@ namespace Bga\GameFramework {
          * @return GameState the current main game state (ignoring private states)
          */
         public function getCurrentMainState(): ?GameState {
+            return null;
+        }
+
+        /**
+         * Returns the current main state class instance, ignoring private parallel states.
+         *
+         * @return ?States\GameState the current main game state class instance (ignoring private states)
+         */
+        public function getCurrentMainStateClass(): ?States\GameState {
             return null;
         }
 
@@ -1450,7 +1543,7 @@ namespace Bga\GameFramework {
             ];
             $this->notify = new Notify();
             $this->userPreferences = new UserPreferences();
-            $this->tableOptions = new TableOptions();
+            $this->tableOptions = new TableOptions($this);
             $this->legacy = $this->_createLegacyStub();
             $this->playerScore = $this->_createPlayerCounterStub();
             $this->playerScoreAux = $this->_createPlayerCounterStub();
@@ -1743,7 +1836,7 @@ namespace Bga\GameFramework {
          *   concede: int,
          * }>
          */
-        function loadPlayersBasicInfos() {
+        function loadPlayersBasicInfos(): array {
             $values = [];
             $no = 1;
             foreach ($this->players as $id => $player) {
@@ -1811,6 +1904,31 @@ namespace Bga\GameFramework {
         public function getPlayerNameById(int $player_id): string {
             $players = self::loadPlayersBasicInfos();
             return $players[$player_id]['player_name'] ?? "player$player_id";
+        }
+
+        /**
+         * Get the player name by player no.
+         *
+         * @param int $playerNo the player no
+         * @return string the player name
+         */
+        public function getPlayerNameByNo(int $playerNo): string {
+            return $this->getPlayerNameById($this->getPlayerIdByNo($playerNo));
+        }
+
+        /**
+         * Get the player id by player no.
+         *
+         * @param int $playerNo the player no
+         * @return int the player id
+         */
+        public function getPlayerIdByNo(int $playerNo): int {
+            foreach ($this->loadPlayersBasicInfos() as $id => $player) {
+                if ((int) $player['player_no'] === $playerNo) {
+                    return $id;
+                }
+            }
+            throw new \BgaSystemException("Unknown player no $playerNo");
         }
 
         /**
@@ -1920,7 +2038,7 @@ namespace Bga\GameFramework {
          * @param bool if a last line should be added to make a loop
          * @return array<int, int>
          */
-        public function createNextPlayerTable(array $players, bool $bLoop = true) {
+        public function createNextPlayerTable(array $players, bool $bLoop = true): array {
             $player_table = [];
             $prev = $first = array_shift($players);
             while (count($players) > 0) {
@@ -2062,7 +2180,10 @@ namespace Bga\GameFramework {
          *
          * @return int the new active player id
          */
-        public function activePrevPlayer(): void {
+        public function activePrevPlayer(): int {
+            $prev = $this->getPlayerBefore((int) $this->getActivePlayerId());
+            $this->gamestate->changeActivePlayer($prev);
+            return $prev;
         }
 
         /**
@@ -2365,10 +2486,12 @@ namespace Bga\GameFramework {
         }
 
         /**
-         * Returns an index of the selected language as defined in gameinfos.inc.php.
+         * Returns an index of the selected language as defined in gameinfos.
+         *
+         * @deprecated use $this->bga->tableOptions->getGameLanguage()
          */
-        public function getGameLanguage(): string {
-            return '';
+        public function getGameLanguage(): int {
+            return 0;
         }
 
         /**
@@ -2686,6 +2809,12 @@ namespace Bga\GameFramework\Components {
 // ============================================================================
 namespace Bga\GameFramework\Components\Counters {
 
+    enum CounterVisibility: string {
+        case VISIBLE = 'visible';
+        case SELF = 'self';
+        case HIDDEN = 'hidden';
+    }
+
     /**
      * Factory to create counters.
      */
@@ -2696,10 +2825,22 @@ namespace Bga\GameFramework\Components\Counters {
          * @param string $name the name of the counter, used to link it to the JS counter
          * @param ?int $min the minimum value of the counter (null = no minimum)
          * @param ?int $max the maximum value of the counter (null = no maximum)
+         * @param CounterVisibility $visibility define the visibility of the counter
+         * @param bool $useNo use player no instead of player id
+         * @param bool $strict set if the player no or id passed as a function param should be validated
          * @return PlayerCounter a new PlayerCounter object
          */
-        public function createPlayerCounter(string $name, ?int $min = 0, ?int $max = null): PlayerCounter {
-            return new class extends PlayerCounter {};
+        public function createPlayerCounter(
+            string $name,
+            ?int $min = 0,
+            ?int $max = null,
+            CounterVisibility $visibility = CounterVisibility::VISIBLE,
+            bool $useNo = false,
+            ?bool $strict = null,
+        ): PlayerCounter {
+            $counter = new class extends PlayerCounter {};
+            $counter->setVisibility($visibility);
+            return $counter;
         }
 
         /**
@@ -2715,10 +2856,10 @@ namespace Bga\GameFramework\Components\Counters {
         }
     }
 
-    abstract class OutOfRangeCounterException extends \BgaSystemException {
+    abstract class OutOfRangeCounterException extends \Bga\GameFramework\SystemException {
     }
 
-    abstract class UnknownPlayerException extends \BgaSystemException {
+    abstract class UnknownPlayerException extends \Bga\GameFramework\SystemException {
     }
 
     /**
@@ -2726,14 +2867,56 @@ namespace Bga\GameFramework\Components\Counters {
      */
     abstract class PlayerCounter {
         private array $values = [];
+        private CounterVisibility $visibility = CounterVisibility::VISIBLE;
+
+        /**
+         * Return if the counter is visible by anyone.
+         */
+        public function isVisible(): bool {
+            return $this->visibility === CounterVisibility::VISIBLE;
+        }
+
+        /**
+         * Return if the counter is invisible.
+         */
+        public function isHidden(): bool {
+            return $this->visibility === CounterVisibility::HIDDEN;
+        }
+
+        /**
+         * Return if the counter is visible by the current player only.
+         */
+        public function isSelf(): bool {
+            return $this->visibility === CounterVisibility::SELF;
+        }
+
+        /**
+         * Set the counter visibility.
+         */
+        public function setVisibility(CounterVisibility $visibility): void {
+            $this->visibility = $visibility;
+        }
+
+        /**
+         * Tell if the counter input will be player no (true) or player id (false)
+         */
+        public function setUseNo(bool $useNo): void {
+        }
+
+        /**
+         * Tell if the counter input will be validated. If true, the counter will trigger an exception if the no or id doesn't exist in the game.
+         */
+        public function setStrict(bool $strict): void {
+        }
 
         /**
          * Initialize the DB elements. Must be called during game `setupNewGame`.
          *
+         * @param array $playerIdsOrNos the player ids (or player no if you set useNo: true)
          * @param int $initialValue, if different than 0
          */
-        public function initDb(array $playerIds, int $initialValue = 0) {
-            foreach ($playerIds as $id) {
+        public function initDb(array $playerIdsOrNos, int $initialValue = 0): void {
+            foreach ($playerIdsOrNos as $id) {
                 $this->values[$id] = $initialValue;
             }
         }
@@ -2741,26 +2924,26 @@ namespace Bga\GameFramework\Components\Counters {
         /**
          * Returns the current value of the counter.
          *
-         * @param int $playerId the player id
+         * @param int $playerIdOrNo the player id (or no if useNo: true)
          * @return int the value
          * @throws UnknownPlayerException if $playerId is not in the player ids initialized by initDb
          */
-        public function get(int $playerId): int {
-            return $this->values[$playerId] ?? 0;
+        public function get(int $playerIdOrNo): int {
+            return $this->values[$playerIdOrNo] ?? 0;
         }
 
         /**
          * Set the value of the counter, and send a notif to update the value on the front side.
          *
-         * @param int $playerId the player id
+         * @param int $playerIdOrNo the player id (or no if useNo: true)
          * @param int $value the new value
          * @param ?NotificationMessage $message the notif to send to the front, with a message and optional args. Empty message for no log, null for no notif at all (the front will not be updated).
          * @return int the new value
          * @throws OutOfRangeCounterException if the value is outside the min/max
          * @throws UnknownPlayerException if $playerId is not in the player ids initialized by initDb
          */
-        public function set(int $playerId, int $value, ?\Bga\GameFramework\NotificationMessage $message = new \Bga\GameFramework\NotificationMessage()): int {
-            $this->values[$playerId] = $value;
+        public function set(int $playerIdOrNo, int $value, ?\Bga\GameFramework\NotificationMessage $message = new \Bga\GameFramework\NotificationMessage()): int {
+            $this->values[$playerIdOrNo] = $value;
             return $value;
         }
 
@@ -2769,16 +2952,16 @@ namespace Bga\GameFramework\Components\Counters {
          *
          * Note: if the inc is 0, no notif will be sent.
          *
-         * @param int $playerId the player id
+         * @param int $playerIdOrNo the player id (or no if useNo: true)
          * @param int $inc the value to add to the current value
          * @param ?NotificationMessage $message the notif to send to the front, with a message and optional args. Empty message for no log, null for no notif at all (the front will not be updated).
          * @return int the new value
          * @throws OutOfRangeCounterException if the value is outside the min/max
          * @throws UnknownPlayerException if $playerId is not in the player ids initialized by initDb
          */
-        public function inc(int $playerId, int $inc, ?\Bga\GameFramework\NotificationMessage $message = new \Bga\GameFramework\NotificationMessage()): int {
-            $this->values[$playerId] = ($this->values[$playerId] ?? 0) + $inc;
-            return $this->values[$playerId];
+        public function inc(int $playerIdOrNo, int $inc, ?\Bga\GameFramework\NotificationMessage $message = new \Bga\GameFramework\NotificationMessage()): int {
+            $this->values[$playerIdOrNo] = ($this->values[$playerIdOrNo] ?? 0) + $inc;
+            return $this->values[$playerIdOrNo];
         }
 
         /**
@@ -2829,8 +3012,9 @@ namespace Bga\GameFramework\Components\Counters {
          *
          * @param array $result the object to update.
          * @param ?string $fieldName the field name to set in $result["players"], if different than the counter name.
+         * @param ?int $currentPlayerId the current player id, needed if the counter has self visibility
          */
-        public function fillResult(array &$result, ?string $fieldName = null) {
+        public function fillResult(array &$result, ?string $fieldName = null, ?int $currentPlayerId = null) {
         }
     }
 
@@ -2954,14 +3138,14 @@ namespace Bga\GameFramework\GameResult {
         /**
          * Score all players separately (no-team game).
          *
-         * @param Player[] $players The players at this table. Currently, real players only.
+         * @param array<int, Player|int|null>|null $players The players or their IDs.
          * @param bool $reverseScore Whether negative scores should be rewarded
          * @param bool $reverseScoreAux Whether auxiliary score ordering is reversed
          *
          * @return self
          */
         public static function individualRanking(
-            array $players,
+            ?array $players = null,
             bool $reverseScore = false,
             bool $reverseScoreAux = false,
         ) {
@@ -2969,18 +3153,35 @@ namespace Bga\GameFramework\GameResult {
         }
 
         /**
-         * Score a single-player (solo) game as a win or loss.
+         * Build a solo game result (internally treated as a cooperative result).
          *
-         * @param Player $player The solo player.
-         * @param int|null $score The player's final score.
-         * @param bool $victory Whether the player won.
+         * @param Player|int|null $player The player or player ID at this table. Null finds the only player.
+         * @param int $score The solo score. For display only, the outcome is decided by $win.
+         * @param bool $win indicates if the coop game is won or lost
          *
          * @return self
          */
         public static function solo(
-            Player $player,
-            ?int $score = null,
-            bool $victory = false,
+            Player|int|null $player = null,
+            int $score = 0,
+            bool $win = true,
+        ) {
+            return new self();
+        }
+
+        /**
+         * Build a cooperative result with a single team representing all players.
+         *
+         * @param array<int, Player|int|null>|null $players The players or their IDs. Null uses all players.
+         * @param int $score The team score. For display only, the outcome is decided by $win.
+         * @param bool $win indicates if the coop game is won or lost
+         *
+         * @return self
+         */
+        public static function coop(
+            ?array $players = null,
+            int $score = 0,
+            bool $win = true,
         ) {
             return new self();
         }
@@ -3178,7 +3379,7 @@ namespace {
          * Set the databasetable name.
          * MUST be called before any other method.
          */
-        function init(string $table): void {
+        function init(string $table) {
             $this->table = $table;
         }
 
@@ -3826,6 +4027,19 @@ namespace {
         protected $viewArgs;
 
         /**
+         * This is the constructor. Do not try to implement a `__construct` to bypass this method.
+         */
+        public function __default() {
+        }
+
+        /**
+         * Get the player id of the player requesting the action.
+         */
+        protected function getCurrentPlayerId(): int {
+            return (int) $this->game->getCurrentPlayerId();
+        }
+
+        /**
          * This method must be used to retrieve the arguments sent with your AJAX query.
          *
          * You must not use "_GET", "_POST" or equivalent PHP variables to do this, as it is unsafe.
@@ -3904,6 +4118,17 @@ namespace {
 
         protected function _(string $text): string {
             return $text;
+        }
+
+        final protected function raw(string $string): array {
+            return [$string];
+        }
+
+        /**
+         * Get the player id of the player requesting the view.
+         */
+        protected function getCurrentPlayerId(): int {
+            return (int) $this->game->getCurrentPlayerId();
         }
 
         abstract public function build_page($viewArgs);

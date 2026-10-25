@@ -80,7 +80,7 @@ needed for PHPUnit tests. Legacy shim files (`table.game.php`, `deck.game.php`,
 
 When `_ide_helper.php` is updated from the BGA framework:
 
-1. Run the sync check:
+1. Run the sync check (`npm run sync:check`, also part of `npm run precommit`):
    ```bash
    php misc/php/stubs/sync_check.php
    ```
@@ -89,7 +89,12 @@ When `_ide_helper.php` is updated from the BGA framework:
    - **Missing classes/methods**: Need to be added to BgaFrameworkStubs.php
    - **Signature mismatches**: May need updating (note: stubs intentionally omit
      `final` and some type annotations to allow test overrides)
-   - **Extra in stubs**: Test helpers like `_getCurrentPlayerId` — expected, not errors
+   - Expected, do not "fix":
+     - ItemManager classes and `Helpers\Collection`: not stubbed yet
+     - `getObjectFromDB` / `getPrivateState` return `?array`: the helper says `array` but
+       documents (and production returns) null
+     - `GameState::__construct` `$game` is untyped so tests can pass a fake game
+     - mismatches on `Bga\GameFramework\Table` repeat under the global `Table`, which extends it
 
 3. For each new/changed item, update the corresponding section in BgaFrameworkStubs.php:
    - Copy the method signature from `_ide_helper.php`
