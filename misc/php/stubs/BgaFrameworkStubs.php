@@ -688,7 +688,7 @@ namespace Bga\GameFramework {
     // ---- TableOptions ----
 
     class TableOptions {
-        // production reads gamestate->table_globals, so tests seeding table_globals keep working
+        // options live in gamestate->table_globals, so tests seeding table_globals keep working
         public function __construct(private Table $game) {}
 
         /**
@@ -1142,7 +1142,7 @@ namespace Bga\GameFramework {
             $this->current_state = $this->toStateId($next_state, "jumpToState");
         }
 
-        /** Production accepts a state id, a numeric string or a state class name, and rejects anything else. */
+        /** Accepts a state id, a numeric string or a state class name, and rejects anything else. */
         private function toStateId(int|string $state, string $caller): int {
             if (is_numeric($state)) {
                 return (int) $state;
