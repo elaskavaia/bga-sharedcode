@@ -1566,7 +1566,7 @@ namespace Bga\GameFramework {
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Accessing_the_database
          */
         final public static function DbAffectedRow(): int {
-            return 0;
+            return (int) \BgaTestDb::$db?->affected_rows;
         }
 
         /**
@@ -1576,7 +1576,7 @@ namespace Bga\GameFramework {
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Accessing_the_database
          */
         final public static function DbGetLastId(): int {
-            return 0;
+            return (int) \BgaTestDb::$db?->insert_id;
         }
 
         public static $query;
@@ -1588,7 +1588,7 @@ namespace Bga\GameFramework {
          */
         final public static function DbQuery(string $sql): null|\mysqli_result|bool {
             self::$query = $sql;
-            return null;
+            return \BgaTestDb::$db?->query($sql);
         }
 
         /**
@@ -1603,7 +1603,7 @@ namespace Bga\GameFramework {
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Accessing_the_database
          */
         final public static function escapeStringForDB(string $string): string {
-            return $string;
+            return \BgaTestDb::$db?->real_escape_string($string) ?? $string;
         }
 
         /**
@@ -1617,7 +1617,7 @@ namespace Bga\GameFramework {
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Accessing_the_database
          */
         final public static function getObjectListFromDB(string $sql, bool $bUniqueValue = false): array {
-            return [];
+            return \BgaTestDb::$db ? \BgaTestDb::getObjectList($sql, $bUniqueValue) : [];
         }
 
         /**
@@ -1627,7 +1627,7 @@ namespace Bga\GameFramework {
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Accessing_the_database
          */
         final public static function getUniqueValueFromDB(string $sql): mixed {
-            return 0;
+            return \BgaTestDb::$db ? \BgaTestDb::getUniqueValue($sql) : 0;
         }
 
         /**
@@ -1647,7 +1647,7 @@ namespace Bga\GameFramework {
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Accessing_the_database
          */
         final public static function getCollectionFromDB(string $sql, bool $bSingleValue = false): array {
-            return [];
+            return \BgaTestDb::$db ? \BgaTestDb::getCollection($sql, $bSingleValue) : [];
         }
 
         /**
@@ -1658,7 +1658,7 @@ namespace Bga\GameFramework {
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Accessing_the_database
          */
         final public static function getNonEmptyCollectionFromDB(string $sql): array {
-            return [];
+            return \BgaTestDb::$db ? \BgaTestDb::getNonEmpty(\BgaTestDb::getCollection($sql, false), $sql) : [];
         }
 
         /**
@@ -1669,7 +1669,7 @@ namespace Bga\GameFramework {
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Accessing_the_database
          */
         final public static function getObjectFromDB(string $sql): ?array {
-            return [];
+            return \BgaTestDb::$db ? \BgaTestDb::getObject($sql) : [];
         }
 
         /**
@@ -1681,7 +1681,7 @@ namespace Bga\GameFramework {
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Accessing_the_database
          */
         final public static function getNonEmptyObjectFromDB(string $sql): array {
-            return [];
+            return \BgaTestDb::$db ? \BgaTestDb::getNonEmpty(\BgaTestDb::getObject($sql), $sql) : [];
         }
 
         /**
@@ -1693,7 +1693,7 @@ namespace Bga\GameFramework {
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#Accessing_the_database
          */
         final public static function getDoubleKeyCollectionFromDB(string $sql, bool $bSingleValue = false): array {
-            return [];
+            return \BgaTestDb::$db ? \BgaTestDb::getDoubleKeyCollection($sql, $bSingleValue) : [];
         }
 
         // --- Player management ---
@@ -2033,6 +2033,9 @@ namespace Bga\GameFramework {
         }
 
         function doUndoSavePoint() {
+            if (\BgaTestDb::$db) {
+                \BgaTestDb::copyTables("", "zz_savepoint_");
+            }
         }
 
         // --- Actions & state ---
@@ -2243,6 +2246,9 @@ namespace Bga\GameFramework {
          * Use DBPREFIX_<table_name> for all tables in the $sql parameter.
          */
         function applyDbUpgradeToAllDB(string $sql): void {
+            if (\BgaTestDb::$db) {
+                \BgaTestDb::applyToAllPrefixes($sql);
+            }
         }
 
         /**
@@ -2476,6 +2482,9 @@ namespace Bga\GameFramework {
          * Restore the situation previously saved as an "Undo save point".
          */
         function undoRestorePoint(): void {
+            if (\BgaTestDb::$db) {
+                \BgaTestDb::copyTables("zz_savepoint_", "");
+            }
         }
 
         /**
@@ -2983,6 +2992,8 @@ namespace Bga\GameFramework\GameResult {
 // ============================================================================
 namespace {
 
+    require_once __DIR__ . "/BgaTestDb.php";
+
     if (!defined('APP_GAMEMODULE_PATH')) {
         define('APP_GAMEMODULE_PATH', '');
     }
@@ -3028,43 +3039,47 @@ namespace {
 
         static public function DbQuery($sql, $specific_db = null, $bMulti = false) {
             APP_DbObject::$query = $sql;
+            return \Bga\GameFramework\Table::DbQuery($sql);
         }
 
         static public function getUniqueValueFromDB($sql, $low_priority_select = false) {
-            return 0;
+            return \Bga\GameFramework\Table::getUniqueValueFromDB($sql);
         }
 
         static public function getCollectionFromDB($sql, $bSingleValue = false, $low_priority_select = false) {
-            return [];
+            return \Bga\GameFramework\Table::getCollectionFromDB($sql, $bSingleValue);
         }
 
         function getNonEmptyCollectionFromDB($sql) {
-            return [];
+            return \Bga\GameFramework\Table::getNonEmptyCollectionFromDB($sql);
         }
 
         function getObjectFromDB($sql) {
-            return [];
+            return \Bga\GameFramework\Table::getObjectFromDB($sql);
         }
 
         function getNonEmptyObjectFromDB($sql) {
-            return [];
+            return \Bga\GameFramework\Table::getNonEmptyObjectFromDB($sql);
         }
 
         function getObjectListFromDB($query, $single = false) {
-            return [];
+            return \Bga\GameFramework\Table::getObjectListFromDB($query, $single);
         }
 
         function getDoubleKeyCollectionFromDB($sql, $bSingleValue = false) {
-            return [];
+            return \Bga\GameFramework\Table::getDoubleKeyCollectionFromDB($sql, $bSingleValue);
         }
 
         function DbGetLastId() {
+            return \Bga\GameFramework\Table::DbGetLastId();
         }
 
         function DbAffectedRow() {
+            return \Bga\GameFramework\Table::DbAffectedRow();
         }
 
         function escapeStringForDB($string) {
+            return \Bga\GameFramework\Table::escapeStringForDB($string);
         }
     }
 
