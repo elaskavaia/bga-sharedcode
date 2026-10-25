@@ -37,8 +37,8 @@ foreach ($newClasses as $className) {
 
     $methods = [];
     foreach ($ref->getMethods() as $method) {
-        // Only include methods declared in this class (not inherited)
-        if ($method->getDeclaringClass()->getName() !== $className) continue;
+        // Inherited methods count, so an empty subclass like `Components\Deck extends \Deck` still exposes its API
+        if ($method->getDeclaringClass()->isInternal()) continue;
 
         $sig = formatMethodSignature($method);
         $methods[$method->getName()] = $sig;

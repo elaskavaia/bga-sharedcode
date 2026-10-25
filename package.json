@@ -1,0 +1,16 @@
+{
+  "name": "bga-sharedcode",
+  "version": "1.0.0",
+  "description": "Shared BGA framework stubs and tooling",
+  "private": true,
+  "scripts": {
+    "lint:php": "git ls-files -z --cached --others --exclude-standard '*.php' | xargs -0 php8.4 -l && echo 'All PHP files OK'",
+    "smoke": "php8.4 -r 'require \"misc/php/stubs/BgaFrameworkStubs.php\";' && echo 'Stubs load OK'",
+    "sync:check": "php8.4 misc/php/stubs/sync_check.php",
+    "precommit": "npm run lint:php && npm run smoke && npm run sync:check",
+    "testdb:start": "php8.4 misc/php/stubs/BgaTestDb.php start",
+    "testdb:stop": "php8.4 misc/php/stubs/BgaTestDb.php stop"
+  },
+  "author": "Alena Laskavaia",
+  "license": "EPL-1.0"
+}

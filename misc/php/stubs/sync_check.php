@@ -35,8 +35,9 @@ $content = preg_replace('/^\s*exit\s*\(.*?\)\s*;/m', '// exit removed for reflec
 file_put_contents($tmpHelper, $content);
 
 // Run reflection on both files in separate processes
-$helperJson = shell_exec("php " . escapeshellarg($reflectScript) . " " . escapeshellarg($tmpHelper) . " 2>&1");
-$stubsJson = shell_exec("php " . escapeshellarg($reflectScript) . " " . escapeshellarg($stubs) . " 2>&1");
+$php = escapeshellarg(PHP_BINARY);
+$helperJson = shell_exec("$php " . escapeshellarg($reflectScript) . " " . escapeshellarg($tmpHelper) . " 2>&1");
+$stubsJson = shell_exec("$php " . escapeshellarg($reflectScript) . " " . escapeshellarg($stubs) . " 2>&1");
 
 unlink($tmpHelper);
 
